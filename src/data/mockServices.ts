@@ -3,6 +3,7 @@ export type ServicePackage = {
   price: number;
   originalPrice: number;
   time: string;
+  features: string[];
 };
 
 export type Service = {
@@ -32,8 +33,8 @@ export const MOCK_SERVICES: Service[] = [
     title: "AC Deep Service",
     description: "Foam-jet cleaning of coils, filters and drain lines — cooler air, lower bills, and a fresh-out-of-the-box smell.",
     packages: [
-      { name: "Split AC Deep Clean", price: 599, originalPrice: 899, time: "45 mins" },
-      { name: "Window AC Deep Clean", price: 499, originalPrice: 699, time: "40 mins" },
+      { name: "Split AC Deep Clean", price: 599, originalPrice: 899, time: "45 mins", features: ["Foam jet cleaning", "Filter & coil wash", "Gas check"] },
+      { name: "Window AC Deep Clean", price: 499, originalPrice: 699, time: "40 mins", features: ["Complete unmounting", "Deep coil wash", "Drainage block clear"] },
     ],
   },
   {
@@ -48,8 +49,8 @@ export const MOCK_SERVICES: Service[] = [
     title: "Full Home Deep Cleaning",
     description: "4-member crew, 42-point checklist, hospital-grade disinfectant. Move-in ready in a single afternoon.",
     packages: [
-      { name: "Complete Home (Furnished)", price: 4299, originalPrice: 5599, time: "6 hrs" },
-      { name: "Kitchen & Bathroom", price: 1899, originalPrice: 2499, time: "3 hrs" },
+      { name: "Complete Home (Furnished)", price: 4299, originalPrice: 5599, time: "6 hrs", features: ["Floor scrubbing & polish", "Bathroom acid wash", "Furniture dry vacuuming"] },
+      { name: "Kitchen & Bathroom", price: 1899, originalPrice: 2499, time: "3 hrs", features: ["Tile descaling", "Chimney surface degrease", "Exhaust cleaning"] },
     ],
   },
   {
@@ -64,8 +65,8 @@ export const MOCK_SERVICES: Service[] = [
     title: "Bathroom Deep Cleaning",
     description: "Descaling on tiles, taps and glass. Deep grout scrub with eco-safe acids — leaves zero streaks or fumes.",
     packages: [
-      { name: "Deep Clean (1 Bathroom)", price: 399, originalPrice: 599, time: "60 mins" },
-      { name: "Deep Clean (2 Bathrooms)", price: 699, originalPrice: 999, time: "2 hrs" },
+      { name: "Deep Clean (1 Bathroom)", price: 399, originalPrice: 599, time: "60 mins", features: ["Hard water stain removal", "Floor/wall tile scrubbing", "Mirror polishing"] },
+      { name: "Deep Clean (2 Bathrooms)", price: 699, originalPrice: 999, time: "2 hrs", features: ["Combo discount", "Grout restoration", "WC deep sanitation"] },
     ],
   },
   {
@@ -80,8 +81,8 @@ export const MOCK_SERVICES: Service[] = [
     title: "Sofa Spa Cleaning",
     description: "Hot-water extraction and shampooing for deep stain and pet odor removal. Dries in just 4 hours.",
     packages: [
-      { name: "Sofa Spa (3 Seats)", price: 749, originalPrice: 999, time: "1.5 hrs" },
-      { name: "Carpet Shampooing", price: 599, originalPrice: 799, time: "1 hr" },
+      { name: "Sofa Spa (3 Seats)", price: 749, originalPrice: 999, time: "1.5 hrs", features: ["Dry dust vacuuming", "Shampoo spot treatment", "Wet vacuum extraction"] },
+      { name: "Carpet Shampooing", price: 599, originalPrice: 799, time: "1 hr", features: ["Deep pile brush", "Stain pre-treatment", "Deodorization spray"] },
     ],
   },
   {
@@ -96,8 +97,8 @@ export const MOCK_SERVICES: Service[] = [
     title: "Leak Fix & Pipe Repair",
     description: "Quick diagnosis and fixing of dripping taps, blocked drains, or leaking pipes with guaranteed no-mess service.",
     packages: [
-      { name: "Tap/Mixer Repair", price: 149, originalPrice: 249, time: "30 mins" },
-      { name: "Drain Blockage Fix", price: 299, originalPrice: 399, time: "45 mins" },
+      { name: "Tap/Mixer Repair", price: 149, originalPrice: 249, time: "30 mins", features: ["Washer replacement", "Spindle change", "Leakage test"] },
+      { name: "Drain Blockage Fix", price: 299, originalPrice: 399, time: "45 mins", features: ["High-pressure flush", "Siphon trap clean", "Chemical descaling"] },
     ],
   },
   {
@@ -112,8 +113,8 @@ export const MOCK_SERVICES: Service[] = [
     title: "Switchboard & Wiring",
     description: "Safe installation, repair, and replacement of switches, MCBs, and general wiring by certified electricians.",
     packages: [
-      { name: "Switch/Socket Fix", price: 99, originalPrice: 149, time: "30 mins" },
-      { name: "Fan Installation", price: 199, originalPrice: 299, time: "45 mins" },
+      { name: "Switch/Socket Fix", price: 99, originalPrice: 149, time: "30 mins", features: ["Burnout replacement", "Current leakage test", "Modular fitting"] },
+      { name: "Fan Installation", price: 199, originalPrice: 299, time: "45 mins", features: ["Secure canopy mount", "Regulator connection", "Blade balancing"] },
     ],
   },
 ];

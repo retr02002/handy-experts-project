@@ -14,7 +14,7 @@ export function PopularServices() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         
         <SectionHeader
-          badgeNumber="03"
+          badgeNumber="04"
           badgeText="POPULAR"
           title={
             <>
@@ -22,22 +22,6 @@ export function PopularServices() {
             </>
           }
           description="Real jobs. Real ratings. Real Delhi pros. Every service below is booked live in the last 7 days."
-          rightElement={
-            <div className="hidden md:flex items-center gap-3">
-              <button 
-                className="popular-swiper-prev w-10 h-10 rounded-full flex items-center justify-center bg-slate-100 dark:bg-[#151f32] text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-[#1e2a44] transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
-                aria-label="Previous service"
-              >
-                <ClientIcon icon="ph:arrow-left-bold" className="w-4 h-4" />
-              </button>
-              <button 
-                className="popular-swiper-next w-10 h-10 rounded-full flex items-center justify-center bg-slate-100 dark:bg-[#151f32] text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-[#1e2a44] transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
-                aria-label="Next service"
-              >
-                <ClientIcon icon="ph:arrow-right-bold" className="w-4 h-4" />
-              </button>
-            </div>
-          }
         />
 
         {/* Client Component handles tabs and swiper interactvity */}

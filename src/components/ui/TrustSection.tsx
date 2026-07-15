@@ -51,7 +51,7 @@ export function TrustSection() {
 
       <div className="max-w-7xl mx-auto relative z-10">
         <SectionHeader
-          badgeNumber="06"
+          badgeNumber="01"
           badgeText="Trust"
           title={
             <>

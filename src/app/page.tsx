@@ -7,12 +7,14 @@ import { PopularServices } from "@/components/ui/PopularServices";
 import { PromoBanner } from "@/components/ui/PromoBanner";
 import { TestimonialsSection } from "@/components/ui/TestimonialsSection";
 import { ContactAndReviewsSection } from "@/components/ui/ContactAndReviewsSection";
+import { ContactSection } from "@/components/ui/ContactSection";
 import { FAQSection } from "@/components/ui/FAQSection";
 
 export default function Home() {
   return (
     <main className="w-full bg-white dark:bg-[#020813]">
       <ScrollHero />
+      <TrustSection />
       <CategoryGrid />
       
       {/* First Promo Banner - Painting Theme */}
@@ -46,8 +48,8 @@ export default function Home() {
       <ContactAndReviewsSection />
 
       <FAQSection />
-      
-      <TrustSection />
+
+      <ContactSection />
     </main>
   );
 }

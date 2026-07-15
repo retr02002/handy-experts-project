@@ -73,21 +73,30 @@ export function ServiceCard({ service }: { service: Service }) {
           <span className="text-[10px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">Popular Packages</span>
           <div className="flex flex-col gap-1.5">
             {service.packages?.map((pkg, idx) => (
-              <div key={idx} className="flex flex-col p-2.5 rounded-lg bg-slate-50 dark:bg-[#151f32] border border-slate-100 dark:border-slate-800 transition-colors hover:border-[#00B4FF]/30 hover:bg-white dark:hover:bg-[#1e2a44] shadow-sm">
-                <div className="flex items-start justify-between gap-2 mb-1.5">
-                  <span className="text-[12px] font-bold text-slate-900 dark:text-white leading-tight">{pkg.name}</span>
-                  <button className="shrink-0 h-6 px-2.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[#00B4FF] text-[10px] font-bold hover:bg-[#00B4FF] hover:text-white hover:border-[#00B4FF] transition-all shadow-sm">
+              <div 
+                key={idx} 
+                className="group/pkg relative flex flex-col p-3 rounded-xl bg-slate-50 dark:bg-[#151f32] border border-slate-200/60 dark:border-slate-800 transition-all duration-300 hover:border-[#00B4FF]/40 hover:bg-white dark:hover:bg-[#1e2a44] hover:shadow-[0_4px_20px_rgba(0,180,255,0.08)] hover:-translate-y-0.5"
+              >
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 group-hover/pkg:bg-[#00B4FF] transition-colors" />
+                    <span className="text-xs font-bold text-slate-900 dark:text-white leading-tight">{pkg.name}</span>
+                  </div>
+                  <button className="shrink-0 h-6 px-3 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[#00B4FF] text-[10px] font-bold transition-all shadow-sm group-hover/pkg:bg-[#00B4FF] group-hover/pkg:text-white group-hover/pkg:border-[#00B4FF]">
                     ADD
                   </button>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[13px] font-black text-slate-900 dark:text-white">₹{pkg.price}</span>
-                  <span className="text-[9px] font-medium text-slate-400 dark:text-slate-500 line-through">₹{pkg.originalPrice}</span>
-                  <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600 mx-0.5"></span>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                    <ClientIcon icon="ph:clock" className="w-3 h-3" />
+                
+                <div className="flex items-center gap-2 pl-3.5">
+                  <span className="text-[13px] font-black text-slate-900 dark:text-white tracking-tight">₹{pkg.price}</span>
+                  <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 line-through decoration-slate-300 dark:decoration-slate-600">₹{pkg.originalPrice}</span>
+                  
+                  <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700 mx-1"></span>
+                  
+                  <div className="flex items-center gap-1 text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/50 px-1.5 py-0.5 rounded-md group-hover/pkg:text-[#00B4FF] group-hover/pkg:bg-[#00B4FF]/10 transition-colors">
+                    <ClientIcon icon="ph:clock-fill" className="w-3 h-3" />
                     {pkg.time}
-                  </span>
+                  </div>
                 </div>
               </div>
             ))}

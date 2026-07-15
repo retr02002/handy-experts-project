@@ -36,9 +36,9 @@ export function PopularServicesClient({ services }: PopularServicesClientProps) 
   return (
     <>
       {/* Categories Tab (Desktop) & Dropdown (Mobile) */}
-      <div className="mb-8">
+      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         {/* Mobile Dropdown */}
-        <div className="md:hidden relative">
+        <div className="md:hidden relative w-full">
           <select
             value={activeCategory}
             onChange={(e) => setActiveCategory(e.target.value)}
@@ -72,6 +72,22 @@ export function PopularServicesClient({ services }: PopularServicesClientProps) 
             </button>
           ))}
         </div>
+
+        {/* Desktop Navigation Buttons */}
+        <div className="hidden md:flex items-center gap-3 shrink-0">
+          <button 
+            className="popular-swiper-prev w-10 h-10 rounded-full flex items-center justify-center bg-slate-100 dark:bg-[#151f32] text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-[#1e2a44] transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
+            aria-label="Previous service"
+          >
+            <ClientIcon icon="ph:arrow-left-bold" className="w-4 h-4" />
+          </button>
+          <button 
+            className="popular-swiper-next w-10 h-10 rounded-full flex items-center justify-center bg-slate-100 dark:bg-[#151f32] text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-[#1e2a44] transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
+            aria-label="Next service"
+          >
+            <ClientIcon icon="ph:arrow-right-bold" className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Swiper Slider */}
@@ -89,8 +105,8 @@ export function PopularServicesClient({ services }: PopularServicesClientProps) 
                 key={`swiper-${activeCategory}`}
                 modules={[Autoplay, Navigation]}
                 spaceBetween={20}
-                slidesPerView={1.1}
-                loop={true}
+                slidesPerView={1}
+                loop={filteredServices.length > 3}
                 autoplay={{
                   delay: 3000,
                   disableOnInteraction: false,
@@ -101,9 +117,8 @@ export function PopularServicesClient({ services }: PopularServicesClientProps) 
                   nextEl: '.popular-swiper-next',
                 }}
                 breakpoints={{
-                  640: { slidesPerView: 2.2, spaceBetween: 24 },
-                  1024: { slidesPerView: 3.2, spaceBetween: 24 },
-                  1280: { slidesPerView: 4, spaceBetween: 24 },
+                  768: { slidesPerView: 2, spaceBetween: 24 },
+                  1024: { slidesPerView: 3, spaceBetween: 24 },
                 }}
                 className="w-full !pb-4"
               >

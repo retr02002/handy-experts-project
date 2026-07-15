@@ -68,7 +68,7 @@ export function CategoryGrid() {
 
         {/* Section Header */}
         <SectionHeader
-          badgeNumber="01"
+          badgeNumber="02"
           badgeText="Categories"
           title={
             <>

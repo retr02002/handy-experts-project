@@ -184,7 +184,7 @@ export const FAQSection = () => {
                       className={`
                         shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300
                         ${isActive
-                          ? "bg-[#F59E0B] text-white shadow-[0_0_15px_rgba(245,158,11,0.4)]"
+                          ? "bg-[#0EA5E9] text-white shadow-[0_0_15px_rgba(14,165,233,0.4)]"
                           : "bg-slate-100 dark:bg-[#1A2333] text-slate-500 dark:text-slate-400 group-hover:bg-slate-200 dark:group-hover:bg-[#222E42]"
                         }
                       `}
@@ -236,11 +236,11 @@ export const FAQSection = () => {
           {/* Contact Card */}
           <div className="bg-white dark:bg-[#111928] border border-slate-200 dark:border-slate-800/60 rounded-[32px] p-8 lg:p-10 relative overflow-hidden shadow-lg shadow-slate-200/50 dark:shadow-none">
             {/* Ambient glow in the card */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-[#F59E0B]/20 blur-[50px] rounded-full pointer-events-none"></div>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-[#0EA5E9]/20 blur-[50px] rounded-full pointer-events-none"></div>
 
             <div className="relative z-10 flex flex-col items-center text-center">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-100 to-amber-50 dark:from-orange-500/20 dark:to-amber-500/5 flex items-center justify-center border border-orange-200 dark:border-orange-500/20 mb-6 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
-                <ClientIcon icon="ph:chat-teardrop-text" className="w-7 h-7 text-[#F59E0B]" />
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-100 to-sky-50 dark:from-sky-500/20 dark:to-sky-400/5 flex items-center justify-center border border-sky-200 dark:border-sky-500/20 mb-6 shadow-[0_0_20px_rgba(14,165,233,0.2)]">
+                <ClientIcon icon="ph:chat-teardrop-text" className="w-7 h-7 text-[#0EA5E9]" />
               </div>
 
               <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">
