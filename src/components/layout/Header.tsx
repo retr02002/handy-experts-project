@@ -61,6 +61,7 @@ export function Header() {
                     height={64}
                     className="h-12 sm:h-16 w-auto object-contain transition-all duration-300 hover:scale-105 drop-shadow-sm dark:brightness-0 dark:invert"
                     priority
+                    unoptimized
                   />
                 </Link>
               </div>

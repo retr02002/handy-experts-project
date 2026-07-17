@@ -14,11 +14,13 @@ export function ScrollHero() {
       {/* Video Background */}
       <video
         src="/videos/hero-loop.mp4"
-        className="absolute inset-0 w-full h-full object-cover opacity-60 dark:opacity-40"
+        className="absolute inset-0 w-full h-full object-cover opacity-60 dark:opacity-40 pointer-events-none"
         autoPlay
         loop
         muted
         playsInline
+        disablePictureInPicture
+        controls={false}
       />
       
       {/* Radial Gradient Overlay ONLY in dark mode now */}
