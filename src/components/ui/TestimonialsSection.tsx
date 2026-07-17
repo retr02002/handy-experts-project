@@ -51,11 +51,15 @@ const TESTIMONIALS = [
   },
 ];
 
-export function TestimonialsSection() {
+export interface TestimonialsSectionProps {
+  hideBadge?: boolean;
+}
+
+export function TestimonialsSection({ hideBadge }: TestimonialsSectionProps) {
   return (
     <section className="w-full bg-slate-50 dark:bg-[#020813] py-16 sm:py-24 px-4 sm:px-8 lg:px-16 overflow-hidden border-t border-slate-200 dark:border-slate-800/50">
       <div className="max-w-7xl mx-auto relative">
-        <TestimonialsCarousel testimonials={TESTIMONIALS} />
+        <TestimonialsCarousel testimonials={TESTIMONIALS} hideBadge={hideBadge} />
       </div>
     </section>
   );

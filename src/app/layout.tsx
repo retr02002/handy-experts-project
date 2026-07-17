@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   title: "Handy Experts - Professional Home Services",
   description: "Your trusted partner for home maintenance, professional cleaning, high-quality repairs, and everyday essential services. Book trusted pros today.",
   keywords: "home services, cleaning, plumbing, appliance repair, handy experts, carpenters, electricians, professional repairs",

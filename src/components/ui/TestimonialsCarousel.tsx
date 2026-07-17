@@ -30,9 +30,10 @@ const NavigationButtons = ({ swiperInstance }: { swiperInstance: SwiperType | nu
 
 export interface TestimonialsCarouselProps {
   testimonials: TestimonialCardProps[];
+  hideBadge?: boolean;
 }
 
-export function TestimonialsCarousel({ testimonials }: TestimonialsCarouselProps) {
+export function TestimonialsCarousel({ testimonials, hideBadge }: TestimonialsCarouselProps) {
   const [swiperInstance, setSwiperInstance] = useState<SwiperType | null>(null);
 
   return (
@@ -40,8 +41,8 @@ export function TestimonialsCarousel({ testimonials }: TestimonialsCarouselProps
       {/* Desktop Header with Navigation */}
       <div className="hidden lg:block">
         <SectionHeader
-          badgeNumber="06"
-          badgeText="Testimonials"
+          badgeNumber={hideBadge ? undefined : "06"}
+          badgeText={hideBadge ? undefined : "Testimonials"}
           title={
             <>
               Loved by <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00B4FF] to-[#0070FF]">Delhi households.</span>
@@ -55,8 +56,8 @@ export function TestimonialsCarousel({ testimonials }: TestimonialsCarouselProps
       {/* Mobile Header (No Navigation) */}
       <div className="lg:hidden">
         <SectionHeader
-          badgeNumber="06"
-          badgeText="Testimonials"
+          badgeNumber={hideBadge ? undefined : "06"}
+          badgeText={hideBadge ? undefined : "Testimonials"}
           title={
             <>
               Loved by <span className="text-[#00B4FF]">Delhi households.</span>

@@ -4,9 +4,9 @@ import { ScrollReveal } from "@/components/ui/ScrollReveal";
 
 export interface PromoBannerProps {
   title: React.ReactNode;
-  description: string;
-  buttonText: string;
-  buttonLink: string;
+  description: React.ReactNode;
+  buttonText?: string;
+  buttonLink?: string;
   imageSrc: string;
   imageAlt: string;
   reverse?: boolean; // Determines text alignment (left vs right)
@@ -51,19 +51,21 @@ export function PromoBanner({
             </p>
             
             {/* Premium Button */}
-            <Link 
-              href={buttonLink}
-              className="group relative inline-flex items-center justify-center px-6 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-[#00B4FF] to-[#0070FF] text-white font-bold rounded-full text-xs sm:text-sm transition-all duration-300 shadow-[0_4px_15px_rgba(0,180,255,0.3)] hover:shadow-[0_8px_25px_rgba(0,180,255,0.5)] hover:-translate-y-0.5 overflow-hidden border border-white/20"
-            >
-              {/* Shine effect inside button */}
-              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-700 ease-in-out pointer-events-none" />
-              <span className="relative flex items-center gap-2">
-                {buttonText}
-                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </span>
-            </Link>
+            {buttonText && buttonLink && (
+              <Link 
+                href={buttonLink}
+                className="group relative inline-flex items-center justify-center px-6 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-[#00B4FF] to-[#0070FF] text-white font-bold rounded-full text-xs sm:text-sm transition-all duration-300 shadow-[0_4px_15px_rgba(0,180,255,0.3)] hover:shadow-[0_8px_25px_rgba(0,180,255,0.5)] hover:-translate-y-0.5 overflow-hidden border border-white/20"
+              >
+                {/* Shine effect inside button */}
+                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-700 ease-in-out pointer-events-none" />
+                <span className="relative flex items-center gap-2">
+                  {buttonText}
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </span>
+              </Link>
+            )}
           </div>
           
         </div>

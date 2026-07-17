@@ -39,10 +39,10 @@ export function Header() {
               <div className="flex-1 flex items-center justify-start">
                 {/* Desktop Nav */}
                 <nav className="hidden lg:flex items-center gap-5 text-[14px] font-medium text-slate-600 dark:text-slate-300">
-                  <Link href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors py-2">Services</Link>
-                  <Link href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors py-2">About</Link>
-                  <Link href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors py-2">Blog</Link>
-                  <Link href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors py-2">Contact</Link>
+                  <Link href="/services" className="hover:text-slate-900 dark:hover:text-white transition-colors py-2">Services</Link>
+                  <Link href="/about" className="hover:text-slate-900 dark:hover:text-white transition-colors py-2">About</Link>
+                  <Link href="/blog" className="hover:text-slate-900 dark:hover:text-white transition-colors py-2">Blog</Link>
+                  <Link href="/contact" className="hover:text-slate-900 dark:hover:text-white transition-colors py-2">Contact</Link>
                 </nav>
 
                 {/* Mobile Cart */}
@@ -79,7 +79,7 @@ export function Header() {
                 </Link>
 
                 {/* Desktop Book Button */}
-                <Link href="#" className="hidden sm:inline-flex items-center justify-center rounded-full px-5 py-2 text-[14px] font-bold shadow-md transition-all hover:scale-105 bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 whitespace-nowrap">
+                <Link href="/book-now" className="hidden sm:inline-flex items-center justify-center rounded-full px-5 py-2 text-[14px] font-bold shadow-md transition-all hover:scale-105 bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 whitespace-nowrap">
                   Book now
                 </Link>
               </div>
@@ -95,24 +95,24 @@ export function Header() {
             <ClientIcon icon={pathname === '/' ? "ph:house-fill" : "ph:house"} width="20" height="20" />
             <span className="text-[9px] font-medium leading-none">Home</span>
           </Link>
-          <Link href="#" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF] transition-colors">
-            <ClientIcon icon="ph:info" width="20" height="20" />
+          <Link href="/about" className={`flex flex-col items-center justify-center gap-1 transition-colors ${pathname === '/about' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
+            <ClientIcon icon={pathname === '/about' ? "ph:info-fill" : "ph:info"} width="20" height="20" />
             <span className="text-[9px] font-medium leading-none">About</span>
           </Link>
-          <Link href="#" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF] transition-colors">
-            <ClientIcon icon="ph:wrench" width="20" height="20" />
+          <Link href="/services" className={`flex flex-col items-center justify-center gap-1 transition-colors ${pathname.startsWith('/services') ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
+            <ClientIcon icon={pathname.startsWith('/services') ? "ph:wrench-fill" : "ph:wrench"} width="20" height="20" />
             <span className="text-[9px] font-medium leading-none">Services</span>
           </Link>
-          <Link href="#" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF] transition-colors">
-            <ClientIcon icon="ph:article" width="20" height="20" />
+          <Link href="/blog" className={`flex flex-col items-center justify-center gap-1 transition-colors ${pathname === '/blog' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
+            <ClientIcon icon={pathname === '/blog' ? "ph:article-fill" : "ph:article"} width="20" height="20" />
             <span className="text-[9px] font-medium leading-none">Blog</span>
           </Link>
-          <Link href="#" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF] transition-colors">
-            <ClientIcon icon="ph:envelope-simple" width="20" height="20" />
+          <Link href="/contact" className={`flex flex-col items-center justify-center gap-1 transition-colors ${pathname === '/contact' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
+            <ClientIcon icon={pathname === '/contact' ? "ph:envelope-simple-fill" : "ph:envelope-simple"} width="20" height="20" />
             <span className="text-[9px] font-medium leading-none">Contact</span>
           </Link>
-          <Link href="#" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF] transition-colors">
-            <ClientIcon icon="ph:calendar-plus" width="20" height="20" />
+          <Link href="/book-now" className={`flex flex-col items-center justify-center gap-1 transition-colors ${pathname === '/book-now' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
+            <ClientIcon icon={pathname === '/book-now' ? "ph:calendar-plus-fill" : "ph:calendar-plus"} width="20" height="20" />
             <span className="text-[9px] font-medium leading-none">Book Now</span>
           </Link>
         </div>

@@ -9,7 +9,7 @@ import { useCart } from "@/context/CartContext";
 
 export function ServiceCard({ service }: { service: Service }) {
   const [isDescExpanded, setIsDescExpanded] = useState(false);
-  const { addToCart, items } = useCart();
+  const { addToCart, updateQuantity, items } = useCart();
   
   // Heuristic: If description is > 95 characters, we consider it > 2 lines and show the read more toggle.
   const showReadMore = service.description.length > 95;
@@ -115,18 +115,26 @@ export function ServiceCard({ service }: { service: Service }) {
                     </div>
                   </div>
                   
-                  {qtyInCart > 0 ? (
-                    <div className="shrink-0 flex items-center justify-center h-9 px-4 rounded-xl bg-[#00B4FF]/10 border border-[#00B4FF]/20 text-[#00B4FF] text-xs font-black">
-                      {qtyInCart} ADDED
-                    </div>
-                  ) : (
-                    <button 
-                      onClick={() => addToCart(service, pkg)}
-                      className="shrink-0 h-9 px-5 rounded-xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-[#00B4FF] text-xs font-black transition-all hover:bg-[#00B4FF] hover:text-white hover:border-[#00B4FF] active:scale-95 shadow-sm"
-                    >
-                      ADD
-                    </button>
-                  )}
+                  <div className="shrink-0 w-[85px]">
+                    {qtyInCart > 0 ? (
+                      <div className="flex items-center justify-between w-full h-9 bg-blue-50/50 dark:bg-blue-500/10 border-2 border-[#00B4FF] rounded-lg overflow-hidden shadow-[0_4px_12px_rgba(0,180,255,0.15)]">
+                        <button onClick={() => updateQuantity(`${service.id}-${pkg.name}`, qtyInCart - 1)} className="w-8 h-full flex items-center justify-center text-[#00B4FF] hover:bg-[#00B4FF]/10 transition-colors">
+                          <ClientIcon icon="ph:minus-bold" className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="flex-1 text-center font-black text-slate-900 dark:text-white text-sm">{qtyInCart}</span>
+                        <button onClick={() => updateQuantity(`${service.id}-${pkg.name}`, qtyInCart + 1)} className="w-8 h-full flex items-center justify-center text-[#00B4FF] hover:bg-[#00B4FF]/10 transition-colors">
+                          <ClientIcon icon="ph:plus-bold" className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={() => addToCart(service, pkg)}
+                        className="w-full h-9 rounded-xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-[#00B4FF] text-xs font-black transition-all hover:bg-[#00B4FF] hover:text-white hover:border-[#00B4FF] active:scale-95 shadow-sm"
+                      >
+                        ADD
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
