@@ -7,10 +7,12 @@ import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { CartButton } from "@/components/ui/CartButton";
+import { useCart } from "@/context/CartContext";
 
 export function Header() {
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
+  const { totalItems } = useCart();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,9 +28,9 @@ export function Header() {
       <div className="fixed top-3 left-0 right-0 z-50 flex justify-center px-3 pointer-events-none">
         <header
           id="main-header"
-          className={`w-full max-w-7xl transition-all duration-300 rounded-full border pointer-events-auto backdrop-blur-xl ${isScrolled
-            ? "bg-white/95 dark:bg-slate-900/95 border-slate-200/80 dark:border-slate-700/80 shadow-lg dark:shadow-2xl"
-            : "bg-white/80 dark:bg-slate-900/80 border-slate-200/50 dark:border-slate-700/50 shadow-sm"
+          className={`w-full max-w-7xl transition-all duration-300 rounded-full border pointer-events-auto ${isScrolled
+            ? "bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-slate-200/80 dark:border-slate-700/80 shadow-lg dark:shadow-2xl"
+            : "bg-white dark:bg-slate-900 border-slate-200/50 dark:border-slate-700/50 shadow-sm"
             }`}
         >
           <div className="px-4 sm:px-6">
@@ -39,8 +41,6 @@ export function Header() {
                 <nav className="hidden lg:flex items-center gap-5 text-[14px] font-medium text-slate-600 dark:text-slate-300">
                   <Link href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors py-2">Services</Link>
                   <Link href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors py-2">About</Link>
-                  <Link href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors py-2">Pricing</Link>
-                  <Link href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors py-2">Partners</Link>
                   <Link href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors py-2">Blog</Link>
                   <Link href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors py-2">Contact</Link>
                 </nav>
@@ -54,14 +54,10 @@ export function Header() {
               {/* Center: Logo */}
               <div className="flex justify-center items-center shrink-0">
                 <Link href="/" className="flex items-center justify-center">
-                  <Image
+                  <img
                     src="/logo-org.svg"
                     alt="Handy Experts"
-                    width={180}
-                    height={64}
                     className="h-12 sm:h-16 w-auto object-contain transition-all duration-300 hover:scale-105 drop-shadow-sm dark:brightness-0 dark:invert"
-                    priority
-                    unoptimized
                   />
                 </Link>
               </div>
@@ -77,7 +73,7 @@ export function Header() {
                   <CartButton />
                 </div>
 
-                <Link href="#" className="flex items-center text-[14px] font-medium text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors sm:ml-1">
+                <Link href="/sign-in" className="flex items-center text-[14px] font-medium text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors sm:ml-1">
                   <ClientIcon icon="ph:sign-in" width="22" height="22" className="sm:mr-1" />
                   <span className="hidden md:inline">Sign in</span>
                 </Link>
@@ -123,7 +119,7 @@ export function Header() {
       </div>
 
       {/* Fixed Mobile Theme Toggle Above Bottom Nav */}
-      <div className="fixed bottom-24 right-4 z-[70] lg:hidden">
+      <div className={`fixed right-4 z-[70] lg:hidden transition-all duration-300 ${pathname.startsWith('/services/') && totalItems > 0 ? 'bottom-[160px]' : 'bottom-24'}`}>
         <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-full shadow-md border border-slate-200/50 dark:border-slate-700/50 p-0.5">
           <ThemeToggle />
         </div>

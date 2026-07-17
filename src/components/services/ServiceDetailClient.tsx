@@ -138,82 +138,116 @@ export function ServiceDetailClient({ service }: { service: Service }) {
             </div>
             <div className="flex flex-col gap-5">
               {service.packages.map((pkg, idx) => {
-                const qty = getQty(`${service.id}-${pkg.name}`);
+                const qty = getQty(pkg.name);
                 const pkgIcon = getPackageIcon(pkg.name);
 
                 return (
                   <div
                     key={idx}
-                    className="group relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded-2xl shadow-sm hover:shadow-xl hover:border-blue-200 dark:hover:border-blue-500/30 transition-all duration-300 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-start justify-between gap-5 overflow-hidden"
+                    className="group relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded-2xl shadow-sm hover:shadow-xl hover:border-[#00B4FF]/30 dark:hover:border-[#00B4FF]/30 transition-all duration-300 flex flex-col lg:flex-row overflow-hidden"
                   >
                     {/* Subtle glow background effect on hover */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent dark:from-blue-900/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#00B4FF]/5 to-transparent dark:from-[#00B4FF]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
 
-                    {/* Info */}
-                    <div className="flex-1 flex flex-col gap-4 relative z-10">
-                      
-                      {/* Top Row: Icon, Title, Price */}
-                      <div className="flex items-center gap-4">
-                        {/* Premium Icon Block */}
-                        <div className="w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-500/10 dark:to-indigo-500/10 flex items-center justify-center border border-blue-100/50 dark:border-blue-500/20 shadow-inner">
-                          <ClientIcon icon={pkgIcon} className="w-7 h-7 sm:w-8 sm:h-8 text-[#00B4FF]" />
+                    {/* Left Section: Info & Features */}
+                    <div className="flex-1 p-5 sm:p-6 flex flex-col relative z-10">
+                      {/* Top Row: Title & Badge */}
+                      <div className="flex justify-between items-start gap-4">
+                        <div className="flex items-center gap-3">
+                           <div className="w-12 h-12 shrink-0 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center border border-blue-100/50 dark:border-blue-500/20">
+                             <ClientIcon icon={pkgIcon} className="w-6 h-6 text-[#00B4FF]" />
+                           </div>
+                           <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-tight">
+                             {pkg.name}
+                           </h3>
                         </div>
-
-                        <div className="flex flex-col justify-center">
-                          <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white leading-tight group-hover:text-[#00B4FF] transition-colors">
-                            {pkg.name}
-                          </h3>
-                          <div className="flex flex-wrap items-center gap-2 mt-1">
-                            <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">₹{pkg.price}</span>
-                            <span className="text-xs sm:text-sm font-semibold text-slate-400 line-through decoration-slate-300 dark:decoration-slate-600">₹{pkg.originalPrice}</span>
-                            <span className="px-2 py-0.5 text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20 rounded uppercase tracking-wider">
-                              Save ₹{pkg.originalPrice - pkg.price}
-                            </span>
+                        {/* Mobile Badge (hidden on lg, moved to right panel) */}
+                        {pkg.originalPrice > pkg.price && (
+                          <div className="lg:hidden shrink-0 bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold tracking-wide mt-1 border border-emerald-100 dark:border-emerald-500/20">
+                            Save ₹{pkg.originalPrice - pkg.price}
                           </div>
-                        </div>
+                        )}
                       </div>
 
-                      {/* Features / Points below */}
-                      <div className="flex flex-col gap-2 mt-1">
-                        {pkg.features.map((feature, fIdx) => (
-                          <div key={fIdx} className="flex items-start gap-2.5 text-sm sm:text-base font-medium text-slate-600 dark:text-slate-300">
-                            <div className="mt-0.5 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center shrink-0">
-                              <ClientIcon icon="ph:check-bold" className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#00B4FF]" />
+                      {/* Features List */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4 mt-6">
+                        {pkg.features.map((feature, fIdx) => {
+                          const icons = ["ph:wrench-duotone", "ph:shield-check-duotone", "ph:sparkle-duotone", "ph:check-circle-duotone", "ph:medal-duotone"];
+                          const featureIcon = icons[fIdx % icons.length];
+                          return (
+                            <div key={fIdx} className="flex items-center gap-3 text-[14px] font-medium text-slate-700 dark:text-slate-300">
+                              <ClientIcon icon={featureIcon} className="w-5 h-5 text-slate-400 dark:text-slate-500 shrink-0" />
+                              <span className="flex-1 leading-snug">{feature}</span>
                             </div>
-                            <span className="flex-1">{feature}</span>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
 
-                    {/* Actions - Compact App Style */}
-                    <div className="w-full sm:w-auto flex flex-row sm:flex-col items-center sm:items-end gap-2.5 shrink-0 mt-2 sm:mt-0 relative z-10">
-                      {mounted && qty > 0 ? (
-                        <div className="flex items-center justify-between flex-1 sm:flex-none w-full sm:w-[120px] h-9 bg-blue-50/50 dark:bg-blue-500/10 border-2 border-[#00B4FF] rounded-lg overflow-hidden shadow-sm">
-                          <button onClick={() => updateQuantity(`${service.id}-${pkg.name}`, qty - 1)} className="w-9 h-full flex items-center justify-center text-[#00B4FF] hover:bg-[#00B4FF]/10 transition-colors">
-                            <ClientIcon icon="ph:minus-bold" className="w-3.5 h-3.5" />
-                          </button>
-                          <span className="flex-1 text-center font-black text-slate-900 dark:text-white text-sm">{qty}</span>
-                          <button onClick={() => updateQuantity(`${service.id}-${pkg.name}`, qty + 1)} className="w-9 h-full flex items-center justify-center text-[#00B4FF] hover:bg-[#00B4FF]/10 transition-colors">
-                            <ClientIcon icon="ph:plus-bold" className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => addToCart(service, pkg)}
-                          className="flex-1 sm:flex-none w-full sm:w-[120px] h-9 rounded-lg bg-[#00B4FF] text-white text-[13px] font-black transition-transform hover:bg-[#0070FF] active:scale-95 flex items-center justify-center gap-1.5 shadow-[0_4px_10px_rgba(0,180,255,0.25)] hover:shadow-[0_6px_15px_rgba(0,180,255,0.35)]"
-                        >
-                          <ClientIcon icon="ph:plus-bold" className="w-3.5 h-3.5" />
-                          ADD
-                        </button>
-                      )}
+                    {/* Right Section: Price & Actions */}
+                    <div className="w-full lg:w-[320px] shrink-0 bg-slate-50/50 dark:bg-slate-800/20 border-t-2 border-dashed lg:border-t-0 lg:border-l-2 border-slate-200 dark:border-slate-700/60 p-5 sm:p-6 flex flex-col justify-center relative z-10">
+                      
+                      {/* Ticket Cutouts (Mobile: left/right on top border. Desktop: top/bottom on left border) */}
+                      {/* Mobile Left Cutout */}
+                      <div className="lg:hidden absolute top-0 -left-4 w-8 h-8 bg-slate-50 dark:bg-slate-950 rounded-full transform -translate-y-1/2 border-r border-slate-200 dark:border-slate-800/80"></div>
+                      {/* Mobile Right Cutout */}
+                      <div className="lg:hidden absolute top-0 -right-4 w-8 h-8 bg-slate-50 dark:bg-slate-950 rounded-full transform -translate-y-1/2 border-l border-slate-200 dark:border-slate-800/80"></div>
+                      {/* Desktop Top Cutout */}
+                      <div className="hidden lg:block absolute top-0 -left-4 w-8 h-8 bg-slate-50 dark:bg-slate-950 rounded-full transform -translate-y-1/2 border-b border-slate-200 dark:border-slate-800/80"></div>
+                      {/* Desktop Bottom Cutout */}
+                      <div className="hidden lg:block absolute bottom-0 -left-4 w-8 h-8 bg-slate-50 dark:bg-slate-950 rounded-full transform translate-y-1/2 border-t border-slate-200 dark:border-slate-800/80"></div>
 
-                      <button
-                        onClick={() => setSelectedPkg(pkg)}
-                        className="flex-1 sm:flex-none w-full sm:w-[120px] h-9 rounded-lg bg-transparent text-slate-500 hover:text-[#00B4FF] border border-slate-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-500/30 text-[12px] font-bold transition-all hover:bg-blue-50 dark:hover:bg-blue-500/10 flex items-center justify-center"
-                      >
-                        View Details
-                      </button>
+                      {/* Price & Badge */}
+                      <div className="flex flex-col gap-1.5 mb-6 relative z-10">
+                         {pkg.originalPrice > pkg.price && (
+                           <div className="hidden lg:inline-flex self-start bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide border border-emerald-100 dark:border-emerald-500/20 mb-2">
+                             Save ₹{pkg.originalPrice - pkg.price}
+                           </div>
+                         )}
+                         <div className="flex items-baseline gap-2">
+                           <span className="text-3xl font-black text-[#00B4FF] tracking-tight">₹{pkg.price}</span>
+                           <span className="text-sm font-medium text-slate-400 line-through">₹{pkg.originalPrice}</span>
+                         </div>
+                         <span className="text-xs font-medium text-slate-500 flex items-center gap-1">
+                           <ClientIcon icon="ph:clock-duotone" className="w-3.5 h-3.5" />
+                           Takes ~{pkg.time || "45 mins"}
+                         </span>
+                      </div>
+
+                      {/* Buttons */}
+                      <div className="flex flex-row gap-3 mt-auto relative z-10">
+                        <button
+                          onClick={() => setSelectedPkg(pkg)}
+                          className="flex-1 h-11 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-[#00B4FF] hover:border-[#00B4FF]/30 transition-all flex items-center justify-center gap-1 text-[12px] sm:text-[13px] shadow-sm whitespace-nowrap px-2"
+                        >
+                          View Details
+                          <ClientIcon icon="ph:arrow-right-bold" className="w-3.5 h-3.5 shrink-0" />
+                        </button>
+
+                        <div className="flex-1 h-11 relative z-10">
+                          {mounted && qty > 0 ? (
+                            <div className="flex items-center justify-between w-full h-full bg-blue-50/50 dark:bg-blue-500/10 border-2 border-[#00B4FF] rounded-xl overflow-hidden shadow-[0_4px_12px_rgba(0,180,255,0.15)]">
+                              <button onClick={() => updateQuantity(`${service.id}-${pkg.name}`, qty - 1)} className="w-11 h-full flex items-center justify-center text-[#00B4FF] hover:bg-[#00B4FF]/10 transition-colors">
+                                <ClientIcon icon="ph:minus-bold" className="w-4 h-4" />
+                              </button>
+                              <span className="flex-1 text-center font-black text-slate-900 dark:text-white text-[15px]">{qty}</span>
+                              <button onClick={() => updateQuantity(`${service.id}-${pkg.name}`, qty + 1)} className="w-11 h-full flex items-center justify-center text-[#00B4FF] hover:bg-[#00B4FF]/10 transition-colors">
+                                <ClientIcon icon="ph:plus-bold" className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => addToCart(service, pkg)}
+                              className="group/btn relative w-full h-full rounded-xl bg-gradient-to-r from-[#00B4FF] to-[#0080FF] text-white text-[13px] font-bold transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(0,180,255,0.6)] hover:shadow-[0_8px_25px_-5px_rgba(0,180,255,0.8)] overflow-hidden"
+                            >
+                              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300 ease-out"></div>
+                              <span className="relative z-10 flex items-center gap-1.5 whitespace-nowrap">
+                                ADD <ClientIcon icon="ph:shopping-cart-bold" className="w-4 h-4 shrink-0" />
+                              </span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
@@ -373,13 +407,13 @@ export function ServiceDetailClient({ service }: { service: Service }) {
 
       {/* MOBILE BOTTOM BAR */}
       {mounted && items.length > 0 && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/90 dark:bg-[#0B1221]/90 backdrop-blur-xl border-t border-slate-200 dark:border-white/10 shadow-[0_-10px_30px_rgba(0,0,0,0.2)] z-40">
-          <div className="flex items-center justify-between max-w-lg mx-auto gap-4">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{totalItems} item{totalItems !== 1 ? 's' : ''}</span>
-              <span className="text-xl font-black text-slate-900 dark:text-white">₹{totalPrice}</span>
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 px-4 pt-3 pb-[84px] bg-white/95 dark:bg-[#0B1221]/95 backdrop-blur-xl border-t border-slate-200 dark:border-white/10 shadow-[0_-10px_20px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_20px_rgba(0,0,0,0.4)] z-40">
+          <div className="flex items-center justify-between max-w-lg mx-auto gap-3">
+            <div className="flex flex-col flex-1 shrink-0">
+              <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest leading-none mb-0.5">{totalItems} item{totalItems !== 1 ? 's' : ''}</span>
+              <span className="text-lg font-black text-slate-900 dark:text-white leading-tight">₹{totalPrice}</span>
             </div>
-            <Link href="/cart" className="flex-1 h-12 flex items-center justify-center rounded-xl bg-gradient-to-r from-[#00B4FF] to-blue-600 text-white text-sm font-black shadow-[0_5px_15px_rgba(0,180,255,0.3)] active:scale-95 transition-transform">
+            <Link href="/cart" className="w-[140px] h-10 flex items-center justify-center rounded-xl bg-gradient-to-r from-[#00B4FF] to-blue-600 text-white text-[13px] font-black shadow-sm active:scale-95 transition-transform">
               View Cart
             </Link>
           </div>

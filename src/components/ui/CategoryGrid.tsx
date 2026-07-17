@@ -84,7 +84,7 @@ export function CategoryGrid() {
           {CATEGORIES.map((cat) => (
             <div
               key={cat.id}
-              className="group relative h-[200px] sm:h-[240px] w-full rounded-3xl overflow-hidden cursor-pointer bg-slate-200 dark:bg-slate-800 isolate shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1"
+              className="group relative h-[200px] sm:h-[240px] w-full rounded-3xl overflow-hidden bg-slate-200 dark:bg-slate-800 isolate shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1"
             >
               {/* Background Image that scales on hover */}
               <Image
@@ -110,13 +110,6 @@ export function CategoryGrid() {
                 <p className="text-white/80 text-[13px] sm:text-sm font-medium line-clamp-2 drop-shadow-sm leading-relaxed max-w-[90%] transform transition-all duration-500 group-hover:text-white">
                   {cat.description}
                 </p>
-              </div>
-
-              {/* Floating Hover Arrow */}
-              <div className="absolute bottom-4 right-4 z-20 opacity-0 translate-y-3 transition-all duration-500 group-hover:opacity-100 group-hover:translate-y-0 hidden sm:flex">
-                <div className="bg-white text-[#00B4FF] rounded-full p-1.5 shadow-lg">
-                  <ClientIcon icon="ph:arrow-right-bold" className="w-3.5 h-3.5" />
-                </div>
               </div>
             </div>
           ))}

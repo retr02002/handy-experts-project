@@ -3,8 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { CartProvider } from "@/context/CartContext";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -68,9 +66,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col pb-24 lg:pb-0">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <CartProvider>
-            <Header />
-            <main className="flex-1 flex flex-col">{children}</main>
-            <Footer />
+            {children}
           </CartProvider>
         </ThemeProvider>
       </body>
