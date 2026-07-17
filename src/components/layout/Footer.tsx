@@ -20,7 +20,7 @@ export function Footer() {
   return (
     <footer className="w-full bg-slate-50 dark:bg-[#020813] border-t border-slate-200 dark:border-slate-800/50 pt-16 pb-8 px-4 sm:px-6 lg:px-8 mt-auto">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-10 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-10 lg:gap-8">
 
           {/* Logo & Stats Column */}
           <div className="col-span-1 md:col-span-3 lg:col-span-2 flex flex-col pr-0 lg:pr-8">
@@ -30,32 +30,12 @@ export function Footer() {
                 alt="Handy Experts"
                 width={260}
                 height={90}
-                className="h-16 w-auto object-contain dark:brightness-0 dark:invert transition-transform hover:scale-105 origin-left"
+                className="h-24 w-auto object-contain dark:brightness-0 dark:invert transition-transform hover:scale-105 origin-left"
               />
             </Link>
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-8 leading-relaxed max-w-sm">
               Your trusted partner for home maintenance, professional cleaning, high-quality repairs, and everyday essential services.
             </p>
-            <div className="flex flex-col gap-5">
-              <div className="flex items-center gap-3 text-sm text-slate-900 dark:text-slate-300 font-medium group">
-                <div className="w-8 h-8 rounded-lg bg-blue-100/50 dark:bg-[#00B4FF]/10 flex items-center justify-center text-[#00B4FF] group-hover:scale-110 transition-transform">
-                  <ClientIcon icon="ph:wrench-fill" className="w-4 h-4" />
-                </div>
-                10,000+ Services Delivered
-              </div>
-              <div className="flex items-center gap-3 text-sm text-slate-900 dark:text-slate-300 font-medium group">
-                <div className="w-8 h-8 rounded-lg bg-emerald-100/50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform">
-                  <ClientIcon icon="ph:shield-check-fill" className="w-4 h-4" />
-                </div>
-                99.99% Satisfaction Rate
-              </div>
-              <div className="flex items-center gap-3 text-sm text-slate-900 dark:text-slate-300 font-medium group">
-                <div className="w-8 h-8 rounded-lg bg-purple-100/50 dark:bg-purple-500/10 flex items-center justify-center text-purple-500 group-hover:scale-110 transition-transform">
-                  <ClientIcon icon="ph:headset-fill" className="w-4 h-4" />
-                </div>
-                24/7 Dedicated Support
-              </div>
-            </div>
           </div>
 
           {/* Our Services */}
@@ -102,19 +82,6 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Legal & Terms */}
-          <div className="col-span-1">
-            <h4 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-6">
-              <ClientIcon icon="ph:scales" className="w-5 h-5 text-slate-400 dark:text-[#00B4FF]/70" />
-              Legal & Terms
-            </h4>
-            <ul className="flex flex-col gap-3.5 text-sm text-slate-600 dark:text-slate-400 font-medium">
-              <li><FooterLink href="#">Privacy Policy</FooterLink></li>
-              <li><FooterLink href="#">Terms of Service</FooterLink></li>
-              <li><FooterLink href="#">Cookie Settings</FooterLink></li>
-            </ul>
-          </div>
-
           {/* Connect With Us */}
           <div className="col-span-1">
             <h4 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-6">
@@ -148,22 +115,23 @@ export function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-16 pt-8 border-t border-slate-200 dark:border-slate-800/60 flex flex-col md:flex-row items-center justify-between gap-6">
-          <p className="text-[13px] font-medium text-slate-500 dark:text-slate-500">
-            © {new Date().getFullYear()} Handy Experts. All rights reserved.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-            <span className="text-[10px] font-black tracking-widest uppercase text-slate-400 dark:text-slate-500 flex items-center gap-2">
-              HANDY EXPERTS DELIVERED <span className="w-1.5 h-1.5 rotate-45 bg-[#00B4FF]"></span>
-            </span>
-            <button
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="w-8 h-8 rounded-lg bg-slate-200/60 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-[#00B4FF] hover:text-white dark:hover:bg-[#00B4FF] dark:hover:text-white transition-colors"
-              aria-label="Scroll to top"
-            >
-              <ClientIcon icon="ph:arrow-up-bold" className="w-3.5 h-3.5" />
-            </button>
+        <div className="mt-16 pt-8 border-t border-slate-200 dark:border-slate-800/60 flex flex-col lg:flex-row items-center justify-between gap-6">
+          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 sm:gap-3 text-[13px] font-medium text-slate-500 dark:text-slate-400">
+            <a href="#" className="hover:text-[#00B4FF] transition-colors">Privacy Policy</a>
+            <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
+            <a href="#" className="hover:text-[#00B4FF] transition-colors">Policy AUP</a>
+            <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
+            <a href="#" className="hover:text-[#00B4FF] transition-colors">Terms of Service</a>
+            <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
+            <a href="#" className="hover:text-[#00B4FF] transition-colors">Refund Policy</a>
+            <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
+            <a href="#" className="hover:text-[#00B4FF] transition-colors">Cancellation Policy</a>
+            <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
+            <a href="#" className="hover:text-[#00B4FF] transition-colors">Cookie Settings</a>
           </div>
+          <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium shrink-0 text-center lg:text-right">
+            ©2025-{new Date().getFullYear()} All Rights Reserved by Handy Experts.
+          </p>
         </div>
       </div>
     </footer>
