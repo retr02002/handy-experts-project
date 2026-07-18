@@ -4,6 +4,7 @@ import { AboutSection } from '@/components/sections/AboutSection';
 import { JourneySection } from '@/components/sections/JourneySection';
 import { TestimonialsSection } from '@/components/ui/TestimonialsSection';
 import { PromoBanner } from '@/components/ui/PromoBanner';
+import { FAQSection } from '@/components/ui/FAQSection';
 
 export const metadata = {
   title: 'About Us | Handy Experts',
@@ -43,6 +44,7 @@ export default function AboutPage() {
 
       <JourneySection />
       <TestimonialsSection hideBadge={true} />
+      <FAQSection hideBadge={true} />
     </div>
   );
 }

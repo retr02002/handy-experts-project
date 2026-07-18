@@ -49,11 +49,12 @@ export function Input({
         <div className="relative">
           <select
             className={`${finalClassName} appearance-none cursor-pointer`}
+            defaultValue=""
             {...(props as React.SelectHTMLAttributes<HTMLSelectElement>)}
           >
             {/* If placeholder is passed and handled natively via first empty option */}
             {props.placeholder && (
-              <option value="" disabled selected hidden>
+              <option value="" disabled hidden>
                 {props.placeholder}
               </option>
             )}

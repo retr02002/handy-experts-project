@@ -47,7 +47,7 @@ export default function Home() {
       
       <ContactAndReviewsSection />
 
-      <FAQSection />
+      <FAQSection hideBadge={true} />
 
       <ContactSection />
     </main>

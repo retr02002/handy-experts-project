@@ -55,7 +55,11 @@ const FAQ_DATA: Record<Category, { q: string; a: string }[]> = {
   ],
 };
 
-export const FAQSection = () => {
+export interface FAQSectionProps {
+  hideBadge?: boolean;
+}
+
+export const FAQSection = ({ hideBadge }: FAQSectionProps = {}) => {
   const [activeCategory, setActiveCategory] = useState<Category>("General");
   const [activeQuestionIdx, setActiveQuestionIdx] = useState<number>(0);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -73,8 +77,8 @@ export const FAQSection = () => {
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeader
-          badgeNumber="08"
-          badgeText="FAQ"
+          badgeNumber={hideBadge ? undefined : "08"}
+          badgeText={hideBadge ? undefined : "FAQ"}
           title={
             <>
               Frequently Asked <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00B4FF] to-[#0070FF]">Questions.</span>

@@ -74,11 +74,9 @@ export function Footer() {
               Support & Help
             </h4>
             <ul className="flex flex-col gap-3.5 text-sm text-slate-600 dark:text-slate-400 font-medium">
-              <li><FooterLink href="#">Help Center</FooterLink></li>
               <li><FooterLink href="#">Documentation</FooterLink></li>
               <li><FooterLink href="#">Service Warranty</FooterLink></li>
               <li><FooterLink href="#">Contact Support</FooterLink></li>
-              <li><FooterLink href="#">Community Forum</FooterLink></li>
             </ul>
           </div>
 
@@ -118,8 +116,6 @@ export function Footer() {
         <div className="mt-16 pt-8 border-t border-slate-200 dark:border-slate-800/60 flex flex-col lg:flex-row items-center justify-between gap-6">
           <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 sm:gap-3 text-[13px] font-medium text-slate-500 dark:text-slate-400">
             <a href="#" className="hover:text-[#00B4FF] transition-colors">Privacy Policy</a>
-            <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
-            <a href="#" className="hover:text-[#00B4FF] transition-colors">Policy AUP</a>
             <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
             <a href="#" className="hover:text-[#00B4FF] transition-colors">Terms of Service</a>
             <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
