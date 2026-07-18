@@ -16,13 +16,8 @@ export function HeroSearchBar() {
   const [locationName, setLocationName] = useState("New Delhi");
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -97,10 +92,13 @@ export function HeroSearchBar() {
     );
   };
 
-  // Automatically fetch on mount
   useEffect(() => {
     // Attempt to silently fetch on load (will prompt the user)
-    fetchLiveLocation(true);
+    // Wrapped in setTimeout to prevent synchronous setState warning
+    const timer = setTimeout(() => {
+      fetchLiveLocation(true);
+    }, 0);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -154,7 +152,7 @@ export function HeroSearchBar() {
       </div>
 
       {/* Responsive Modal (Rendered in Portal) */}
-      {mounted && isDropdownOpen && createPortal(
+      {isDropdownOpen && createPortal(
         <div 
           className="fixed inset-0 z-[99999] flex flex-col sm:items-center sm:justify-center justify-end bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={() => setIsDropdownOpen(false)} // Clicking backdrop closes modal
