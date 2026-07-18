@@ -2,6 +2,7 @@ import React from "react";
 import { Metadata } from "next";
 import Link from "next/link";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { BackButton } from "@/components/ui/BackButton";
 import { CartContainer } from "@/components/cart/CartContainer";
 
 export const metadata: Metadata = {
@@ -16,12 +17,11 @@ export default function CartPage() {
         
         {/* Page Header (Server Rendered) */}
         <div className="flex items-center gap-4">
-          <Link
-            href="/"
+          <BackButton
             className="w-10 h-10 rounded-full bg-white dark:bg-[#0B1221] border border-slate-200 dark:border-slate-800/80 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors shadow-sm"
           >
             <ClientIcon icon="ph:arrow-left-bold" className="w-4 h-4" />
-          </Link>
+          </BackButton>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
             Checkout
           </h1>

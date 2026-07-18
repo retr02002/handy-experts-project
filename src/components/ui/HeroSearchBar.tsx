@@ -83,9 +83,10 @@ export function HeroSearchBar() {
         }
       },
       (error) => {
-        console.error("Error getting location:", error);
-        // Only alert if the user explicitly clicked to fetch
-        if (!silent) alert("Please allow location access to fetch your live area.");
+        if (!silent) {
+          console.error("Error getting location:", error.message || error);
+          alert("Please allow location access to fetch your live area.");
+        }
         setIsFetchingLocation(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }

@@ -115,15 +115,15 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="mt-16 pt-8 border-t border-slate-200 dark:border-slate-800/60 flex flex-col lg:flex-row items-center justify-between gap-6">
           <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 sm:gap-3 text-[13px] font-medium text-slate-500 dark:text-slate-400">
-            <a href="#" className="hover:text-[#00B4FF] transition-colors">Privacy Policy</a>
+            <Link href="/privacy" className="hover:text-[#00B4FF] transition-colors">Privacy Policy</Link>
             <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
-            <a href="#" className="hover:text-[#00B4FF] transition-colors">Terms of Service</a>
+            <Link href="/terms" className="hover:text-[#00B4FF] transition-colors">Terms of Service</Link>
             <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
-            <a href="#" className="hover:text-[#00B4FF] transition-colors">Refund Policy</a>
+            <Link href="/refund" className="hover:text-[#00B4FF] transition-colors">Refund Policy</Link>
             <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
-            <a href="#" className="hover:text-[#00B4FF] transition-colors">Cancellation Policy</a>
+            <Link href="/cancellation" className="hover:text-[#00B4FF] transition-colors">Cancellation Policy</Link>
             <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
-            <a href="#" className="hover:text-[#00B4FF] transition-colors">Cookie Settings</a>
+            <Link href="/cookies" className="hover:text-[#00B4FF] transition-colors">Cookie Settings</Link>
           </div>
           <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium shrink-0 text-center lg:text-right">
             ©2025-{new Date().getFullYear()} All Rights Reserved by Handy Experts.
