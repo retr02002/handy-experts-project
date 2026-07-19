@@ -19,7 +19,7 @@ export function CustomerBottomNav() {
   return (
     <nav className="md:hidden fixed bottom-0 left-0 w-full h-16 bg-white dark:bg-[#0B1120] border-t border-slate-200 dark:border-slate-800 z-50 px-2 pb-safe flex items-center justify-around">
       {BOTTOM_NAV_LINKS.map((link) => {
-        const isActive = pathname === link.href || pathname.startsWith(link.href) && link.href !== "/customer";
+        const isActive = pathname === link.href || (pathname.startsWith(link.href) && link.href !== "/customer");
         
         return (
           <Link

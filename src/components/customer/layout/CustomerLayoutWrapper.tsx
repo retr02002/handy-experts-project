@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { CustomerSidebar } from "./CustomerSidebar";
 import { CustomerNavbar } from "./CustomerNavbar";
 import { CustomerBottomNav } from "./CustomerBottomNav";
+import { ChatBot } from "@/components/ui/ChatBot";
 
 export function CustomerLayoutWrapper({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -26,6 +27,7 @@ export function CustomerLayoutWrapper({ children }: { children: React.ReactNode 
 
       {/* Mobile Bottom Navigation */}
       <CustomerBottomNav />
+      <ChatBot />
     </div>
   );
 }

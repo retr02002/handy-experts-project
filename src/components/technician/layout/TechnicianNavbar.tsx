@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { LocationPicker } from "@/components/shared/LocationPicker";
 
 interface TechnicianNavbarProps {
   isMobileMenuOpen: boolean;
@@ -38,10 +39,13 @@ export function TechnicianNavbar({ isMobileMenuOpen, setMobileMenuOpen }: Techni
         {/* Mobile Hamburger Menu */}
         <button 
           onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}
-          className="md:hidden p-2 -ml-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-lg"
+          className="md:hidden p-2 -ml-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-lg shrink-0"
         >
           <ClientIcon icon="ph:list" className="w-6 h-6" />
         </button>
+
+        <LocationPicker />
+        <div className="w-2 md:w-4 shrink-0" />
 
         {/* Left: Search Bar */}
         <div className="flex-1 max-w-md hidden sm:block">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useTheme } from "next-themes";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { LocationPicker } from "@/components/shared/LocationPicker";
 
 export function CustomerNavbar() {
   const { setTheme, resolvedTheme } = useTheme();
@@ -30,19 +31,11 @@ export function CustomerNavbar() {
   }, []);
 
   return (
-    <header className="h-16 bg-white/80 dark:bg-[#0B1120]/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between md:justify-end px-4 md:px-6 sticky top-0 z-40 transition-colors">
-
-      {/* Mobile Brand (Hidden on desktop as it's in sidebar) */}
-      <div className="md:hidden flex items-center gap-2">
-        <Link href="/customer" className="flex items-center gap-2 group">
-          <Image
-            src="/logo-org.svg"
-            alt="Handy Experts"
-            width={32}
-            height={32}
-            className="w-12 h-12 group-hover:scale-105 transition-transform"
-          />
-        </Link>
+    <header className="h-16 bg-white/80 dark:bg-[#0B1120]/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 md:px-6 sticky top-0 z-40 transition-colors">
+      
+      {/* Left: Location Picker */}
+      <div className="flex items-center gap-2">
+        <LocationPicker />
       </div>
 
       {/* Right: Actions */}

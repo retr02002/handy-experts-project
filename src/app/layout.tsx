@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { CartProvider } from "@/context/CartContext";
+import { ChatProvider } from "@/context/ChatContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -67,7 +68,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col pb-24 lg:pb-0">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <CartProvider>
-            {children}
+            <ChatProvider>
+              {children}
+            </ChatProvider>
           </CartProvider>
         </ThemeProvider>
       </body>

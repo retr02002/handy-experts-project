@@ -8,11 +8,13 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { CartButton } from "@/components/ui/CartButton";
 import { useCart } from "@/context/CartContext";
+import { useChat } from "@/context/ChatContext";
 
 export function Header() {
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
   const { totalItems } = useCart();
+  const { isOpen, toggleChat } = useChat();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -88,32 +90,48 @@ export function Header() {
         </header>
       </div>
 
-      {/* Bottom Fixed Navigation for Mobile (Floating Pill) */}
-      <div className="fixed bottom-5 left-3 right-3 z-[60] lg:hidden">
-        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-slate-700/80 shadow-[0_10px_40px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.6)] rounded-full px-4 py-2.5 flex items-center justify-between">
-          <Link href="/" className={`flex flex-col items-center justify-center gap-1 transition-colors ${pathname === '/' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
-            <ClientIcon icon={pathname === '/' ? "ph:house-fill" : "ph:house"} width="20" height="20" />
-            <span className="text-[9px] font-medium leading-none">Home</span>
+      {/* Bottom Fixed Navigation for Mobile (Full Width App-like) */}
+      <div className="fixed bottom-0 left-0 right-0 w-full z-[60] lg:hidden">
+        <div className="bg-white dark:bg-[#0B1120] border-t border-slate-200 dark:border-slate-800 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] px-1 pb-safe h-16 flex items-center justify-between">
+          <Link href="/" className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${pathname === '/' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
+            <ClientIcon icon={pathname === '/' ? "ph:house-fill" : "ph:house"} className={`w-5 h-5 transition-transform ${pathname === '/' ? 'scale-110' : ''}`} />
+            <span className="text-[9px] font-medium leading-none mt-0.5">Home</span>
           </Link>
-          <Link href="/about" className={`flex flex-col items-center justify-center gap-1 transition-colors ${pathname === '/about' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
-            <ClientIcon icon={pathname === '/about' ? "ph:info-fill" : "ph:info"} width="20" height="20" />
-            <span className="text-[9px] font-medium leading-none">About</span>
+
+          <Link href="/about" className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${pathname === '/about' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
+            <ClientIcon icon={pathname === '/about' ? "ph:info-fill" : "ph:info"} className={`w-5 h-5 transition-transform ${pathname === '/about' ? 'scale-110' : ''}`} />
+            <span className="text-[9px] font-medium leading-none mt-0.5">About</span>
           </Link>
-          <Link href="/services" className={`flex flex-col items-center justify-center gap-1 transition-colors ${pathname.startsWith('/services') ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
-            <ClientIcon icon={pathname.startsWith('/services') ? "ph:wrench-fill" : "ph:wrench"} width="20" height="20" />
-            <span className="text-[9px] font-medium leading-none">Services</span>
+          
+          <Link href="/services" className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${pathname.startsWith('/services') ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
+            <ClientIcon icon={pathname.startsWith('/services') ? "ph:wrench-fill" : "ph:wrench"} className={`w-5 h-5 transition-transform ${pathname.startsWith('/services') ? 'scale-110' : ''}`} />
+            <span className="text-[9px] font-medium leading-none mt-0.5">Services</span>
           </Link>
-          <Link href="/blog" className={`flex flex-col items-center justify-center gap-1 transition-colors ${pathname === '/blog' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
-            <ClientIcon icon={pathname === '/blog' ? "ph:article-fill" : "ph:article"} width="20" height="20" />
-            <span className="text-[9px] font-medium leading-none">Blog</span>
+
+          {/* AI Chatbot Center Button */}
+          <button 
+            onClick={toggleChat}
+            className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors group px-1 ${isOpen ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}
+          >
+            <div className={`flex items-center justify-center w-[40px] h-[40px] -mt-6 rounded-full border-[3px] border-white dark:border-[#0B1120] shadow-md transition-transform group-hover:scale-110 group-active:scale-95 ${isOpen ? 'bg-slate-800 text-white dark:bg-slate-700' : 'bg-gradient-to-tr from-[#00B4FF] to-[#0096d6] text-white'}`}>
+              <ClientIcon icon="ph:robot-fill" className="w-5 h-5" />
+            </div>
+            <span className={`text-[9px] font-bold -mt-1 leading-none ${isOpen ? 'font-semibold' : ''}`}>Ask AI</span>
+          </button>
+
+          <Link href="/blog" className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${pathname === '/blog' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
+            <ClientIcon icon={pathname === '/blog' ? "ph:article-fill" : "ph:article"} className={`w-5 h-5 transition-transform ${pathname === '/blog' ? 'scale-110' : ''}`} />
+            <span className="text-[9px] font-medium leading-none mt-0.5">Blog</span>
           </Link>
-          <Link href="/contact" className={`flex flex-col items-center justify-center gap-1 transition-colors ${pathname === '/contact' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
-            <ClientIcon icon={pathname === '/contact' ? "ph:envelope-simple-fill" : "ph:envelope-simple"} width="20" height="20" />
-            <span className="text-[9px] font-medium leading-none">Contact</span>
+
+          <Link href="/contact" className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${pathname === '/contact' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
+            <ClientIcon icon={pathname === '/contact' ? "ph:envelope-simple-fill" : "ph:envelope-simple"} className={`w-5 h-5 transition-transform ${pathname === '/contact' ? 'scale-110' : ''}`} />
+            <span className="text-[9px] font-medium leading-none mt-0.5">Contact</span>
           </Link>
-          <Link href="/book-now" className={`flex flex-col items-center justify-center gap-1 transition-colors ${pathname === '/book-now' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
-            <ClientIcon icon={pathname === '/book-now' ? "ph:calendar-plus-fill" : "ph:calendar-plus"} width="20" height="20" />
-            <span className="text-[9px] font-medium leading-none">Book Now</span>
+
+          <Link href="/book-now" className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${pathname === '/book-now' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
+            <ClientIcon icon={pathname === '/book-now' ? "ph:calendar-plus-fill" : "ph:calendar-plus"} className={`w-5 h-5 transition-transform ${pathname === '/book-now' ? 'scale-110' : ''}`} />
+            <span className="text-[9px] font-medium leading-none mt-0.5">Book</span>
           </Link>
         </div>
       </div>
