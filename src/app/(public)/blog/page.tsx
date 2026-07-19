@@ -31,7 +31,7 @@ export default async function BlogPage(props: {
   const sortParam = typeof searchParams.sort === 'string' ? searchParams.sort : 'newest';
 
   // Filter logic
-  let filteredBlogs = [...MOCK_BLOGS].filter(post => {
+  const filteredBlogs = [...MOCK_BLOGS].filter(post => {
     // 1. Search Query
     if (query && !post.title.toLowerCase().includes(query) && !post.excerpt.toLowerCase().includes(query)) {
       return false;
