@@ -33,8 +33,18 @@ export function CustomerNavbar() {
   return (
     <header className="h-16 bg-white/80 dark:bg-[#0B1120]/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 md:px-6 sticky top-0 z-40 transition-colors">
       
-      {/* Left: Location Picker */}
-      <div className="flex items-center gap-2">
+      {/* Left: Logo & Location Picker */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        <Link href="/" className="flex items-center justify-center shrink-0 mr-1">
+          <Image
+            src="/logo-org.svg"
+            alt="Handy Experts"
+            width={100}
+            height={32}
+            priority
+            className="h-6 sm:h-8 w-auto object-contain drop-shadow-sm dark:brightness-0 dark:invert transition-transform hover:scale-105"
+          />
+        </Link>
         <LocationPicker />
       </div>
 
@@ -46,7 +56,7 @@ export function CustomerNavbar() {
           {/* Theme Toggle */}
           <button
             onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-            className="p-1.5 md:p-2 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white rounded-full transition-all hover:shadow-sm"
+            className="hidden sm:block p-1.5 md:p-2 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white rounded-full transition-all hover:shadow-sm"
           >
             {mounted && resolvedTheme === "dark" ? (
               <ClientIcon icon="ph:moon" className="w-4 h-4 md:w-5 md:h-5" />

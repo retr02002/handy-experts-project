@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
 const BOTTOM_NAV_LINKS = [
+  { href: "/customer", label: "Dashboard", icon: "ph:squares-four" },
   { href: "/customer/orders", label: "Orders", icon: "ph:shopping-cart" },
   { href: "/customer/bills", label: "Bills", icon: "ph:receipt" },
   { href: "/customer/rewards", label: "Rewards", icon: "ph:gift" },

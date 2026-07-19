@@ -5,6 +5,7 @@ import { CustomerSidebar } from "./CustomerSidebar";
 import { CustomerNavbar } from "./CustomerNavbar";
 import { CustomerBottomNav } from "./CustomerBottomNav";
 import { ChatBot } from "@/components/ui/ChatBot";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export function CustomerLayoutWrapper({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -28,6 +29,13 @@ export function CustomerLayoutWrapper({ children }: { children: React.ReactNode 
       {/* Mobile Bottom Navigation */}
       <CustomerBottomNav />
       <ChatBot />
+
+      {/* Floating Theme Toggle (Mobile Only) */}
+      <div className="md:hidden fixed bottom-[150px] right-4 z-[90]">
+        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-full shadow-md border border-slate-200/50 dark:border-slate-700/50 p-0.5">
+          <ThemeToggle />
+        </div>
+      </div>
     </div>
   );
 }
