@@ -56,9 +56,12 @@ export function Header() {
               {/* Center: Logo */}
               <div className="flex justify-center items-center shrink-0">
                 <Link href="/" className="flex items-center justify-center">
-                  <img
+                  <Image
                     src="/logo-org.svg"
                     alt="Handy Experts"
+                    width={160}
+                    height={64}
+                    priority
                     className="h-12 sm:h-16 w-auto object-contain transition-all duration-300 hover:scale-105 drop-shadow-sm dark:brightness-0 dark:invert"
                   />
                 </Link>

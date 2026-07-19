@@ -14,9 +14,9 @@ export default function TechnicianReferralPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 w-full">
         <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-6 md:p-8 rounded-2xl md:rounded-3xl text-white shadow-sm flex flex-col justify-center items-center gap-3 md:gap-4 text-center">
           <ClientIcon icon="ph:gift" className="w-12 h-12 md:w-16 md:h-16 text-amber-200" />
-          <h2 className="text-xl md:text-2xl font-bold">Earn $50 per referral!</h2>
+          <h2 className="text-xl md:text-2xl font-bold">Earn ₹50 per referral!</h2>
           <p className="text-amber-100 text-xs md:text-sm max-w-sm">
-            Share your unique referral code with other technicians. Once they complete their first service call, you both get a $50 bonus!
+            Share your unique referral code with other technicians. Once they complete their first service call, you both get a ₹50 bonus!
           </p>
           
           <div className="mt-2 md:mt-4 flex items-center bg-black/20 p-1.5 md:p-2 rounded-xl border border-white/20 w-full max-w-xs justify-between backdrop-blur-md">

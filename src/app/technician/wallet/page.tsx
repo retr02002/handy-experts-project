@@ -23,7 +23,7 @@ export default function TechnicianWalletPage() {
             <p className="font-medium text-sm md:text-base text-emerald-100">Available Balance</p>
             <ClientIcon icon="ph:wallet" className="w-5 h-5 md:w-6 md:h-6 text-emerald-200" />
           </div>
-          <p className="text-3xl md:text-4xl font-bold">$1,250.00</p>
+          <p className="text-3xl md:text-4xl font-bold">₹1,250.00</p>
         </div>
         
         <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-2xl md:rounded-3xl p-4 md:p-6 shadow-sm flex flex-col justify-between h-36 md:h-40">
@@ -31,7 +31,7 @@ export default function TechnicianWalletPage() {
             <p className="font-medium text-sm md:text-base text-slate-500 dark:text-slate-400">Lifetime Earnings</p>
             <ClientIcon icon="ph:chart-line-up" className="w-5 h-5 md:w-6 md:h-6 text-slate-400" />
           </div>
-          <p className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white">$4,250.00</p>
+          <p className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white">₹4,250.00</p>
         </div>
       </div>
 

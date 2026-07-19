@@ -101,7 +101,7 @@ export default function TechnicianNotificationsPage() {
                 </span>
               </div>
               <p className="text-sm text-slate-500 dark:text-slate-500 leading-relaxed">
-                Your requested payout of $450.00 has been successfully processed to your linked bank account. It should appear within 1-2 business days.
+                Your requested payout of ₹450.00 has been successfully processed to your linked bank account. It should appear within 1-2 business days.
               </p>
             </div>
           </div>

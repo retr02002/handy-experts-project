@@ -40,7 +40,7 @@ export function TechnicianLayoutWrapper({ children }: { children: React.ReactNod
           setMobileMenuOpen={setMobileMenuOpen}
         />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          <div className="w-full">
+          <div className="w-full max-w-7xl mx-auto flex flex-col">
             {children}
           </div>
         </main>

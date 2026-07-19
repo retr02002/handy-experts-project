@@ -1,5 +1,7 @@
 import React from "react";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { ServiceCallCard } from "@/components/shared/ServiceCallCard";
+import { mockServiceCalls, mockVendors } from "@/lib/mockData";
 
 export default function AdminDashboardPage() {
   return (
@@ -112,11 +114,37 @@ export default function AdminDashboardPage() {
 
       {/* Placeholder for larger charts, matching screenshot's bottom rows */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-2">
-        <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 min-h-[300px] flex items-center justify-center shadow-sm">
-           <span className="text-slate-400 dark:text-slate-600 font-medium tracking-widest uppercase text-sm">Call Volume Chart Placeholder</span>
+        <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 min-h-[300px] flex flex-col shadow-sm">
+           <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Recent Service Calls</h2>
+           <div className="flex flex-col gap-3 overflow-y-auto pr-2 max-h-[500px]">
+             {mockServiceCalls.slice(0, 5).map((call) => (
+               <ServiceCallCard 
+                 key={call.id} 
+                 call={call} 
+                 viewerRole="super_admin" 
+               />
+             ))}
+           </div>
         </div>
-        <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 min-h-[300px] flex items-center justify-center shadow-sm">
-           <span className="text-slate-400 dark:text-slate-600 font-medium tracking-widest uppercase text-sm">Vendor Performance Placeholder</span>
+        <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 min-h-[300px] flex flex-col shadow-sm">
+           <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Top Vendor Performance</h2>
+           <div className="flex flex-col gap-4 overflow-y-auto pr-2 max-h-[500px]">
+             {mockVendors.slice(0, 5).map((vendor) => (
+               <div key={vendor.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
+                 <div>
+                   <h3 className="font-semibold text-slate-900 dark:text-white">{vendor.companyName}</h3>
+                   <div className="flex items-center gap-2 mt-1">
+                     <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 capitalize">{vendor.status}</span>
+                     <span className="text-xs text-slate-500 flex items-center gap-1"><ClientIcon icon="ph:star-fill" className="w-3 h-3 text-amber-500" /> {vendor.rating}</span>
+                   </div>
+                 </div>
+                 <div className="text-right">
+                   <div className="text-sm font-bold text-slate-900 dark:text-white">{vendor.completedJobs}</div>
+                   <div className="text-xs text-slate-500">Jobs Completed</div>
+                 </div>
+               </div>
+             ))}
+           </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,7 @@
 import React from "react";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { ServiceCallCard } from "@/components/shared/ServiceCallCard";
+import { mockServiceCalls } from "@/lib/mockData";
 
 export default function TechnicianDashboardPage() {
   return (
@@ -64,7 +66,7 @@ export default function TechnicianDashboardPage() {
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Earnings</p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">$1,250</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">₹1,250</p>
             </div>
           </div>
 
@@ -90,42 +92,24 @@ export default function TechnicianDashboardPage() {
         </div>
       </div>
 
-      {/* Activity Timeline */}
+      {/* Activity Timeline / Schedule */}
       <div className="w-full bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm mt-2">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">Today&apos;s Schedule</h2>
           <button className="text-sm font-semibold text-amber-600 dark:text-amber-500 hover:underline">View All</button>
         </div>
 
-        <div className="relative border-l-2 border-slate-100 dark:border-slate-800 ml-3 space-y-8 pb-4">
-
-          <div className="relative pl-6">
-            <div className="absolute w-4 h-4 bg-emerald-500 border-4 border-white dark:border-[#0F172A] rounded-full -left-[9px] top-1" />
-            <p className="text-xs font-bold text-slate-400 mb-1">09:00 AM</p>
-            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-700/50">
-              <p className="font-semibold text-slate-900 dark:text-white line-through opacity-70">HVAC Maintenance</p>
-              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Completed - Earned $120</p>
-            </div>
-          </div>
-
-          <div className="relative pl-6">
-            <div className="absolute w-4 h-4 bg-amber-500 border-4 border-white dark:border-[#0F172A] rounded-full -left-[9px] top-1 ring-2 ring-amber-500/30" />
-            <p className="text-xs font-bold text-amber-600 dark:text-amber-500 mb-1">02:30 PM</p>
-            <div className="bg-amber-50 dark:bg-amber-500/5 rounded-2xl p-4 border border-amber-200 dark:border-amber-500/20 shadow-sm">
-              <p className="font-semibold text-slate-900 dark:text-white">Plumbing Repair - Leak</p>
-              <p className="text-xs text-slate-500 mt-1">123 Maple Street, Suite 400</p>
-            </div>
-          </div>
-
-          <div className="relative pl-6">
-            <div className="absolute w-4 h-4 bg-slate-300 dark:bg-slate-600 border-4 border-white dark:border-[#0F172A] rounded-full -left-[9px] top-1" />
-            <p className="text-xs font-bold text-slate-400 mb-1">04:00 PM</p>
-            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-700/50">
-              <p className="font-semibold text-slate-900 dark:text-white">Electrical Assessment</p>
-              <p className="text-xs text-slate-500 mt-1">456 Oak Avenue</p>
-            </div>
-          </div>
-
+        <div className="flex flex-col gap-3">
+          {mockServiceCalls
+            .filter(c => c.technicianName === "Mike Smith" || c.status === "assigned")
+            .slice(0, 3)
+            .map((call) => (
+              <ServiceCallCard 
+                key={call.id} 
+                call={call} 
+                viewerRole="technician" 
+              />
+          ))}
         </div>
       </div>
     </div>
