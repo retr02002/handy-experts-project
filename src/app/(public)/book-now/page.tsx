@@ -1,12 +1,18 @@
 import React from 'react';
 import { Banner } from '@/components/ui/Banner';
+import { BookingSection } from '@/components/booking/BookingSection';
 
 export const metadata = {
   title: 'Book an Appointment | Handy Experts',
   description: 'Book your next home service appointment quickly and securely with Handy Experts.',
 };
 
-export default function BookNowPage() {
+type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
+
+export default async function BookNowPage(props: {
+  searchParams: SearchParams;
+}) {
+  const searchParams = await props.searchParams;
   return (
     <div className="flex flex-col min-h-screen">
       <Banner 
@@ -23,15 +29,9 @@ export default function BookNowPage() {
       />
       
       <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-        <div className="text-center bg-white dark:bg-slate-900 rounded-3xl p-8 sm:p-12 border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="w-16 h-16 bg-blue-50 dark:bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <span className="text-2xl">📅</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-4">Scheduling Portal</h2>
-          <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto text-lg">
-            Our comprehensive booking portal is currently under maintenance to serve you better. Please try again later.
-          </p>
-        </div>
+        <React.Suspense fallback={<div className="flex justify-center p-12"><span className="iconify ph-spinner animate-spin text-3xl text-blue-600" /></div>}>
+          <BookingSection searchParams={searchParams} />
+        </React.Suspense>
       </div>
     </div>
   );

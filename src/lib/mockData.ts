@@ -286,3 +286,37 @@ export const mockCustomerRewards = {
     { id: 2, title: "Free Priority Booking", cost: 1000 },
   ]
 };
+
+export interface AvailableService {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  duration: string;
+  icon: string;
+}
+
+export interface Package {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  services: string[]; // array of service IDs included
+  discountPercentage: number;
+}
+
+export const mockAvailableServices: AvailableService[] = [
+  { id: "s1", name: "Basic Plumbing Fix", description: "Fix minor leaks and clogs", price: 80, category: "Plumbing", duration: "1 hr", icon: "ph:drop" },
+  { id: "s2", name: "Deep Home Cleaning", description: "Comprehensive cleaning of all rooms", price: 150, category: "Cleaning", duration: "3 hrs", icon: "ph:broom" },
+  { id: "s3", name: "AC Maintenance", description: "Filter change and performance check", price: 120, category: "HVAC", duration: "1.5 hrs", icon: "ph:thermometer-cold" },
+  { id: "s4", name: "Electrical Inspection", description: "Check wiring and panels for safety", price: 90, category: "Electrical", duration: "1 hr", icon: "ph:lightning" },
+  { id: "s5", name: "Pest Control Assessment", description: "Identify and plan treatment for pests", price: 60, category: "Pest Control", duration: "1 hr", icon: "ph:bug" },
+  { id: "s6", name: "Furniture Assembly", description: "Assemble flat-pack furniture", price: 70, category: "Handyman", duration: "2 hrs", icon: "ph:chair" },
+];
+
+export const mockPackages: Package[] = [
+  { id: "p1", name: "Home Maintenance Starter", description: "Basic plumbing, electrical, and AC check", price: 250, services: ["s1", "s3", "s4"], discountPercentage: 15 },
+  { id: "p2", name: "Move-In Special", description: "Deep cleaning and pest assessment", price: 180, services: ["s2", "s5"], discountPercentage: 10 },
+  { id: "p3", name: "The Works", description: "Comprehensive coverage of all basic services", price: 400, services: ["s1", "s2", "s3", "s4", "s5"], discountPercentage: 20 },
+];
