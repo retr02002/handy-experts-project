@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Access Denied | Handy Experts",
+  title: "Access Denied | Handyzo",
   description: "You do not have permission to view this page.",
 };
 

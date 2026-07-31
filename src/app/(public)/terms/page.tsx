@@ -2,8 +2,8 @@ import React from "react";
 import { PolicyLayout, PolicySection } from "@/components/layout/PolicyLayout";
 
 export const metadata = {
-  title: "Terms of Service | Handy Experts",
-  description: "Read our Terms of Service for using Handy Experts.",
+  title: "Terms of Service | Handyzo",
+  description: "Read our Terms of Service for using Handyzo.",
 };
 
 export default function TermsOfServicePage() {
@@ -14,7 +14,7 @@ export default function TermsOfServicePage() {
       content: (
         <>
           <p>
-            By accessing or using the Handy Experts platform and services (collectively, the &quot;Services&quot;), you agree to be bound by these Terms of Service (&quot;Terms&quot;). If you do not agree to all the terms and conditions of this agreement, then you may not access the website or use any Services.
+            By accessing or using the Handyzo platform and services (collectively, the &quot;Services&quot;), you agree to be bound by these Terms of Service (&quot;Terms&quot;). If you do not agree to all the terms and conditions of this agreement, then you may not access the website or use any Services.
           </p>
         </>
       ),
@@ -25,7 +25,7 @@ export default function TermsOfServicePage() {
       content: (
         <>
           <p>
-            Handy Experts provides a digital marketplace connecting homeowners and businesses with independent service professionals (&quot;Professionals&quot;) for various home maintenance, repair, and improvement tasks. We provide the platform for booking, but the actual services are performed by independent contractors.
+            Handyzo provides a digital marketplace connecting homeowners and businesses with independent service professionals (&quot;Professionals&quot;) for various home maintenance, repair, and improvement tasks. We provide the platform for booking, but the actual services are performed by independent contractors.
           </p>
         </>
       ),
@@ -53,7 +53,7 @@ export default function TermsOfServicePage() {
       content: (
         <>
           <p>
-            You agree to pay the quoted fees for any services booked through the Handy Experts platform. Payments are securely processed through our third-party payment gateways. A hold may be placed on your credit card prior to the service, and the final charge will be processed upon service completion.
+            You agree to pay the quoted fees for any services booked through the Handyzo platform. Payments are securely processed through our third-party payment gateways. A hold may be placed on your credit card prior to the service, and the final charge will be processed upon service completion.
           </p>
         </>
       ),
@@ -64,7 +64,7 @@ export default function TermsOfServicePage() {
       content: (
         <>
           <p>
-            Handy Experts acts as a technology platform connecting users with Professionals. We do not directly employ the Professionals. To the maximum extent permitted by law, Handy Experts shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Services or the actions of the independent Professionals.
+            Handyzo acts as a technology platform connecting users with Professionals. We do not directly employ the Professionals. To the maximum extent permitted by law, Handyzo shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Services or the actions of the independent Professionals.
           </p>
         </>
       ),
@@ -74,10 +74,10 @@ export default function TermsOfServicePage() {
   return (
     <PolicyLayout
       title="Terms of Service"
-      description="The rules and guidelines for using the Handy Experts platform."
+      description="The rules and guidelines for using the Handyzo platform."
       lastUpdated="February 10, 2026"
       sections={sections}
-      contactEmail="support@handyexperts.com"
+      contactEmail="support@Handyzo.com"
     />
   );
 }

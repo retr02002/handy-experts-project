@@ -7,7 +7,7 @@ const REVIEWS = [
     author: "Ashutosh Singh",
     time: "7 months ago",
     rating: 5,
-    text: "By booking with Handy Experts, you can clearly see how experienced their professionals are. They know exactly where customers usually face difficulties and provide transparent pricing that makes the whole service journey much easier. I genuinely recommend everyone to try them at least once—once you do, you won't have any complaints about their work quality or their way of handling complex repairs.",
+    text: "By booking with Handyzo, you can clearly see how experienced their professionals are. They know exactly where customers usually face difficulties and provide transparent pricing that makes the whole service journey much easier. I genuinely recommend everyone to try them at least once—once you do, you won't have any complaints about their work quality or their way of handling complex repairs.",
     avatar: "https://i.pravatar.cc/150?u=ashutosh",
   },
   {
@@ -35,7 +35,7 @@ export function ContactAndReviewsSection() {
           badgeText="Visit & Reviews"
           title={
             <>
-              Find us in <span className="text-[#00B4FF]">Delhi.</span>
+              Find us in <span className="text-[#00B4FF]">Hyderabad.</span>
             </>
           }
           description="We are centrally located to dispatch our experts quickly. Read what your neighbors have to say."
@@ -48,7 +48,7 @@ export function ContactAndReviewsSection() {
 
             {/* Google Maps Iframe */}
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d14008.114827184462!2d77.215956!3d28.629168!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390cfd37b741d057%3A0xc46188cb612f4cb7!2sConnaught%20Place%2C%20New%20Delhi%2C%20Delhi%20110001!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin"
+              src="https://maps.google.com/maps?q=Mf-2%20p.s%20nagar%20masab%20tank%20Mehdipatnam%20Hyderabad%20500028&t=&z=13&ie=UTF8&iwloc=&output=embed"
               className="absolute inset-0 w-full h-full border-0 dark:invert-[90%] dark:hue-rotate-180 dark:contrast-80 dark:opacity-80 transition-all duration-500"
               allowFullScreen={false}
               loading="lazy"
@@ -64,9 +64,9 @@ export function ContactAndReviewsSection() {
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#9B82F3] to-[#7B5EE4] flex items-center justify-center text-white shadow-lg shadow-[#9B82F3]/40 mb-2 group-hover:scale-110 transition-transform duration-500">
                 <ClientIcon icon="ph:map-pin-fill" className="w-5 h-5" />
               </div>
-              <h3 className="text-[17px] font-extrabold text-slate-900 dark:text-white mb-1.5">Handy Experts Headquarters</h3>
+              <h3 className="text-[17px] font-extrabold text-slate-900 dark:text-white mb-1.5">Handyzo Headquarters</h3>
               <p className="text-[13px] font-medium text-slate-600 dark:text-slate-300 max-w-sm mb-4 leading-tight">
-                Block A, Connaught Place, Inner Circle, New Delhi, 110001
+                Mf-2 p.s nagar masab tank Mehdipatnam Hyderabad 500028
               </p>
               <button className="flex items-center gap-2 px-5 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-bold rounded-full transition-all hover:scale-105 active:scale-95 shadow-md">
                 <ClientIcon icon="ph:navigation-arrow-fill" className="w-3.5 h-3.5" />
@@ -91,7 +91,7 @@ export function ContactAndReviewsSection() {
                   <div>
                     <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-none mb-1.5">Address</h4>
                     <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
-                      Block A, Connaught Place, Inner Circle, New Delhi, 110001
+                      Mf-2 p.s nagar masab tank Mehdipatnam Hyderabad 500028
                     </p>
                   </div>
                 </div>
@@ -118,7 +118,7 @@ export function ContactAndReviewsSection() {
                   <div>
                     <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-none mb-1.5">Phone</h4>
                     <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed group-hover:text-[#10B981] transition-colors">
-                      +91 98765 43210
+                      +91 9403892784
                     </p>
                   </div>
                 </div>
@@ -131,7 +131,7 @@ export function ContactAndReviewsSection() {
                   <div>
                     <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-none mb-1.5">Email</h4>
                     <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed group-hover:text-[#EF4444] transition-colors">
-                      hello@handyexperts.in
+                      homejoyexperts@gmail.com
                     </p>
                   </div>
                 </div>

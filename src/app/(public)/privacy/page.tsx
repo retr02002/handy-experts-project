@@ -2,8 +2,8 @@ import React from "react";
 import { PolicyLayout, PolicySection } from "@/components/layout/PolicyLayout";
 
 export const metadata = {
-  title: "Privacy Policy | Handy Experts",
-  description: "Learn how we collect, use, and protect your personal information at Handy Experts.",
+  title: "Privacy Policy | Handyzo",
+  description: "Learn how we collect, use, and protect your personal information at Handyzo.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -14,7 +14,7 @@ export default function PrivacyPolicyPage() {
       content: (
         <>
           <p>
-            This Privacy Policy (&quot;Policy&quot;) outlines how Handy Experts (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) collects, uses, and protects your personal information when you access our website and use our home services platform (&quot;Services&quot;). This Policy also explains your rights regarding the information we collect. By accessing our website and using our Services, you consent to the terms of this Policy.
+            This Privacy Policy (&quot;Policy&quot;) outlines how Handyzo (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) collects, uses, and protects your personal information when you access our website and use our home services platform (&quot;Services&quot;). This Policy also explains your rights regarding the information we collect. By accessing our website and using our Services, you consent to the terms of this Policy.
           </p>
           <p>
             <strong>Personal Information:</strong> When you book a service or interact with our website, we may collect personal information such as your name, email address, phone number, physical address, and payment details. We only collect personal information that is relevant and necessary for providing our Services.
@@ -110,10 +110,10 @@ export default function PrivacyPolicyPage() {
   return (
     <PolicyLayout
       title="Privacy Policy"
-      description="Learn how Handy Experts collects, uses, and protects your personal information."
+      description="Learn how Handyzo collects, uses, and protects your personal information."
       lastUpdated="January 15, 2026"
       sections={sections}
-      contactEmail="support@handyexperts.com"
+      contactEmail="support@Handyzo.com"
     />
   );
 }

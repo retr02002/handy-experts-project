@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { Service } from "@/data/mockServices";
+import { Service } from "@/types/service";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
 interface ServiceBreadcrumbProps {

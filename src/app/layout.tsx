@@ -17,20 +17,20 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
-  title: "Handy Experts - Professional Home Services",
+  title: "Handyzo - Professional Home Services",
   description: "Your trusted partner for home maintenance, professional cleaning, high-quality repairs, and everyday essential services. Book trusted pros today.",
-  keywords: "home services, cleaning, plumbing, appliance repair, handy experts, carpenters, electricians, professional repairs",
+  keywords: "home services, cleaning, plumbing, appliance repair, Handyzo, carpenters, electricians, professional repairs",
   openGraph: {
-    title: "Handy Experts - Professional Home Services",
+    title: "Handyzo - Professional Home Services",
     description: "Your trusted partner for home maintenance, professional cleaning, high-quality repairs, and everyday essential services.",
-    url: "https://handyexperts.com",
-    siteName: "Handy Experts",
+    url: "https://Handyzo.com",
+    siteName: "Handyzo",
     images: [
       {
         url: "/logo-org.svg", // Replace with a high-res OG image in production
         width: 1200,
         height: 630,
-        alt: "Handy Experts - Professional Home Services",
+        alt: "Handyzo - Professional Home Services",
       },
     ],
     locale: "en_US",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Handy Experts - Professional Home Services",
+    title: "Handyzo - Professional Home Services",
     description: "Your trusted partner for home maintenance, professional cleaning, high-quality repairs, and everyday essential services.",
     images: ["/logo-org.svg"],
   },

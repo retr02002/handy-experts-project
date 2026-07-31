@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { ClientIcon } from "./ClientIcon";
-import { Service, ServicePackage } from "@/data/mockServices";
+import { Service, ServicePackage } from "@/types/service";
 import { useCart } from "@/context/CartContext";
 import { PackageDetailsModal } from "@/components/services/PackageDetailsModal";
 import { useSession } from "next-auth/react";
@@ -30,7 +30,7 @@ export function PackageCard({ parentService, pkg }: PackageCardProps) {
     addToCart(parentService, pkg);
   };
   
-  const cartItemId = `${parentService.id}-${pkg.name}`;
+  const cartItemId = pkg.id;
   const qtyInCart = items.find((i) => i.id === cartItemId)?.quantity || 0;
 
   return (

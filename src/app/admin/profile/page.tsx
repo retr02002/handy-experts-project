@@ -8,7 +8,7 @@ export default async function AdminProfilePage() {
   const session = await getServerSession(authOptions);
   const user = session?.user;
   const userName = user?.name || "System Admin";
-  const userEmail = user?.email || "admin@handyexperts.com";
+  const userEmail = user?.email || "admin@Handyzo.com";
   const [firstName, ...lastNameParts] = userName.split(" ");
   const lastName = lastNameParts.join(" ") || "";
   const avatarInitial = userName.charAt(0).toUpperCase() || "A";

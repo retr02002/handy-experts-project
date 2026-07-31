@@ -3,11 +3,11 @@ import { Banner } from '@/components/ui/Banner';
 import { GlobalSearchBar } from '@/components/ui/GlobalSearchBar';
 import { ServicesFilterMenu } from '@/components/ui/ServicesFilterMenu';
 import { ServicesList } from '@/components/services/ServicesList';
-import { MOCK_SERVICES } from '@/data/mockServices';
+import { getAllServices } from '@/lib/services-data';
 import { CategoryTabs } from '@/components/ui/CategoryTabs';
 
 export const metadata = {
-  title: 'Our Services | Handy Experts',
+  title: 'Our Services | Handyzo',
   description: 'Explore our wide range of professional home services.',
 };
 
@@ -41,10 +41,10 @@ export default async function ServicesPage(props: {
   const minPrice = typeof searchParams.minPrice === 'string' ? parseInt(searchParams.minPrice) : 0;
   const maxPrice = typeof searchParams.maxPrice === 'string' ? parseInt(searchParams.maxPrice) : 10000;
 
-  // NOTE: Availability filtering is purely visual/mock for now as mockServices don't have explicit availability dates.
-  
+  const allServices = await getAllServices();
+
   // Filter logic
-  const filteredServices = MOCK_SERVICES.filter(service => {
+  const filteredServices = allServices.filter(service => {
     // 1. Search Query
     if (query && !service.title.toLowerCase().includes(query) && !service.description.toLowerCase().includes(query)) {
       return false;
@@ -60,10 +60,12 @@ export default async function ServicesPage(props: {
         return false;
       }
     }
-    // 4. Price (Check if any package is within range)
-    const hasPackagesInPriceRange = service.packages && service.packages.some(pkg => pkg.price >= minPrice && pkg.price <= maxPrice);
-    if (!hasPackagesInPriceRange) {
-      return false;
+    // 4. Price (check if any package is within range — services with no packages yet aren't excluded by this)
+    if (service.packages.length > 0) {
+      const hasPackagesInPriceRange = service.packages.some(pkg => pkg.price >= minPrice && pkg.price <= maxPrice);
+      if (!hasPackagesInPriceRange) {
+        return false;
+      }
     }
     // 5. Popularity (Tags)
     if (selectedTags.length > 0) {

@@ -6,6 +6,15 @@ export default withAuth(
     const { pathname } = req.nextUrl;
     const { token } = req.nextauth;
 
+    // Signed in but hasn't picked an account type yet — send everywhere to
+    // /onboarding until that's done. This is a JWT-only check (no DB call),
+    // so it's safe to run in edge middleware; deeper profile-completeness
+    // checks (e.g. a customer missing name/phone) happen in each dashboard's
+    // layout Server Component instead, where Prisma is actually usable.
+    if (token?.role === "PENDING" && !pathname.startsWith("/onboarding")) {
+      return NextResponse.redirect(new URL("/onboarding", req.url));
+    }
+
     // Route protections based on roles
     if (pathname.startsWith("/admin") && token?.role !== "SUPER_ADMIN") {
       return NextResponse.redirect(new URL("/sign-in", req.url));
@@ -43,5 +52,6 @@ export const config = {
     "/customer/:path*",
     "/technician/:path*",
     "/cart",
+    "/onboarding",
   ],
 };

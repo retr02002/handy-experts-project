@@ -18,12 +18,12 @@ export async function generateMetadata(
   
   if (!post) {
     return {
-      title: "Blog Post Not Found | Handy Experts",
+      title: "Blog Post Not Found | Handyzo",
     };
   }
 
   return {
-    title: `${post.title} | Handy Experts Blog`,
+    title: `${post.title} | Handyzo Blog`,
     description: post.excerpt,
   };
 }

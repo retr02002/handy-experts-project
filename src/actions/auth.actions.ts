@@ -28,7 +28,7 @@ export async function registerUser(input: RegisterInput): Promise<ActionResponse
       };
     }
 
-    const { email, password, name, role } = validatedData.data;
+    const { email, password, name } = validatedData.data;
 
     // 2. Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -42,13 +42,13 @@ export async function registerUser(input: RegisterInput): Promise<ActionResponse
     // 3. Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 4. Create the user
+    // 4. Create the user — role defaults to PENDING; they pick an account
+    // type (customer/vendor/technician) on the /onboarding step right after.
     await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name: name || null,
-        role: role as "CUSTOMER" | "TECHNICIAN" | "VENDOR",
       }
     });
 

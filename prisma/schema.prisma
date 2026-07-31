@@ -35,6 +35,7 @@ model Session {
 }
 
 enum Role {
+  PENDING
   CUSTOMER
   TECHNICIAN
   VENDOR
@@ -42,15 +43,63 @@ enum Role {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  role          Role      @default(CUSTOMER)
-  accounts      Account[]
-  sessions      Session[]
+  id                String             @id @default(cuid())
+  name              String?
+  email             String?            @unique
+  emailVerified     DateTime?
+  image             String?
+  password          String?
+  phone             String?
+  role              Role               @default(PENDING)
+  accounts          Account[]
+  sessions          Session[]
+  cartItems         CartItem[]
+  vendorProfile     VendorProfile?
+  technicianProfile TechnicianProfile?
+}
+
+// Company type is a free-form string (not an enum) so new legal structures
+// don't require a schema migration — the onboarding form offers a fixed
+// dropdown of common values, but the column itself stays flexible.
+model VendorProfile {
+  id                String              @id @default(cuid())
+  userId            String              @unique
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName       String
+  companyType       String
+  gstNumber         String
+  panNumber         String
+  aadhaarNumber     String
+  address           String
+  city              String
+  state             String
+  pincode           String
+  incorporationDate DateTime
+  technicians       TechnicianProfile[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+}
+
+enum TechnicianType {
+  FREELANCE
+  VENDOR_MANAGED
+}
+
+model TechnicianProfile {
+  id              String         @id @default(cuid())
+  userId          String         @unique
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            TechnicianType @default(FREELANCE)
+  skillCategory   String
+  experienceYears Int
+  aadhaarNumber   String?
+  servicePincode  String
+  // Set only for technicians a vendor creates from their own dashboard — not
+  // part of the public self-signup flow this schema currently supports.
+  vendorId        String?
+  vendor          VendorProfile? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 }
 
 model VerificationToken {
@@ -70,6 +119,7 @@ model Service {
   badgeColor  String?
   rating      String?
   image       String
+  videoUrl    String?
   time        String?
   warranty    String?
   description String    @db.Text
@@ -82,9 +132,9 @@ model Service {
 }
 
 model ServicePackage {
-  id            String   @id @default(cuid())
+  id            String     @id @default(cuid())
   serviceId     String
-  service       Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  service       Service    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   name          String
   price         Float
   originalPrice Float
@@ -95,8 +145,29 @@ model ServicePackage {
   image         String?
   features      Json
   details       Json?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  cartItems     CartItem[]
 
   @@index([serviceId])
+}
+
+enum CartItemStatus {
+  ACTIVE
+  SAVED
+}
+
+model CartItem {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  packageId String
+  package   ServicePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  quantity  Int            @default(1)
+  status    CartItemStatus @default(ACTIVE)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([userId, packageId])
+  @@index([userId, status])
 }

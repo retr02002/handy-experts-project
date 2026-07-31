@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { Service, ServicePackage } from "@/data/mockServices";
+import { Service, ServicePackage } from "@/types/service";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
 type Props = {
@@ -161,7 +161,7 @@ export function PackageDetailsModal({ isOpen, onClose, service, pkg, onAdd, qtyI
 
           <hr className="border-slate-150 dark:border-slate-800" />
 
-          {/* Handy Experts Promise Guarantee */}
+          {/* Handyzo Promise Guarantee */}
           <div>
             <h3 className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
               Our Service Guarantee

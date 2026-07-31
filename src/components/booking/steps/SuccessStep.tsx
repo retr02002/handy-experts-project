@@ -13,7 +13,7 @@ export function SuccessStep() {
       
       <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">Booking Confirmed!</h2>
       <p className="text-lg text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-8">
-        Thank you for choosing Handy Experts. Your appointment has been successfully scheduled. We&apos;ve sent a confirmation email with the details.
+        Thank you for choosing Handyzo. Your appointment has been successfully scheduled. We&apos;ve sent a confirmation email with the details.
       </p>
 
       <div className="flex flex-col sm:flex-row gap-4">

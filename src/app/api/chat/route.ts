@@ -10,7 +10,7 @@ export async function POST(req: Request) {
 
     // Simple mocked logic for demonstration
     const lowerText = lastMessage?.content?.toLowerCase() || "";
-    let reply = "I'm your Handy Experts AI assistant. I can help you find services, understand our pricing, or assist with booking. How can I help?";
+    let reply = "I'm your Handyzo AI assistant. I can help you find services, understand our pricing, or assist with booking. How can I help?";
 
     if (lowerText.includes("clean") || lowerText.includes("maid")) {
       reply = "We offer professional Deep Cleaning, Standard Cleaning, and Move-in/Move-out cleaning services. You can book them starting from just ₹49! Check out our Services page for more details.";
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     } else if (lowerText.includes("book") || lowerText.includes("schedule")) {
       reply = "You can book a service easily by clicking the 'Book Now' button in the navigation, or by selecting a specific service package and adding it to your cart.";
     } else if (lowerText.includes("hello") || lowerText.includes("hi")) {
-      reply = "Hello! 👋 Welcome to Handy Experts. What kind of home service are you looking for today?";
+      reply = "Hello! 👋 Welcome to Handyzo. What kind of home service are you looking for today?";
     } else if (lowerText.includes("thank")) {
       reply = "You're very welcome! Let me know if you need anything else.";
     }

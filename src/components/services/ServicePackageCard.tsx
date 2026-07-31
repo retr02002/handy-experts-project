@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { Service, ServicePackage } from "@/data/mockServices";
+import { Service, ServicePackage } from "@/types/service";
 import { useCart } from "@/context/CartContext";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { PackageDetailsModal } from "./PackageDetailsModal";
@@ -29,7 +29,7 @@ export function ServicePackageCard({ service, pkg, idx, catIdx }: ServicePackage
     return () => clearTimeout(timer);
   }, []);
 
-  const qty = items.find((i) => i.id === `${service.id}-${pkg.name}`)?.quantity || 0;
+  const qty = items.find((i) => i.id === pkg.id)?.quantity || 0;
   const displayImage = pkg.image || service.image;
   const badgeTag = pkg.tag || (idx === 0 && catIdx === 0 ? "Bestseller" : undefined);
 
@@ -110,14 +110,14 @@ export function ServicePackageCard({ service, pkg, idx, catIdx }: ServicePackage
               {mounted && status === "authenticated" && qty > 0 ? (
                 <div className="h-8 sm:h-10 bg-blue-50 dark:bg-[#101E38] border-2 border-[#00B4FF] rounded-xl flex items-center justify-between px-1.5 sm:px-2 shadow-lg font-black text-slate-900 dark:text-white text-xs sm:text-sm">
                   <button
-                    onClick={() => updateQuantity(`${service.id}-${pkg.name}`, qty - 1)}
+                    onClick={() => updateQuantity(pkg.id, qty - 1)}
                     className="w-5 sm:w-7 h-full flex items-center justify-center text-[#00B4FF] hover:opacity-70 transition-opacity"
                   >
                     <ClientIcon icon="ph:minus-bold" className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   </button>
                   <span>{qty}</span>
                   <button
-                    onClick={() => updateQuantity(`${service.id}-${pkg.name}`, qty + 1)}
+                    onClick={() => updateQuantity(pkg.id, qty + 1)}
                     className="w-5 sm:w-7 h-full flex items-center justify-center text-[#00B4FF] hover:opacity-70 transition-opacity"
                   >
                     <ClientIcon icon="ph:plus-bold" className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
@@ -180,7 +180,7 @@ export function ServicePackageCard({ service, pkg, idx, catIdx }: ServicePackage
             setIsModalOpen(false);
           }}
           qtyInCart={qty}
-          onUpdateQty={(newQty) => updateQuantity(`${service.id}-${pkg.name}`, newQty)}
+          onUpdateQty={(newQty) => updateQuantity(pkg.id, newQty)}
         />
       )}
     </>

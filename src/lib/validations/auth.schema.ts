@@ -7,7 +7,6 @@ export const registerSchema = z.object({
     .min(6, { message: "Password must be at least 6 characters long" })
     .max(100, { message: "Password must be less than 100 characters" }),
   name: z.string().optional(),
-  role: z.enum(["CUSTOMER", "TECHNICIAN", "VENDOR"]).default("CUSTOMER"),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

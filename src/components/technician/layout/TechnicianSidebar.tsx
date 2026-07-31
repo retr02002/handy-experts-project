@@ -44,12 +44,12 @@ export function TechnicianSidebar({ isCollapsed, setCollapsed, isMobileMenuOpen,
         <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-800">
           {(!isCollapsed || isMobileMenuOpen) && (
             <div className="flex items-center justify-start overflow-hidden w-full">
-              <img src="/logo-org.svg" alt="Handy Experts" className="h-10 md:h-12 w-auto dark:brightness-0 dark:invert" />
+              <img src="/logo-org.svg" alt="Handyzo" className="h-10 md:h-12 w-auto dark:brightness-0 dark:invert" />
             </div>
           )}
           {isCollapsed && !isMobileMenuOpen && (
             <div className="w-full flex justify-center">
-              <img src="/logo-org.svg" alt="Handy Experts" className="h-8 w-auto object-left object-cover dark:brightness-0 dark:invert" style={{ maxWidth: '32px' }} />
+              <img src="/logo-org.svg" alt="Handyzo" className="h-8 w-auto object-left object-cover dark:brightness-0 dark:invert" style={{ maxWidth: '32px' }} />
             </div>
           )}
           <button

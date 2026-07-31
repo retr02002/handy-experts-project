@@ -17,7 +17,7 @@ export default function CustomerNotificationsPage() {
             <ClientIcon icon="ph:info" className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-bold text-slate-900 dark:text-white">Welcome to Handy Experts!</h3>
+            <h3 className="font-bold text-slate-900 dark:text-white">Welcome to Handyzo!</h3>
             <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">We are glad to have you. Explore your dashboard to create your first order.</p>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">Just now</p>
           </div>

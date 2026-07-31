@@ -20,8 +20,8 @@ export function ContactInfo() {
           <div className="min-w-0 flex-1">
             <h4 className="text-slate-900 dark:text-white font-bold text-base mb-1 tracking-tight group-hover:text-[#00B4FF] transition-colors truncate">Chat to us</h4>
             <p className="text-slate-500 dark:text-slate-400 text-sm mb-1 truncate">Our friendly team is here to help.</p>
-            <a href="mailto:contact@handyexperts.com" className="text-[#00B4FF] font-bold text-sm hover:underline break-all inline-block">
-              contact@handyexperts.com
+            <a href="mailto:contact@Handyzo.com" className="text-[#00B4FF] font-bold text-sm hover:underline break-all inline-block">
+              contact@Handyzo.com
             </a>
           </div>
         </div>
@@ -34,8 +34,8 @@ export function ContactInfo() {
           <div className="min-w-0 flex-1">
             <h4 className="text-slate-900 dark:text-white font-bold text-base mb-1 tracking-tight group-hover:text-[#00B4FF] transition-colors truncate">Call us</h4>
             <p className="text-slate-500 dark:text-slate-400 text-sm mb-1 truncate">Mon-Sat from 8am to 8pm.</p>
-            <a href="tel:+15551234567" className="text-[#00B4FF] font-bold text-sm hover:underline break-words inline-block">
-              +1 (555) 123-4567
+            <a href="tel:+919403892784" className="text-[#00B4FF] font-bold text-sm hover:underline break-words inline-block">
+              +91 9403892784
             </a>
           </div>
         </div>
@@ -49,7 +49,7 @@ export function ContactInfo() {
             <h4 className="text-slate-900 dark:text-white font-bold text-base mb-1 tracking-tight group-hover:text-[#00B4FF] transition-colors truncate">Visit us</h4>
             <p className="text-slate-500 dark:text-slate-400 text-sm mb-1 truncate">Come say hello at our office.</p>
             <p className="text-[#00B4FF] font-bold text-sm leading-relaxed break-words">
-              123 Handy Street, Suite 400, New York, NY 10001
+              Mf-2 p.s nagar masab tank Mehdipatnam Hyderabad 500028
             </p>
           </div>
         </div>
@@ -58,7 +58,7 @@ export function ContactInfo() {
 
       {/* Map Card */}
       <a 
-        href="https://maps.google.com/?q=New+York,+NY" 
+        href="https://maps.google.com/?q=Mf-2+p.s+nagar+masab+tank+Mehdipatnam+Hyderabad+500028" 
         target="_blank" 
         rel="noopener noreferrer"
         className="block mt-8 h-[150px] relative rounded-2xl overflow-hidden group border border-slate-200 dark:border-slate-800/80 shadow-sm shrink-0"
@@ -71,7 +71,7 @@ export function ContactInfo() {
         <div className="absolute inset-x-0 bottom-0 p-5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <ClientIcon icon="ph:map-trifold" className="w-5 h-5 shrink-0 text-[#00B4FF]" />
-            <span className="text-white font-bold text-sm tracking-tight truncate">New York, NY HQ</span>
+            <span className="text-white font-bold text-sm tracking-tight truncate">Hyderabad HQ</span>
           </div>
           <div className="w-8 h-8 shrink-0 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm border border-white/20 group-hover:bg-[#00B4FF] group-hover:border-[#00B4FF] transition-colors shadow-sm">
             <ClientIcon icon="ph:arrow-up-right" className="w-4 h-4 text-white" />

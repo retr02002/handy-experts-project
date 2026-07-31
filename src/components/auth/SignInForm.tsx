@@ -31,10 +31,11 @@ export function SignInForm() {
       setIsLoading(false);
     } else {
       const userRole = await getUserRole();
-      const targetPath = userRole === "TECHNICIAN" ? "/technician"
-        : userRole === "VENDOR" ? "/vendor"
-          : userRole === "SUPER_ADMIN" ? "/admin"
-            : "/customer";
+      const targetPath = userRole === "PENDING" ? "/onboarding"
+        : userRole === "TECHNICIAN" ? "/technician"
+          : userRole === "VENDOR" ? "/vendor"
+            : userRole === "SUPER_ADMIN" ? "/admin"
+              : "/customer";
 
       router.push(targetPath);
     }
@@ -44,11 +45,11 @@ export function SignInForm() {
     <div className="flex flex-col">
       <div className="mb-5 text-center">
         <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-1">Sign in</h2>
-        <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium">Continue to your HandyExperts account</p>
+        <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium">Continue to your Handyzo account</p>
       </div>
 
       <button
-        onClick={() => signIn("google", { callbackUrl: "/" })}
+        onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
         type="button"
         className="w-full flex items-center justify-center gap-2 bg-transparent border border-slate-200 dark:border-slate-700/80 rounded-xl px-4 py-2 text-[13px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors mb-5 shadow-sm"
       >

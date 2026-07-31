@@ -36,7 +36,7 @@ export function LocationForm() {
                 type="text" 
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="123 Main St"
+                placeholder="Masab Tank"
                 autoComplete="street-address"
                 className="w-full bg-transparent border-none p-0 text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 focus:ring-0 text-sm sm:text-base font-medium truncate focus:outline-none"
               />
@@ -55,7 +55,7 @@ export function LocationForm() {
                   type="text" 
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  placeholder="New York"
+                  placeholder="Hyderabad"
                   autoComplete="address-level2"
                   className="w-full bg-transparent border-none p-0 text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 focus:ring-0 text-sm sm:text-base font-medium truncate focus:outline-none"
                 />
@@ -73,7 +73,7 @@ export function LocationForm() {
                   type="text" 
                   value={zip}
                   onChange={(e) => setZip(e.target.value)}
-                  placeholder="10001"
+                  placeholder="500028"
                   autoComplete="postal-code"
                   className="w-full bg-transparent border-none p-0 text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 focus:ring-0 text-sm sm:text-base font-medium truncate focus:outline-none"
                 />

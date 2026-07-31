@@ -5,14 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { ClientIcon } from "@/components/ui/ClientIcon";
-import { registerUser, getUserRole } from "@/actions/auth.actions";
+import { registerUser } from "@/actions/auth.actions";
 
 export function SignUpForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"CUSTOMER" | "TECHNICIAN" | "VENDOR">("CUSTOMER");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -22,7 +21,7 @@ export function SignUpForm() {
     setError("");
 
     try {
-      const res = await registerUser({ email, password, role });
+      const res = await registerUser({ email, password });
 
       if (!res.success) {
         throw new Error(res.error || "Something went wrong during registration.");
@@ -39,11 +38,8 @@ export function SignUpForm() {
         throw new Error("Failed to auto-login. Please sign in manually.");
       }
 
-      const targetPath = role === "TECHNICIAN" ? "/technician"
-        : role === "VENDOR" ? "/vendor"
-          : "/customer";
-
-      router.push(targetPath);
+      // New accounts always start as PENDING — send them to pick an account type.
+      router.push("/onboarding");
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
@@ -59,11 +55,11 @@ export function SignUpForm() {
     <div className="flex flex-col">
       <div className="mb-5 text-center">
         <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-1">Create an account</h2>
-        <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium">Join HandyExperts and get started</p>
+        <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium">Join Handyzo and get started</p>
       </div>
 
       <button
-        onClick={() => signIn("google", { callbackUrl: "/" })}
+        onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
         type="button"
         className="w-full flex items-center justify-center gap-2 bg-transparent border border-slate-200 dark:border-slate-700/80 rounded-xl px-4 py-2 text-[13px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors mb-5 shadow-sm"
       >
@@ -83,26 +79,6 @@ export function SignUpForm() {
             {error}
           </div>
         )}
-        <div className="space-y-1.5">
-          <label className="text-[13px] font-bold text-slate-700 dark:text-slate-300 ml-0.5">Account Type</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-              <ClientIcon icon="ph:user-circle" className="w-4 h-4 text-slate-400" />
-            </div>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as "CUSTOMER" | "TECHNICIAN" | "VENDOR")}
-              className="w-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-10 pr-10 py-2.5 text-[13px] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00B4FF]/40 focus:border-[#00B4FF] transition-all appearance-none"
-            >
-              <option value="CUSTOMER">Customer (Book Services)</option>
-              <option value="TECHNICIAN">Technician (Provide Services)</option>
-              <option value="VENDOR">Company/Vendor</option>
-            </select>
-            <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
-              <ClientIcon icon="ph:caret-down" className="w-4 h-4 text-slate-400" />
-            </div>
-          </div>
-        </div>
         <div className="space-y-1.5">
           <label className="text-[13px] font-bold text-slate-700 dark:text-slate-300 ml-0.5">Email</label>
           <div className="relative">

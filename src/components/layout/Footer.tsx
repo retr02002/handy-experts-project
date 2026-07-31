@@ -27,10 +27,10 @@ export function Footer() {
             <Link href="/" className="mb-6 inline-block">
               <Image
                 src="/logo-org.svg"
-                alt="Handy Experts"
+                alt="Handyzo"
                 width={260}
                 height={90}
-                className="h-24 w-auto object-contain dark:brightness-0 dark:invert transition-transform hover:scale-105 origin-left"
+                className="h-18 w-auto object-contain dark:brightness-0 dark:invert transition-transform hover:scale-105 origin-left"
               />
             </Link>
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-8 leading-relaxed max-w-sm">
@@ -105,8 +105,8 @@ export function Footer() {
               <ClientIcon icon="ph:envelope-simple" className="w-4 h-4 text-slate-400 dark:text-[#00B4FF]/70" />
               Contact Info
             </h5>
-            <a href="mailto:hello@handyexperts.com" className="text-sm text-slate-600 dark:text-slate-400 hover:text-[#00B4FF] transition-colors font-medium">
-              hello@handyexperts.com
+            <a href="mailto:hello@Handyzo.com" className="text-sm text-slate-600 dark:text-slate-400 hover:text-[#00B4FF] transition-colors font-medium">
+              hello@Handyzo.com
             </a>
           </div>
 
@@ -126,7 +126,7 @@ export function Footer() {
             <Link href="/cookies" className="hover:text-[#00B4FF] transition-colors">Cookie Settings</Link>
           </div>
           <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium shrink-0 text-center lg:text-right">
-            ©2025-{new Date().getFullYear()} All Rights Reserved by Handy Experts.
+            ©2025-{new Date().getFullYear()} All Rights Reserved by Handyzo.
           </p>
         </div>
       </div>

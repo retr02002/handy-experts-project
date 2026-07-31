@@ -10,7 +10,7 @@ export default function AdminDashboardPage() {
       {/* Welcome Banner */}
       <div className="w-full bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-[#1E1B4B] dark:to-[#312E81] rounded-2xl p-8 shadow-sm dark:shadow-lg border border-blue-100 dark:border-indigo-900/50 transition-colors">
         <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-2 flex items-center gap-3">
-          Welcome back to Handy Experts <span className="text-4xl">👋</span>
+          Welcome back to Handyzo <span className="text-4xl">👋</span>
         </h1>
         <p className="text-slate-600 dark:text-indigo-200">
           Here is the real-time overview of your service infrastructure and call metrics.

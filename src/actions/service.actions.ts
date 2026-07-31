@@ -29,6 +29,9 @@ export async function createService(input: ServiceInput): Promise<ActionResponse
     });
 
     revalidatePath("/admin/services");
+    revalidatePath("/services");
+    revalidatePath("/");
+    revalidatePath(`/services/${service.slug}`);
     return { success: true, data: { id: service.id } };
   } catch (error) {
     console.error("Create service error:", error);
@@ -49,6 +52,8 @@ export async function updateService(id: string, input: ServiceInput): Promise<Ac
   const { benefits, howItWorks, faqs, ...rest } = validated.data;
 
   try {
+    const current = await prisma.service.findUnique({ where: { id }, select: { slug: true } });
+
     const existing = await prisma.service.findUnique({ where: { slug: rest.slug } });
     if (existing && existing.id !== id) {
       return { success: false, error: "A service with this slug already exists", errors: { slug: ["Slug already in use"] } };
@@ -60,6 +65,12 @@ export async function updateService(id: string, input: ServiceInput): Promise<Ac
     });
 
     revalidatePath("/admin/services");
+    revalidatePath("/services");
+    revalidatePath("/");
+    revalidatePath(`/services/${rest.slug}`);
+    if (current && current.slug !== rest.slug) {
+      revalidatePath(`/services/${current.slug}`);
+    }
     return { success: true };
   } catch (error) {
     console.error("Update service error:", error);
@@ -73,8 +84,11 @@ export async function deleteService(id: string): Promise<ActionResponse> {
   }
 
   try {
-    await prisma.service.delete({ where: { id } });
+    const deleted = await prisma.service.delete({ where: { id } });
     revalidatePath("/admin/services");
+    revalidatePath("/services");
+    revalidatePath("/");
+    revalidatePath(`/services/${deleted.slug}`);
     return { success: true };
   } catch (error) {
     console.error("Delete service error:", error);

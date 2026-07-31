@@ -3,8 +3,8 @@ import { Banner } from '@/components/ui/Banner';
 import { ContactPageSection } from '@/components/ui/ContactPageSection';
 
 export const metadata = {
-  title: 'Contact Us | Handy Experts',
-  description: 'Get in touch with the Handy Experts team for support, inquiries, or feedback.',
+  title: 'Contact Us | Handyzo',
+  description: 'Get in touch with the Handyzo team for support, inquiries, or feedback.',
 };
 
 export default function ContactPage() {

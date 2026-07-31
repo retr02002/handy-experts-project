@@ -21,7 +21,7 @@ export function ChatBot() {
     {
       id: "welcome",
       role: "assistant",
-      content: "Hi there! I'm your Handy Experts assistant. How can I help you today?",
+      content: "Hi there! I'm your Handyzo assistant. How can I help you today?",
     },
   ]);
   const [input, setInput] = useState("");

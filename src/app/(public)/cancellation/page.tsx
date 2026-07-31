@@ -2,7 +2,7 @@ import React from "react";
 import { PolicyLayout, PolicySection } from "@/components/layout/PolicyLayout";
 
 export const metadata = {
-  title: "Cancellation Policy | Handy Experts",
+  title: "Cancellation Policy | Handyzo",
   description: "Read our Cancellation Policy for booking and managing services.",
 };
 
@@ -51,10 +51,10 @@ export default function CancellationPolicyPage() {
   return (
     <PolicyLayout
       title="Cancellation Policy"
-      description="Rules for cancelling or rescheduling your Handy Experts bookings."
+      description="Rules for cancelling or rescheduling your Handyzo bookings."
       lastUpdated="March 5, 2026"
       sections={sections}
-      contactEmail="support@handyexperts.com"
+      contactEmail="support@Handyzo.com"
     />
   );
 }

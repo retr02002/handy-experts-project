@@ -75,10 +75,23 @@ export const authOptions: NextAuthOptions = {
     maxAge: 7 * 24 * 60 * 60, // 7 days
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+      }
+      // The JWT is only re-derived from `user` at sign-in, so a role/name
+      // change mid-session (e.g. completing onboarding) needs an explicit
+      // refresh — triggered client-side via useSession().update().
+      if (trigger === "update" && token.id) {
+        const freshUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { role: true, name: true },
+        });
+        if (freshUser) {
+          token.role = freshUser.role;
+          token.name = freshUser.name;
+        }
       }
       return token;
     },
@@ -86,6 +99,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role;
+        session.user.name = token.name as string | null;
       }
       return session;
     }

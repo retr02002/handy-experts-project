@@ -1,27 +1,26 @@
-import { MOCK_SERVICES } from "@/data/mockServices";
+import { getServiceBySlug, getAllServiceSlugs } from "@/lib/services-data";
 import { notFound } from "next/navigation";
 import { ServiceDetailClient } from "@/components/services/ServiceDetailClient";
 import { Metadata } from "next";
 
 export async function generateStaticParams() {
-  return MOCK_SERVICES.map((service) => ({
-    slug: service.slug,
-  }));
+  const slugs = await getAllServiceSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const service = MOCK_SERVICES.find((s) => s.slug === slug);
+  const service = await getServiceBySlug(slug);
   if (!service) return { title: "Not Found" };
   return {
-    title: `${service.title} - Handy Experts`,
+    title: `${service.title} - Handyzo`,
     description: service.description,
   };
 }
 
 export default async function ServicePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const service = MOCK_SERVICES.find((s) => s.slug === slug);
+  const service = await getServiceBySlug(slug);
 
   if (!service) {
     notFound();

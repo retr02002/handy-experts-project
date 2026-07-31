@@ -2,8 +2,8 @@ import React from "react";
 import { PolicyLayout, PolicySection } from "@/components/layout/PolicyLayout";
 
 export const metadata = {
-  title: "Refund Policy | Handy Experts",
-  description: "Read our Refund Policy for services provided by Handy Experts.",
+  title: "Refund Policy | Handyzo",
+  description: "Read our Refund Policy for services provided by Handyzo.",
 };
 
 export default function RefundPolicyPage() {
@@ -14,7 +14,7 @@ export default function RefundPolicyPage() {
       content: (
         <>
           <p>
-            At Handy Experts, we strive to ensure you are completely satisfied with the services you receive. If you are not satisfied with the quality of the work provided by a Professional, please contact us within 24 hours of the service completion.
+            At Handyzo, we strive to ensure you are completely satisfied with the services you receive. If you are not satisfied with the quality of the work provided by a Professional, please contact us within 24 hours of the service completion.
           </p>
         </>
       ),
@@ -41,7 +41,7 @@ export default function RefundPolicyPage() {
       content: (
         <>
           <p>
-            To request a refund, please contact our support team at support@handyexperts.com with your booking reference and evidence (e.g., photos) of the issue. We will review your claim and respond within 3-5 business days. Approved refunds will be credited back to your original payment method within 5-10 business days.
+            To request a refund, please contact our support team at support@Handyzo.com with your booking reference and evidence (e.g., photos) of the issue. We will review your claim and respond within 3-5 business days. Approved refunds will be credited back to your original payment method within 5-10 business days.
           </p>
         </>
       ),
@@ -69,7 +69,7 @@ export default function RefundPolicyPage() {
       description="Our guidelines for refunds and service satisfaction guarantees."
       lastUpdated="March 1, 2026"
       sections={sections}
-      contactEmail="support@handyexperts.com"
+      contactEmail="support@Handyzo.com"
     />
   );
 }

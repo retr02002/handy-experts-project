@@ -1,5 +1,5 @@
 import React from "react";
-import { Service } from "@/data/mockServices";
+import { Service } from "@/types/service";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
 interface ServiceBenefitsSectionProps {
@@ -14,7 +14,7 @@ export function ServiceBenefitsSection({ service }: ServiceBenefitsSectionProps)
       <div className="bg-white dark:bg-[#0E172B] rounded-2xl sm:rounded-3xl p-5 sm:p-8 border border-slate-200/90 dark:border-slate-800 shadow-sm">
         <h2 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-4 sm:mb-6 flex items-center gap-2">
           <ClientIcon icon="ph:sparkle-duotone" className="w-5 h-5 sm:w-7 sm:h-7 text-[#00B4FF]" />
-          <span>Why Handy Experts Leads the Industry</span>
+          <span>Why Handyzo Leads the Industry</span>
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {service.benefits.map((benefit, idx) => (

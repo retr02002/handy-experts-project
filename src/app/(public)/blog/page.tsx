@@ -6,7 +6,7 @@ import { BlogList } from '@/components/blog/BlogList';
 import { MOCK_BLOGS } from '@/data/mockBlogs';
 
 export const metadata = {
-  title: 'Blog | Handy Experts',
+  title: 'Blog | Handyzo',
   description: 'Read the latest tips, guides, and news about home improvement and maintenance.',
 };
 

@@ -6,7 +6,7 @@ import { BackButton } from "@/components/ui/BackButton";
 import { CartContainer } from "@/components/cart/CartContainer";
 
 export const metadata: Metadata = {
-  title: "Checkout - Handy Experts",
+  title: "Checkout - Handyzo",
   description: "Review and manage your selected services before checkout.",
 };
 

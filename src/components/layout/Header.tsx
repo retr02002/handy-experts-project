@@ -61,11 +61,11 @@ export function Header() {
                 <Link href="/" className="flex items-center justify-center">
                   <Image
                     src="/logo-org.svg"
-                    alt="Handy Experts"
+                    alt="Handyzo"
                     width={160}
                     height={64}
                     priority
-                    className="h-12 sm:h-16 w-auto object-contain transition-all duration-300 hover:scale-105 drop-shadow-sm dark:brightness-0 dark:invert"
+                    className="h-8 sm:h-13 w-auto object-contain transition-all duration-300 hover:scale-105 drop-shadow-sm dark:brightness-0 dark:invert"
                   />
                 </Link>
               </div>
@@ -102,8 +102,8 @@ export function Header() {
         </header>
       </div>
 
-      {/* Bottom Fixed Navigation for Mobile (Full Width App-like) */}
-      <div className="fixed bottom-0 left-0 right-0 w-full z-[60] lg:hidden">
+      {/* Bottom Fixed Navigation for Mobile (Full Width App-like) — hidden during checkout, which has its own dedicated action bar */}
+      <div className={`fixed bottom-0 left-0 right-0 w-full z-[60] lg:hidden`}>
         <div className="bg-white dark:bg-[#0B1120] border-t border-slate-200 dark:border-slate-800 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] px-1 pb-safe h-16 flex items-center justify-between">
           <Link href="/" className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${pathname === '/' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
             <ClientIcon icon={pathname === '/' ? "ph:house-fill" : "ph:house"} className={`w-5 h-5 transition-transform ${pathname === '/' ? 'scale-110' : ''}`} />
@@ -148,11 +148,24 @@ export function Header() {
         </div>
       </div>
 
-      {/* Fixed Mobile Theme Toggle Above Bottom Nav */}
-      <div className={`fixed right-4 z-[70] lg:hidden transition-all duration-300 ${pathname.startsWith('/services/') && totalItems > 0 ? 'bottom-[160px]' : 'bottom-24'}`}>
+      {/* Fixed Mobile Theme Toggle Above Bottom Nav — hidden during checkout, which has its own dedicated action bar */}
+      <div className={`fixed right-4 z-[70] lg:hidden transition-all duration-300 ${pathname.startsWith('/cart') && totalItems > 0 ? 'hidden' : pathname.startsWith('/services/') && totalItems > 0 ? 'bottom-[160px]' : 'bottom-24'}`}>
         <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-full shadow-md border border-slate-200/50 dark:border-slate-700/50 p-0.5">
           <ThemeToggle />
         </div>
+      </div>
+
+      {/* WhatsApp Floating Button */}
+      <div className={`fixed right-4 lg:right-6 z-[70] transition-all duration-300 ${pathname.startsWith('/cart') && totalItems > 0 ? 'hidden' : pathname.startsWith('/services/') && totalItems > 0 ? 'bottom-[208px] lg:bottom-[104px]' : 'bottom-[144px] lg:bottom-[104px]'}`}>
+        <a
+          href="https://wa.me/1234567890"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center w-12 h-12 lg:w-14 lg:h-14 bg-[#25D366] hover:bg-[#1EBE5D] text-white rounded-full shadow-lg shadow-[#25D366]/30 transition-all duration-300 hover:scale-110 active:scale-95"
+          aria-label="Chat with us on WhatsApp"
+        >
+          <ClientIcon icon="ph:whatsapp-logo-fill" className="w-7 h-7 lg:w-8 lg:h-8" />
+        </a>
       </div>
     </>
   );

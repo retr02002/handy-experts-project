@@ -2,8 +2,8 @@ import React from "react";
 import { PolicyLayout, PolicySection } from "@/components/layout/PolicyLayout";
 
 export const metadata = {
-  title: "Cookie Settings | Handy Experts",
-  description: "Learn about how Handy Experts uses cookies and similar technologies.",
+  title: "Cookie Settings | Handyzo",
+  description: "Learn about how Handyzo uses cookies and similar technologies.",
 };
 
 export default function CookieSettingsPage() {
@@ -25,7 +25,7 @@ export default function CookieSettingsPage() {
       content: (
         <>
           <p>
-            Handy Experts uses cookies for the following purposes:
+            Handyzo uses cookies for the following purposes:
           </p>
           <ul>
             <li><strong>Essential Cookies:</strong> These are required for the operation of our website, such as enabling you to log into secure areas of the site and completing bookings.</li>
@@ -68,7 +68,7 @@ export default function CookieSettingsPage() {
       description="Information about our use of cookies and tracking technologies."
       lastUpdated="January 20, 2026"
       sections={sections}
-      contactEmail="support@handyexperts.com"
+      contactEmail="support@Handyzo.com"
     />
   );
 }

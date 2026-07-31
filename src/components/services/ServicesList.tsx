@@ -1,5 +1,5 @@
 import React from "react";
-import { Service, ServicePackage } from "@/data/mockServices";
+import { Service, ServicePackage } from "@/types/service";
 import { ServiceCard } from "@/components/ui/ServiceCard";
 import { PackageCard } from "@/components/ui/PackageCard";
 import { ClientIcon } from "@/components/ui/ClientIcon";

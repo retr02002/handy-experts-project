@@ -3,8 +3,8 @@ import { Banner } from '@/components/ui/Banner';
 import { BookingSection } from '@/components/booking/BookingSection';
 
 export const metadata = {
-  title: 'Book an Appointment | Handy Experts',
-  description: 'Book your next home service appointment quickly and securely with Handy Experts.',
+  title: 'Book an Appointment | Handyzo',
+  description: 'Book your next home service appointment quickly and securely with Handyzo.',
 };
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;

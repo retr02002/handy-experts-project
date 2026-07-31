@@ -10,7 +10,7 @@ export function ServicePromoBanner() {
         </div>
         <div className="min-w-0">
           <h4 className="text-sm sm:text-lg font-black text-slate-900 dark:text-white mb-0.5 truncate">
-            Feel Ease & Peace with Handy Experts
+            Feel Ease & Peace with Handyzo
           </h4>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium leading-relaxed break-words">
             100% damage protection coverage & complimentary 48-hour free rework guarantee on every task.

@@ -16,7 +16,7 @@ export default function CustomerReferralsPage() {
         <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto mb-6">Share your unique referral link with friends. When they sign up and complete their first order, you both get 100 reward points!</p>
         
         <div className="flex items-center bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden max-w-md mx-auto">
-          <input type="text" value="https://handyexperts.com/ref/CU8492" readOnly className="flex-1 bg-transparent px-4 py-3 text-sm text-slate-600 dark:text-slate-300 outline-none" />
+          <input type="text" value="https://Handyzo.com/ref/CU8492" readOnly className="flex-1 bg-transparent px-4 py-3 text-sm text-slate-600 dark:text-slate-300 outline-none" />
           <button className="bg-blue-600 text-white px-6 py-3 text-sm font-medium hover:bg-blue-700 transition-colors">
             Copy
           </button>

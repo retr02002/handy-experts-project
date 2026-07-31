@@ -1,5 +1,5 @@
 import React from "react";
-import { Service } from "@/data/mockServices";
+import { Service } from "@/types/service";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
 interface ServiceProcessSectionProps {

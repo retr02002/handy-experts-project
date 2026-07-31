@@ -31,6 +31,7 @@ export const serviceSchema = z.object({
   badgeColor: z.string().optional(),
   rating: z.string().optional(),
   image: z.string().min(1, "Image is required"),
+  videoUrl: z.string().optional(),
   time: z.string().optional(),
   warranty: z.string().optional(),
   description: z.string().min(10, "Description must be at least 10 characters"),

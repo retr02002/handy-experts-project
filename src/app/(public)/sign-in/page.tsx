@@ -4,8 +4,8 @@ import { SignInForm } from "@/components/auth/SignInForm";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Sign In - Handy Experts",
-  description: "Sign in to your Handy Experts account.",
+  title: "Sign In - Handyzo",
+  description: "Sign in to your Handyzo account.",
 };
 
 export default function SignInPage() {

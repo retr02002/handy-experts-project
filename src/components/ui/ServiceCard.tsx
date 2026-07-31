@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ClientIcon } from "./ClientIcon";
-import { Service, ServicePackage } from "@/data/mockServices";
+import { Service, ServicePackage } from "@/types/service";
 import { useCart } from "@/context/CartContext";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -110,7 +110,7 @@ export function ServiceCard({ service }: { service: Service }) {
           
           <div className="flex flex-col gap-2">
             {service.packages?.slice(0, 2).map((pkg, idx) => {
-              const qtyInCart = items.find(i => i.id === `${service.id}-${pkg.name}`)?.quantity || 0;
+              const qtyInCart = items.find(i => i.id === pkg.id)?.quantity || 0;
               
               return (
                 <div 
@@ -135,11 +135,11 @@ export function ServiceCard({ service }: { service: Service }) {
                   <div className="shrink-0">
                     {status === "authenticated" && qtyInCart > 0 ? (
                       <div className="flex items-center justify-between w-[76px] h-7 bg-blue-500/15 dark:bg-blue-500/25 border border-[#00B4FF] rounded-lg overflow-hidden shadow-2xs">
-                        <button onClick={() => updateQuantity(`${service.id}-${pkg.name}`, qtyInCart - 1)} className="w-6 h-full flex items-center justify-center text-[#00B4FF] hover:bg-[#00B4FF]/20 transition-colors">
+                        <button onClick={() => updateQuantity(pkg.id, qtyInCart - 1)} className="w-6 h-full flex items-center justify-center text-[#00B4FF] hover:bg-[#00B4FF]/20 transition-colors">
                           <ClientIcon icon="ph:minus-bold" className="w-3 h-3" />
                         </button>
                         <span className="flex-1 text-center font-black text-slate-900 dark:text-white text-xs">{qtyInCart}</span>
-                        <button onClick={() => updateQuantity(`${service.id}-${pkg.name}`, qtyInCart + 1)} className="w-6 h-full flex items-center justify-center text-[#00B4FF] hover:bg-[#00B4FF]/20 transition-colors">
+                        <button onClick={() => updateQuantity(pkg.id, qtyInCart + 1)} className="w-6 h-full flex items-center justify-center text-[#00B4FF] hover:bg-[#00B4FF]/20 transition-colors">
                           <ClientIcon icon="ph:plus-bold" className="w-3 h-3" />
                         </button>
                       </div>

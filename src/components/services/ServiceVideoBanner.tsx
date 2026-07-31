@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
-import { Service } from "@/data/mockServices";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { Service } from "@/types/service";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
 interface ServiceVideoBannerProps {
@@ -10,6 +11,17 @@ interface ServiceVideoBannerProps {
 
 export function ServiceVideoBanner({ service }: ServiceVideoBannerProps) {
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (isVideoModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isVideoModalOpen]);
 
   return (
     <>
@@ -20,9 +32,9 @@ export function ServiceVideoBanner({ service }: ServiceVideoBannerProps) {
           loop 
           muted 
           playsInline 
-          className="w-full h-full object-cover opacity-85 group-hover:scale-105 transition-transform duration-700" 
-          src="/videos/hero-loop.mp4" 
-          poster={service.image} 
+          className="w-full h-full object-cover opacity-85 group-hover:scale-105 transition-transform duration-700"
+          src={service.videoUrl || "/videos/hero-loop.mp4"}
+          poster={service.image}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent pointer-events-none"></div>
 
@@ -65,8 +77,8 @@ export function ServiceVideoBanner({ service }: ServiceVideoBannerProps) {
       </div>
 
       {/* VIDEO DEMONSTRATION MODAL */}
-      {isVideoModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-6 bg-slate-950/90 backdrop-blur-2xl animate-in fade-in duration-200">
+      {isVideoModalOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-slate-950/90 backdrop-blur-2xl animate-in fade-in duration-200">
           <div className="relative w-full max-w-4xl bg-[#0B1426] border border-white/20 rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.8)] flex flex-col">
             
             <div className="px-5 py-4 bg-slate-900/90 border-b border-white/10 flex items-center justify-between gap-3">
@@ -101,7 +113,7 @@ export function ServiceVideoBanner({ service }: ServiceVideoBannerProps) {
                 preload="auto"
                 playsInline
                 className="w-full h-full object-contain max-h-[75vh]"
-                src="/videos/hero-loop.mp4"
+                src={service.videoUrl || "/videos/hero-loop.mp4"}
                 poster={service.image}
               >
                 Your browser does not support HTML5 video.
@@ -121,7 +133,8 @@ export function ServiceVideoBanner({ service }: ServiceVideoBannerProps) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

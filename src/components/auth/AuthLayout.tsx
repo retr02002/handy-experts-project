@@ -34,7 +34,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
           </h1>
 
           <p className="text-base text-slate-300 max-w-sm font-medium mb-10 leading-relaxed">
-            Join thousands of happy homeowners who trust HandyExperts.
+            Join thousands of happy homeowners who trust Handyzo.
           </p>
 
           {/* Compact Feature List */}

@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Navigation } from "swiper/modules";
 import { ClientIcon } from "./ClientIcon";
-import { Service } from "@/data/mockServices";
+import { Service } from "@/types/service";
 import { ServiceCard } from "./ServiceCard";
 import { motion, AnimatePresence } from "framer-motion";
 

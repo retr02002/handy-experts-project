@@ -6,6 +6,13 @@ import { servicePackageSchema, ServicePackageInput } from "@/lib/validations/ser
 import type { ActionResponse } from "@/actions/auth.actions";
 import { requireAdmin } from "@/lib/require-admin";
 
+function revalidateForService(slug: string) {
+  revalidatePath("/admin/services");
+  revalidatePath("/services");
+  revalidatePath("/");
+  revalidatePath(`/services/${slug}`);
+}
+
 export async function createPackage(input: ServicePackageInput): Promise<ActionResponse<{ id: string }>> {
   if (!(await requireAdmin())) {
     return { success: false, error: "Unauthorized" };
@@ -17,8 +24,11 @@ export async function createPackage(input: ServicePackageInput): Promise<ActionR
   }
 
   try {
-    const pkg = await prisma.servicePackage.create({ data: validated.data });
-    revalidatePath("/admin/services");
+    const pkg = await prisma.servicePackage.create({
+      data: validated.data,
+      include: { service: { select: { slug: true } } },
+    });
+    revalidateForService(pkg.service.slug);
     return { success: true, data: { id: pkg.id } };
   } catch (error) {
     console.error("Create package error:", error);
@@ -37,8 +47,12 @@ export async function updatePackage(id: string, input: ServicePackageInput): Pro
   }
 
   try {
-    await prisma.servicePackage.update({ where: { id }, data: validated.data });
-    revalidatePath("/admin/services");
+    const pkg = await prisma.servicePackage.update({
+      where: { id },
+      data: validated.data,
+      include: { service: { select: { slug: true } } },
+    });
+    revalidateForService(pkg.service.slug);
     return { success: true };
   } catch (error) {
     console.error("Update package error:", error);
@@ -52,8 +66,11 @@ export async function deletePackage(id: string): Promise<ActionResponse> {
   }
 
   try {
-    await prisma.servicePackage.delete({ where: { id } });
-    revalidatePath("/admin/services");
+    const pkg = await prisma.servicePackage.delete({
+      where: { id },
+      include: { service: { select: { slug: true } } },
+    });
+    revalidateForService(pkg.service.slug);
     return { success: true };
   } catch (error) {
     console.error("Delete package error:", error);

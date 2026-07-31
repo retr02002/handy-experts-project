@@ -27,7 +27,7 @@ export function CustomerNavbar() {
         <Link href="/" className="flex items-center justify-center shrink-0 mr-1">
           <Image
             src="/logo-org.svg"
-            alt="Handy Experts"
+            alt="Handyzo"
             width={100}
             height={32}
             priority

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { ServicePackage } from "@/data/mockServices";
+import { ServicePackage } from "@/types/service";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
 interface CategorySelectorProps {

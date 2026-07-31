@@ -20,7 +20,7 @@ export function PolicyLayout({
   description,
   lastUpdated,
   sections,
-  contactEmail = "support@handyexperts.com",
+  contactEmail = "support@Handyzo.com",
 }: PolicyLayoutProps) {
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#0A0F1C]">

@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>Handy Experts - Your Trusted Appliance Service & Repair Center in Hyderabad</title>
+  <meta name="description" content="">
+  <meta name="keywords" content="">
+
+  <!-- Favicons -->
+  <link href="assets/img/favicon.png" rel="icon">
+  <link href="assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Nunito:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+/* Mobile Navigation */
+@media (max-width: 991px) {
+  .navbar ul {
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    top: 60px;
+    right: 15px;
+    background: #fff;
+    padding: 10px 20px;
+    box-shadow: 0px 2px 15px rgba(0, 0, 0, 0.1);
+  }
+
+  body.mobile-nav-active .navbar ul {
+    display: block;
+  }
+
+  .mobile-nav-toggle {
+    display: inline-block;
+    font-size: 28px;
+    cursor: pointer;
+    line-height: 0;
+    transition: all 0.5s;
+  }
+}
+@media only screen and (max-width: 2400px) and (min-width: 680px)  {
+#navbar {
+display:none;
+} 
+}
+.mobile-nav-toggle.d-xl-none.bi.bi-list {
+  display: none;
+}
+</style> 
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  "use strict";
+
+  const select = (sel, all = false) => {
+    if (!sel) return null;
+    sel = sel.trim();
+    return all ? Array.from(document.querySelectorAll(sel)) : document.querySelector(sel);
+  };
+
+  const navbar = select('#navbar');                     // nav container
+  const navToggle = select('.mobile-nav-toggle');       // hamburger toggle
+  const body = document.body;
+  const header = select('#header') || select('.header'); // header for offset
+
+  const headerOffset = () => (header ? header.offsetHeight : 70); // adjust if needed
+
+  const openMobileNav = () => {
+    body.classList.add('mobile-nav-active');
+    if (navToggle) { navToggle.classList.remove('bi-list'); navToggle.classList.add('bi-x'); }
+  };
+  const closeMobileNav = () => {
+    body.classList.remove('mobile-nav-active');
+    if (navToggle) { navToggle.classList.remove('bi-x'); navToggle.classList.add('bi-list'); }
+  };
+  const toggleMobileNav = () => {
+    if (body.classList.contains('mobile-nav-active')) closeMobileNav();
+    else openMobileNav();
+  };
+
+  // Toggle button
+  if (navToggle) {
+    navToggle.addEventListener('click', (e) => {
+      e.stopPropagation(); // prevent the document click handler from immediately closing it
+      toggleMobileNav();
+    });
+  }
+
+  // Delegate clicks inside navbar — handles clicks on inner elements too
+  if (navbar) {
+    navbar.addEventListener('click', (e) => {
+      const a = e.target.closest('a'); // nearest anchor clicked (handles icon/text inside <a>)
+      if (!a || !navbar.contains(a)) return;
+
+      const href = a.getAttribute('href');
+      if (!href) return;
+
+      // ignore javascript:void(0) or plain '#'
+      if (href === '#' || href.trim() === '') return;
+
+      // If href contains a hash (same-page anchor or path+hash), handle only if target exists on this page
+      const hashIndex = href.indexOf('#');
+      if (hashIndex === -1) return; // not an anchor link -> allow default (may navigate to other page)
+
+      const hash = href.slice(hashIndex); // includes leading '#'
+      if (!hash || hash === '#') return;
+
+      // Find target element on current page
+      const target = document.querySelector(hash);
+      if (!target) {
+        // no target on this page — allow default navigation (go to other page)
+        return;
+      }
+
+      // At this point we have a same-page anchor target -> handle smooth scroll + close
+      e.preventDefault();
+
+      const top = target.getBoundingClientRect().top + window.pageYOffset - headerOffset();
+      window.scrollTo({ top: top, behavior: 'smooth' });
+
+      // close mobile nav if open
+      if (body.classList.contains('mobile-nav-active')) {
+        // small timeout to ensure smooth scroll starts (optional)
+        setTimeout(() => { closeMobileNav(); }, 50);
+      }
+    }, { passive: false }); // allow preventDefault
+  }
+
+  // Click outside to close mobile nav
+  document.addEventListener('click', (e) => {
+    if (!navbar || !navToggle) return;
+    if (body.classList.contains('mobile-nav-active') && !navbar.contains(e.target) && !navToggle.contains(e.target)) {
+      closeMobileNav();
+    }
+  });
+
+  // On resize (to desktop) ensure menu is closed
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 991 && body.classList.contains('mobile-nav-active')) {
+      closeMobileNav();
+    }
+  });
+
+});
+</script>
+
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<script> 
+&nbsp; window.dataLayer = window.dataLayer || \[]; 
+&nbsp; function gtag(){dataLayer.push(arguments);} 
+&nbsp; gtag('js', new Date()); 
+&nbsp; gtag('config', 'AW-16590621260'); 
+</script>
+
+  <!-- Vendor CSS Files -->
+  <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+  <link href="assets/vendor/aos/aos.css" rel="stylesheet">
+  <link href="assets/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
+  <link href="assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
+ <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Owl Carousel CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.theme.default.min.css"/>
+
+  <!-- Main CSS File -->
+  <link href="assets/css/main.css" rel="stylesheet">
+
+</head>
+
+<body class="index-page">
+
+  <header id="header" class="header d-flex align-items-center fixed-top">
+    <div class="container-fluid container-xl position-relative d-flex align-items-center">
+
+      <a href="index.html" class="logo d-flex align-items-center">
+        <!-- Uncomment the line below if you also wish to use an image logo -->
+        <img src="assets/img/logo.webp" alt=""> 
+      </a>
+ <nav id="navbar" class="navbar">
+       <ul>
+          <li><a href="index.html" class="active">Home<br></a></li>
+          <li><a href="about-us.html">About Us</a></li>
+      <li class="dropdown">
+      <a href="#"><span>Our Services</span> <i class="bi bi-chevron-down"></i></a>
+      <ul class="dropdown-menu">
+        <li><a href="washing-machine-service-and-repair-center-in-hyderabad.html">Washing Machine Service</a></li>
+        <li><a href="refrigerator-service-and-repair-center-in-hyderabad.html">Refrigerator Service</a></li>
+        <li><a href="air-conditioner-service-and-repair-center-in-hyderabad.html">Air Conditioner Service</a></li>
+      </ul>
+    </li>
+          <li><a href="contact-us.html">Contact</a></li>
+        </ul>
+      <i class="bi bi-list mobile-nav-toggle"></i>
+    </nav><!-- .navbar -->
+ <nav id="navmenu" class="navmenu">
+        <ul>
+          <li><a href="index.html" class="active">Home<br></a></li>
+          <li><a href="about-us.html">About Us</a></li>
+<li class="dropdown">
+      <a href="#"><span>Our Services</span> <i class="bi bi-chevron-down"></i></a>
+      <ul class="dropdown-menu">
+        <li><a href="washing-machine-service-and-repair-center-in-hyderabad.html">Washing Machine Service</a></li>
+        <li><a href="refrigerator-service-and-repair-center-in-hyderabad.html">Refrigerator Service</a></li>
+        <li><a href="air-conditioner-service-and-repair-center-in-hyderabad.html">Air Conditioner Service</a></li>
+      </ul>
+    </li>
+          <li><a href="contact-us.html">Contact</a></li>
+        </ul>
+        <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+      </nav>
+
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- Hero Section -->
+    <section id="hero" class="hero section">
+      
+	  
+	  <section class="hero-section">
+    <div class="owl-carousel owl-theme"  id="cnt">
+
+      <!-- Banner 1 -->
+      <div class="hero-slide" style="background-image: url('assets/img/washing-machine/washing-machine-slider1.jpg');">
+        <div class="overlay"></div>
+        <div class="hero-content">
+            <h3>Washing Machine Service</h3>
+           <h1>Book Washing Machine Service Now Call us</h1>
+         <a href="tel:+919403892784" class="btn btn-md btn-rose tra-white-hover" id="cntr"> 
+      <i class="fa fa-phone"></i> &nbsp;Call Now:+91 9403892784 </a>
+        </div>
+      </div>
+
+      <!-- Banner 2 -->
+      <div class="hero-slide" style="background-image: url('assets/img/refrigerator/ref-slider.jpg');">
+        <div class="overlay"></div>
+        <div class="hero-content">
+                <h3>Refrigerator Service</h3>
+              <h1>Get fast, reliable, and trustworthy repair Call us.</h1>
+          <a href="tel:+919403892784" class="btn btn-md btn-rose tra-white-hover" id="cntr"> 
+      <i class="fa fa-phone"></i> &nbsp;Call Now:+91 9403892784 </a>
+        </div>
+      </div>
+
+      <!-- Banner 3 -->
+      <div class="hero-slide" style="background-image: url('assets/img/air-conditioner/a.c-banner.jpg');">
+        <div class="overlay"></div>
+        <div class="hero-content">
+                <h3>Air Conditioner Service</h3>
+          <h1>We do repair, service, installation, and gas refilling, Call Us</h1>
+          <a href="tel:+919403892784" class="btn btn-md btn-rose tra-white-hover" id="cntr"> 
+      <i class="fa fa-phone"></i> &nbsp;Call Now:+91 9403892784 </a>
+        </div>
+      </div>
+
+    </div>
+ 
+    <!-- Right Fixed Form -->
+    <div class="form-box">
+      <h3>Enquiry Form</h3>
+    <form class="row register-frm" method="post" action="form.php">
+  <div class="col-md-12">
+    <input type="text" name="name" class="form-control name" placeholder="Enter Your Name*" required>
+  </div>
+   <div class="col-md-12">
+    <input type="email" name="email" class="form-control name" placeholder="Email Id*" required>
+  </div>
+
+  <div class="col-md-12">
+    <input type="tel" name="phone" class="form-control phone" placeholder="Enter Your Phone Number*" required>
+  </div>
+    <div class="col-md-12">
+    <input type="text" name="subject" class="form-control name" placeholder="Subject*" required>
+  </div>
+
+  <div class="col-md-12">
+    <select name="service" class="form-control name" required>
+      <option value="">Service</option>
+      <option>Washing Machine Service</option>
+      <option>Refrigerator Service</option>
+      <option>Air Conditioner Service</option>
+    </select>
+  </div>
+
+  <div class="col-md-12">
+    <input type="text" name="MSG" placeholder="Message" class="form-control name">
+  </div>
+
+  <div class="col-md-12 form-btn">
+    <input type="submit" value="Send Now" class="btn btn-md btn-rose tra-black-hover submit w-100">
+  </div>
+  <div class="col-md-12 register-form-msg text-center"></div>
+</form>
+
+    </div>
+  </section>
+
+    </section><!-- /Hero Section -->
+<div class="container mob-1">
+  <div class="row">
+    <span id="cnt1"></span>
+    <!-- HERO REGISTER FORM -->
+    <div class="col-12 animate__animated animate__Up">
+      <div id="register-form">
+  <form class="row register-frm" method="post" action="form.php">
+  <div class="col-md-12">
+    <input type="text" name="name" class="form-control name" placeholder="Enter Your Name*" required>
+  </div>
+   <div class="col-md-12">
+    <input type="email" name="email" class="form-control name" placeholder="Email Id*" required>
+  </div>
+
+  <div class="col-md-12">
+    <input type="tel" name="phone" class="form-control phone" placeholder="Enter Your Phone Number*" required>
+  </div>
+    <div class="col-md-12">
+    <input type="text" name="subject" class="form-control name" placeholder="Subject*" required>
+  </div>
+
+  <div class="col-md-12">
+    <select name="service" class="form-control name" required>
+      <option value="">Service</option>
+      <option>Washing Machine Service</option>
+      <option>Refrigerator Service</option>
+      <option>Air Conditioner Service</option>
+    </select>
+  </div>
+
+  <div class="col-md-12">
+    <input type="text" name="MSG" placeholder="Message" class="form-control name">
+  </div>
+
+  <div class="col-md-12 form-btn">
+    <input type="submit" value="Send Now" class="btn btn-md btn-rose tra-black-hover submit w-100">
+  </div>
+  <div class="col-md-12 register-form-msg text-center"></div>
+</form>
+
+      </div>
+    </div>
+    <!-- END HERO REGISTER FORM -->
+  </div>
+</div>
+    <!-- About Section -->
+    <section id="about" class="about section">
+	<section id="banner-1" class="bg-yellow banner-section division animate__animated animate__Up">
+    <h2 class="h5-xl text-center  visible" id="clr1" style="margin-bottom:20px;color:#fff">Our Services</h2>
+    <div class="container">
+      <div class="row">
+        <!-- BANNER TEXT -->
+        <div class="col-lg-4">
+          <div class="awd-img">
+            <div class="txt-block p-25" id="bdd">
+              <img src="assets/img/washing-machine/washing-machine.jpg" alt="">
+              <!-- Title -->
+              <h4 class="h3-sm">Washing Machine Service</h4>
+              <!-- Text -->
+              <div class="cbox-2-txt">
+                <!-- Course Rating -->
+                <div class="course-rating clearfix">
+                  <span id="cts">
+                    <ul id="lst" class="txt-list mb-15">
+                      <!-- <li>₹20,000 per Month</li> -->
+                      <li>
+                      <a href="washing-machine-service-and-repair-center-in-hyderabad.html" target="_blank">Read More</a>
+                      </li>
+                    </ul>
+                  </span>
+                </div>
+                <!-- Course Tags -->
+              </div>
+              <!-- List -->
+            </div>
+          </div>
+        </div>
+          <div class="col-lg-4">
+          <div class="awd-img">
+            <div class="txt-block p-25" id="bdd">
+              <img src="assets/img/air-conditioner/ac.jpg" alt="">
+              <!-- Title -->
+              <h4 class="h3-sm">Air Conditioner Service</h4>
+              <!-- Text -->
+              <div class="cbox-2-txt">
+                <!-- Course Rating -->
+                <div class="course-rating clearfix">
+                  <span id="cts">
+                    <ul id="lst" class="txt-list mb-15">
+                      <!-- <li>₹20,000 per Month</li> -->
+                      <li>
+                          <a href="air-conditioner-service-and-repair-center-in-hyderabad.html" target="_blank">Read More</a>
+                     
+                      </li>
+                    </ul>
+                  </span>
+                </div>
+                <!-- Course Tags -->
+              </div>
+              <!-- List -->
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="awd-img">
+            <div class="txt-block p-25" id="bdd">
+              <img src="assets/img/refrigerator/refrigerator.jpg" alt="">
+              <!-- Title -->
+              <h4 class="h3-sm">Refrigerator Service</h4>
+              <!-- Text -->
+              <div class="cbox-2-txt">
+                <!-- Course Rating -->
+                <div class="course-rating clearfix">
+                  <span id="cts">
+                    <ul id="lst" class="txt-list mb-15">
+                     
+                      <li>
+                          <a href="refrigerator-service-and-repair-center-in-hyderabad.html" target="_blank">Read More</a>
+                      
+                      </li>
+                    </ul>
+                  </span>
+                </div>
+                <!-- Course Tags -->
+              </div>
+              <!-- List -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- End row -->
+      <div class="row" style="margin-top:30px;">
+        <div class="col-md-4">
+         
+        </div>
+        <div class="col-md-4">
+           <a href="tel:+919403892784" class="btn btn-md btn-rose tra-white-hover" id="cntr">
+            <i class="fa fa-phone"></i> &nbsp;Dial Now : +91 9403892784 </a>
+        </div>
+        <div class="col-md-4">
+        
+        </div>
+      </div>
+    </div>
+    <!-- End container -->
+  </section>
+
+    </section><!-- /About Section -->
+ 
+   
+
+    <!-- Services Section -->
+    <section id="services" class="services section">
+<section id="about-2-abt" class="wide-50 mb-20 about-section division ">
+  <div class="container">
+    <div class="row d-flex align-items-center ">
+      <!-- ABOUT TEXT -->
+      <div class="col-md-7 col-lg-6">
+        <div class="txt-block pc-25">
+          <!-- Title -->
+          <h4 class="animate__animated animate__fade" id="clr">Welcome to </h4>
+          <h1 class="h3-sm animate__animated animate__zoomInDown" id="clr1">Handy Experts</h1>
+          <h4 class="animate__animated animate__fade">Your Trusted Appliance Service & Repair Center in Hyderabad</h4>
+          <!-- Text -->
+          <p id="jst">When a home appliance stops working, everything from your routine to your peace of mind gets interrupted. That's exactly why Handy Experts is here
+            to offer fast, reliable, and doorstep appliance repair services across Hyderabad and Secunderabad. Whether it's your washing machine refusing to spin, your 
+            refrigerator not cooling, or your AC struggling in the summer heat, our skilled professionals ensure you get the right fix at the right time.</p>
+            <p id="jst">At Handy Experts, we believe good service should be simple, transparent, and stress-free. Our technicians are trained to handle all popular brands
+            in India, including LG, Samsung, Whirlpool, Bosch, IFB, Godrej, Haier, Voltas, Daikin, Hitachi, Carrier, and many more. From basic issues to complex technical
+            faults, we use 100% genuine company spares to ensure long-lasting performance.</p>
+              <p id="jst">If you want expert care, prompt response, and budget-friendly repairs, you're in the right place. 
+                <b>Book Your Service Today - and bring life back to your appliances!</b></p>
+          <!-- Button -->
+          <a href="about-us.html" class="btn btn-md btn-tra-grey rose-hover"> &nbsp; Read More</a>
+        </div>
+      </div>
+      <!-- END ABOUT TEXT -->
+      <!-- ABOUT IMAGE -->
+      <div class="col-md-5 col-lg-6 ">
+          <div class="ser-img">
+                   <img src="assets/img/hm/hm-abt.webp" width="100%">
+              </div>
+        <div class="img-block pc-25 mb-40 ">
+         
+        </div>
+      </div>
+    </div>
+    <!-- End row -->
+  </div>
+  <!-- End container -->
+</section>
+    </section><!-- /Services Section -->
+
+
+
+ 
+     <!-- Portfolio Section -->
+    <section id="portfolio" class="portfolio section">
+	<section id="banner-2" class="bg-02 wide-50 banner-section ">
+  <div class="container" id="aftlt-2">
+    <div class="row  align-items-center">
+      <!-- BANNER TEXT -->
+      <div class="col-md-12">
+          <div class="banner-2-txt white-color ">
+          <!-- Title -->
+          <h3 class="h3-sm" id="cl" style="color:#fff;">Brands We Service</h3>
+         <p class="text-center" id="jst"> We handle all top brands in India, including HITACHI, LG, SAMSUNG, PANASONIC, DAIKIN, MITSUBISHI, TOSHIBA, SHARP, GREE, IFB, HAIER, BLUESTAR, VOLTAS, LLOYD, CARRIER
+          ONIDA, VOLTAS, WHIRLPOOL, O GENERAL, GODREJ, KENSTAR, ELECTROLUX, MIDEA, VIDEOCON, YORK, TRANE, SANYO, MARQ, CROMA, MICROMAX, MITASHI, SANSUI, VESTAR, BOSCH</p>
+        </div>
+      </div>
+      <a href="tel:+919403892784" class="btn btn-md btn-rose tra-white-hover" id="cntr">
+        <i class="fa fa-phone"></i> &nbsp;Dail Now :+91 9403892784</a>
+    </div>
+    <!-- End row -->
+  </div>
+  <!-- End container -->
+</section>
+    </section><!-- /Portfolio Section -->
+
+    
+    <!-- Team Section -->
+    <section id="team" class="team section">
+	<section id="about-4" class="wide-50 about-section division ">
+  <div class="container" id="whys">
+    <!-- ABOUT TEXT -->
+    <div class="row">
+      <div class="col-xl-10 offset-xl-1 ">
+        <div class="a4-txt">
+          <!-- Title -->
+          <div class="row">
+            <div class="col-lg-7 ">
+              <h3 class="h5-xl " id="clr1" style="margin-bottom:20px;">Why Choose Handy Experts?</h3>
+              <ul id="jst1">
+                <li>
+                  <strong>Doorstep Service Anywhere in Hyderabad & Secunderabad:</strong> No need to visit a service center. We come to you.</li>
+                <li>
+                  <strong>Experienced & Verified Technicians :</strong> Trained experts who handle every issue with care.
+                </li>
+                <li>
+                  <strong>Affordable and Transparent Pricing :</strong> No hidden charges. Clear communication at every step.
+                </li>
+                <li>
+                  <strong>All Brand Support :</strong> We repair all leading brands and all types of models.
+                </li>
+                <li>
+                  <strong>Fast Response & Same-Day Service :</strong> Because appliance issues shouldn't wait.
+                </li>
+                <li>
+                  <strong>Guaranteed Service Quality  :</strong> Dedicated relationship managers to guide you through every step.
+                </li>
+                <li>
+                  <strong>Community-Driven Model:</strong> Helping members achieve disciplined savings while supporting each other'''s financial goals.
+                </li>
+              </ul>
+            </div>
+            <div class="col-lg-5">
+               <div class="ser-img">
+                  <img src="assets/img/hm/hm-why.jpg" width="100%">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+    <!-- Contact Section -->
+    <section id="contact" class="contact section">
+	<div class="container">
+    <div class="contacts-1-holder" style="background-image: url('./assets/img/hm/hm-final.jpg');">
+      <div class="row d-flex align-items-center">
+        <!-- CONTACTS TEXT -->
+        <div class="col-lg-8 offset-lg-2">
+          <div class="contacts-txt text-center white-color">
+            <!-- Title -->
+            <h3 class="h3-sm">Book Your Service Today </h3>
+            <!-- Text -->
+            <p class="p-md">And bring life back to your appliances!</p>
+            <!-- Button -->
+            <a href="tel:+919403892784" class="btn btn-md btn-rose tra-white-hover">
+              <i class="fa fa-phone"></i> &nbsp;Dail Now :+91 9403892784 </a>
+          </div>
+        </div>
+      </div>
+      <!-- End row -->
+    </div>
+    <!-- End contacts-holder -->
+  </div>
+
+    </section><!-- /Contact Section -->
+
+  </main>
+
+  <footer id="footer" class="footer">
+ 
+
+    <div class="container footer-top">
+      <div class="row gy-4">
+        <div class="col-lg-3 col-md-3 footer-about">
+          <a href="index.html" class="d-flex align-items-center">
+            <span class="sitename">About Us</span>
+          </a>
+          <div class="footer-contact pt-3">
+            <p>Handy Experts is a Hyderabad-based appliance service and repair company built with one mission — to make home appliance repair simple, reliable, and truly 
+              hassle-free. We understand how essential your washing machine, refrigerator, or AC is in your daily life. So we built a service model that puts customers at 
+              the center, supported by skilled technicians and high-quality workmanship.</p>
+          </div>
+        </div>
+
+        <div class="col-lg-2 footer-links">
+          <h4>Useful Links</h4>
+          <ul>
+            
+            <li><i class="bi bi-chevron-right"></i>  <a href="index.html" class="active">Home<br></a></li>
+          <li><i class="bi bi-chevron-right"></i>  <a href="about-us.html">About Us</a></li>
+          <li><i class="bi bi-chevron-right"></i>  <a href="contact-us.html">Contact Us</a></li> 
+          </ul>
+        </div>
+             <div class="col-lg-3 footer-links">
+          <h4>Our Services</h4>
+          <ul>
+            
+            <li><i class="bi bi-chevron-right"></i>  <a href="washing-machine-service-and-repair-center-in-hyderabad.html" class="active">Washing Machine<br></a></li>
+          <li><i class="bi bi-chevron-right"></i>  <a href="refrigerator-service-and-repair-center-in-hyderabad.html">Refrigerator</a></li>
+          <li><i class="bi bi-chevron-right"></i>  <a href="air-conditioner-service-and-repair-center-in-hyderabad.html">Air Conditioner</a></li> 
+          </ul>
+        </div>
+ 
+
+        <div class="col-lg-4 ">
+          <h4>Handy Experts</h4>  
+           <ul class="llss">
+            <li>
+              <a href="#">Address: Mf-2 p.s nagar masab tank Mehdipatnam Hyderabad 500028.</a>
+            </li>
+            <li>
+              <a href="tel:+919403892784">Phone: +91 9403892784</a>
+            </li>
+            <li>
+              <a href="mailto:homejoyexperts@gmail.com;">Email: homejoyexperts@gmail.com</a>
+            </li>
+             <li>
+              <a href="#"><b>GST :</b>36BPWPR4550J1Z3</a>
+            </li>
+          </ul> 
+		  <nav class="social" aria-label="Follow Northeast Chit Fund">
+  <a class="icon facebook" href="#" target="_blank" aria-label="Facebook" title="Facebook">
+    <i class="fab fa-facebook-f"></i>
+  </a>
+
+  <a class="icon instagram" href="#" target="_blank" aria-label="Instagram" title="Instagram">
+    <i class="fab fa-instagram"></i>
+  </a>
+
+  <a class="icon linkedin" href="#" target="_blank" aria-label="LinkedIn" title="LinkedIn">
+    <i class="fab fa-linkedin-in"></i>
+  </a>
+
+  <a class="icon youtube" href="#" target="_blank" aria-label="YouTube" title="YouTube">
+    <i class="fab fa-youtube"></i>
+  </a>
+</nav>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="container copyright text- mt-4">
+      <p>&copy; Copyright All Right Reserved 2025 @ Handy Experts. <a href="https://vstechnosolutions.com" target="_blank">Webdesigner VS Technosolutions</a>
+              </p>
+      </div>
+
+  </footer>
+
+  <!-- Scroll Top -->
+  <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+      <!-- Whatsapp icon -->
+
+    <a class="whats-app" href="https://wa.me/919403892784" target="_blank">
+        <i class="fab fa-whatsapp  my-float"></i>
+    </a>
+    <!-- phone icon -->
+    <a class="whats-app1" href="tel:+919403892784" target="_blank">
+        <i class="fa fa-phone   my-float"></i>
+    </a>
+
+  <!-- Vendor JS Files -->
+  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/vendor/php-email-form/validate.js"></script>
+  <script src="assets/vendor/aos/aos.js"></script>
+  <script src="assets/vendor/glightbox/js/glightbox.min.js"></script>
+  <script src="assets/vendor/purecounter/purecounter_vanilla.js"></script>
+  <script src="assets/vendor/imagesloaded/imagesloaded.pkgd.min.js"></script>
+  <script src="assets/vendor/isotope-layout/isotope.pkgd.min.js"></script>
+  <script src="assets/vendor/swiper/swiper-bundle.min.js"></script>
+
+  <!-- Main JS File -->
+  
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Owl Carousel JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
+
+  <script>
+    $(document).ready(function(){
+      $(".owl-carousel").owlCarousel({
+        items:1,
+        loop:true,
+        autoplay:true,
+        autoplayTimeout:4000,
+        autoplayHoverPause:false,
+        animateOut: 'fadeOut',
+      });
+    });
+  </script>
+  
+  
+  <style>
+  :root {
+    --size: 32px;
+    --gap: 15px;
+  }
+
+  .social {
+    display: flex;
+    gap: var(--gap);
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+	float: inline-start;
+  }
+
+  .social .icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--size);
+    height: var(--size);
+    border-radius: 50%;
+    background: #f4f4f4;
+    font-size: 18px;
+    color: #333;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+
+  /* Hover effects with brand colors */
+  .social .icon.facebook:hover { background: #1877F2; color: #fff; }
+  .social .icon.instagram:hover { 
+    background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); 
+    color: #fff; 
+  }
+  .social .icon.linkedin:hover { background: #0A66C2; color: #fff; }
+  .social .icon.youtube:hover { background: #FF0000; color: #fff; }
+
+  /* Icon scaling effect */
+  .social .icon:hover {
+    transform: scale(1.15);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+  }
+
+  /* Responsive adjustment */
+  @media (max-width: 480px) {
+    :root { --size: 44px; --gap: 12px; }
+    .social .icon { font-size: 18px; }
+  }
+ 
+</style>
+</body>
+
+</html>

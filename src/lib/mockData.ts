@@ -55,7 +55,7 @@ export const mockServiceCalls: ServiceCall[] = [
     technicianName: "John Doe",
     vendorName: "FixIt Plumbing Inc.",
     amount: 150.00,
-    location: "123 Main St, New York, NY",
+    location: "Masab Tank, Hyderabad, TS",
   },
   {
     id: "SRV-1002",
@@ -111,7 +111,7 @@ export const mockServiceCalls: ServiceCall[] = [
     technicianName: "Leo Valdez",
     vendorName: "BugBusters",
     amount: 195.00,
-    location: "303 Cedar Ct, New York, NY",
+    location: "Mehdipatnam, Hyderabad, TS",
   },
   {
     id: "SRV-1007",
@@ -131,7 +131,7 @@ export const mockVendors: Vendor[] = [
     companyName: "FixIt Plumbing Inc.",
     contactPerson: "Robert Fixer",
     email: "contact@fixit.com",
-    phone: "+1 (555) 123-4567",
+    phone: "+91 9403892784",
     status: "active",
     joinedDate: "2022-01-15",
     rating: 4.8,
@@ -258,7 +258,7 @@ export const mockReviews = [
 
 // Technician Mock Data
 export const mockRouteStops = [
-  { id: "STOP-1", time: "09:00 AM", location: "123 Main St, New York, NY", status: "completed", customer: "Alice Smith", task: "Plumbing Inspection" },
+  { id: "STOP-1", time: "09:00 AM", location: "Masab Tank, Hyderabad, TS", status: "completed", customer: "Alice Smith", task: "Plumbing Inspection" },
   { id: "STOP-2", time: "11:30 AM", location: "456 Oak Ave, Brooklyn, NY", status: "in_progress", customer: "Bob Johnson", task: "Pipe Repair" },
   { id: "STOP-3", time: "02:00 PM", location: "789 Pine Rd, Queens, NY", status: "pending", customer: "Charlie Brown", task: "Water Heater Setup" },
 ];

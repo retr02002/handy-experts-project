@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { WizardModal } from "./WizardModal";
 import { ImageUploadField } from "./ImageUploadField";
+import { VideoUploadField } from "./VideoUploadField";
 import { createService, updateService } from "@/actions/service.actions";
 import { serviceSchema, ServiceInput, ServiceBenefit, ServiceStep, ServiceFaq } from "@/lib/validations/service.schema";
 import { emptyServiceInput, slugify } from "./utils";
@@ -202,6 +203,7 @@ export function ServiceFormWizard({ isOpen, onClose, onSuccess, initialData, ser
       {step === 1 && (
         <div className="flex flex-col gap-4">
           <ImageUploadField label="Cover Image" value={form.image} onChange={(url) => set("image", url)} error={errors.image} />
+          <VideoUploadField label="Demo Video" value={form.videoUrl ?? ""} onChange={(url) => set("videoUrl", url)} error={errors.videoUrl} />
           <Field label="Description" error={errors.description}>
             <textarea
               className={`${inputClass} min-h-[120px] resize-y`}
@@ -286,6 +288,7 @@ export function ServiceFormWizard({ isOpen, onClose, onSuccess, initialData, ser
             <SummaryItem label="Warranty" value={form.warranty || "—"} />
           </div>
           <SummaryItem label="Description" value={form.description} />
+          <SummaryItem label="Demo Video" value={form.videoUrl ? "Attached" : "None"} />
           <SummaryItem label="Benefits" value={`${form.benefits.length} added`} />
           <SummaryItem label="How It Works" value={`${form.howItWorks.length} steps added`} />
           <SummaryItem label="FAQs" value={`${form.faqs.length} added`} />

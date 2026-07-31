@@ -1,5 +1,5 @@
 import React from "react";
-import { Service, ServicePackage } from "@/data/mockServices";
+import { Service, ServicePackage } from "@/types/service";
 import { ServiceBreadcrumb } from "./ServiceBreadcrumb";
 import { ServiceSummaryCard } from "./ServiceSummaryCard";
 import { MobileCategoryChipBar, DesktopCategorySelectorCard } from "./ServiceCategorySelector";
@@ -44,7 +44,7 @@ export function ServiceDetailClient({ service }: { service: Service }) {
           </div>
 
           {/* MIDDLE COLUMN: Video Banner, Package Groups & Details */}
-          <div className="w-full lg:w-[45%] flex-1 flex flex-col gap-8 sm:gap-10 min-w-0 z-10">
+          <div className="w-full lg:w-[45%] flex-1 flex flex-col gap-8 sm:gap-10 min-w-0">
 
             {/* Video Demonstration Banner & Modal Trigger */}
             <ServiceVideoBanner service={service} />

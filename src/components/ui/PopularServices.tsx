@@ -1,13 +1,11 @@
 import React from "react";
 import { SectionHeader } from "./SectionHeader";
 import { PopularServicesClient } from "./PopularServicesClient";
-import { MOCK_SERVICES } from "@/data/mockServices";
+import { getAllServices } from "@/lib/services-data";
 import { ClientIcon } from "./ClientIcon";
 
-export function PopularServices() {
-  // In a real app, this is where you'd fetch data from your backend
-  // const services = await fetchServices();
-  const services = MOCK_SERVICES;
+export async function PopularServices() {
+  const services = await getAllServices();
 
   return (
     <section className="py-20 sm:py-28 bg-white dark:bg-[#060b14] overflow-hidden border-t border-slate-100 dark:border-slate-800/50">
