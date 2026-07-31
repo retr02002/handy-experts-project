@@ -54,6 +54,9 @@ export const metadata: Metadata = {
   manifest: '/favicon/site.webmanifest',
 };
 
+import { NextAuthProvider } from "@/components/auth/NextAuthProvider";
+import { Toaster } from "sonner";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -65,16 +68,20 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col pb-24 lg:pb-0">
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          <CartProvider>
-            <ChatProvider>
-              {children}
-            </ChatProvider>
-          </CartProvider>
-        </ThemeProvider>
+      <body className="min-h-full flex flex-col pb-24 lg:pb-0 overflow-x-hidden lg:overflow-x-visible w-full max-w-full">
+        <NextAuthProvider>
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+            <CartProvider>
+              <ChatProvider>
+                {children}
+                <Toaster position="bottom-right" richColors />
+              </ChatProvider>
+            </CartProvider>
+          </ThemeProvider>
+        </NextAuthProvider>
       </body>
     </html>
   );
 }
+
 

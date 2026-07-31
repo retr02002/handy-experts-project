@@ -120,7 +120,7 @@ export function PopularServicesClient({ services }: PopularServicesClientProps) 
                   768: { slidesPerView: 2, spaceBetween: 24 },
                   1024: { slidesPerView: 3, spaceBetween: 24 },
                 }}
-                className="w-full !pb-4"
+                className="w-full !pt-4 !pb-6 -mt-4"
               >
                 {filteredServices.map((service) => (
                   <SwiperSlide key={service.id} className="h-auto flex">

@@ -9,8 +9,11 @@ import { ClientIcon } from "@/components/ui/ClientIcon";
 import { CartButton } from "@/components/ui/CartButton";
 import { useCart } from "@/context/CartContext";
 import { useChat } from "@/context/ChatContext";
+import { useSession } from "next-auth/react";
+import { UserDropdown } from "@/components/shared/UserDropdown";
 
 export function Header() {
+  const { data: session } = useSession();
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
   const { totalItems } = useCart();
@@ -78,10 +81,16 @@ export function Header() {
                   <CartButton />
                 </div>
 
-                <Link href="/sign-in" className="flex items-center text-[14px] font-medium text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors sm:ml-1">
-                  <ClientIcon icon="ph:sign-in" width="22" height="22" className="sm:mr-1" />
-                  <span className="hidden md:inline">Sign in</span>
-                </Link>
+                {session ? (
+                  <div className="sm:ml-1">
+                    <UserDropdown />
+                  </div>
+                ) : (
+                  <Link href="/sign-in" className="flex items-center text-[14px] font-medium text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors sm:ml-1">
+                    <ClientIcon icon="ph:sign-in" width="22" height="22" className="sm:mr-1" />
+                    <span className="hidden md:inline">Sign in</span>
+                  </Link>
+                )}
 
                 {/* Desktop Book Button */}
                 <Link href="/book-now" className="hidden sm:inline-flex items-center justify-center rounded-full px-5 py-2 text-[14px] font-bold shadow-md transition-all hover:scale-105 bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 whitespace-nowrap">
@@ -105,14 +114,14 @@ export function Header() {
             <ClientIcon icon={pathname === '/about' ? "ph:info-fill" : "ph:info"} className={`w-5 h-5 transition-transform ${pathname === '/about' ? 'scale-110' : ''}`} />
             <span className="text-[9px] font-medium leading-none mt-0.5">About</span>
           </Link>
-          
+
           <Link href="/services" className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${pathname.startsWith('/services') ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
             <ClientIcon icon={pathname.startsWith('/services') ? "ph:wrench-fill" : "ph:wrench"} className={`w-5 h-5 transition-transform ${pathname.startsWith('/services') ? 'scale-110' : ''}`} />
             <span className="text-[9px] font-medium leading-none mt-0.5">Services</span>
           </Link>
 
           {/* AI Chatbot Center Button */}
-          <button 
+          <button
             onClick={toggleChat}
             className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors group px-1 ${isOpen ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}
           >

@@ -2,9 +2,15 @@
 
 import React, { useState } from "react";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { useSession } from "next-auth/react";
+import Image from "next/image";
 
 export default function TechnicianProfilePage() {
+  const { data: session } = useSession();
   const [isEditing, setIsEditing] = useState(false);
+  const user = session?.user;
+  const userName = user?.name || "John Doe";
+  const userEmail = user?.email || "john@handyexperts.com";
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
@@ -37,7 +43,11 @@ export default function TechnicianProfilePage() {
             <div className="relative">
               <div className="w-32 h-32 rounded-2xl bg-white dark:bg-[#0F172A] p-1.5 shadow-lg">
                 <div className="w-full h-full rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden relative group">
-                  <ClientIcon icon="ph:user" className="w-12 h-12 text-slate-400" />
+                  {user?.image ? (
+                    <Image src={user.image} alt={userName} fill className="object-cover" />
+                  ) : (
+                    <ClientIcon icon="ph:user" className="w-12 h-12 text-slate-400" />
+                  )}
                   {isEditing && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer backdrop-blur-sm">
                       <ClientIcon icon="ph:camera" className="w-6 h-6 text-white" />
@@ -66,7 +76,7 @@ export default function TechnicianProfilePage() {
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Full Name</label>
                   <input 
                     type="text" 
-                    defaultValue="John Doe" 
+                    defaultValue={userName} 
                     disabled={!isEditing}
                     className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all"
                   />
@@ -76,7 +86,7 @@ export default function TechnicianProfilePage() {
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Email Address</label>
                   <input 
                     type="email" 
-                    defaultValue="john@handyexperts.com" 
+                    defaultValue={userEmail} 
                     disabled={!isEditing}
                     className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all"
                   />

@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { UserDropdown } from "@/components/shared/UserDropdown";
 
 interface AdminNavbarProps {
   isMobileMenuOpen: boolean;
@@ -13,22 +14,10 @@ interface AdminNavbarProps {
 export function AdminNavbar({ isMobileMenuOpen, setMobileMenuOpen }: AdminNavbarProps) {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 0);
     return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
-        setIsProfileOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
@@ -90,48 +79,7 @@ export function AdminNavbar({ isMobileMenuOpen, setMobileMenuOpen }: AdminNavbar
         <div className="hidden sm:block w-px h-6 bg-slate-200 dark:bg-slate-800 mx-2" />
 
         {/* Profile Avatar */}
-        <div className="relative" ref={profileRef}>
-          <button onClick={() => setIsProfileOpen(!isProfileOpen)} className="flex items-center gap-2 outline-none">
-            <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-xs ring-2 ring-transparent hover:ring-indigo-500/30 transition-all">
-              SA
-            </div>
-          </button>
-          
-          {isProfileOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-              <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">Admin User</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">admin@handyexperts.com</p>
-              </div>
-              <div className="p-1">
-                <Link 
-                  href="/admin" 
-                  onClick={() => setIsProfileOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                >
-                  <ClientIcon icon="ph:squares-four" className="w-4 h-4" />
-                  Dashboard
-                </Link>
-                <Link 
-                  href="/admin/profile" 
-                  onClick={() => setIsProfileOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                >
-                  <ClientIcon icon="ph:user" className="w-4 h-4" />
-                  Profile
-                </Link>
-                <div className="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2" />
-                <button 
-                  onClick={() => setIsProfileOpen(false)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors"
-                >
-                  <ClientIcon icon="ph:sign-out" className="w-4 h-4" />
-                  Logout
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        <UserDropdown />
         
       </div>
     </header>

@@ -14,7 +14,7 @@ export default function Home() {
   return (
     <main className="w-full bg-white dark:bg-[#020813]">
       <ScrollHero />
-      <TrustSection />
+      <PopularServices />
       <CategoryGrid />
       
       {/* First Promo Banner - Painting Theme */}
@@ -28,8 +28,8 @@ export default function Home() {
         reverse={false}
       />
       
+      <TrustSection />
       <FeaturedServices />
-      <PopularServices />
       <HowItWorks />
       
       {/* Second Promo Banner - Cleaning Theme (Reversed) */}

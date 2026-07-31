@@ -1,7 +1,17 @@
 import React from "react";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import Image from "next/image";
 
-export default function AdminProfilePage() {
+export default async function AdminProfilePage() {
+  const session = await getServerSession(authOptions);
+  const user = session?.user;
+  const userName = user?.name || "System Admin";
+  const userEmail = user?.email || "admin@handyexperts.com";
+  const [firstName, ...lastNameParts] = userName.split(" ");
+  const lastName = lastNameParts.join(" ") || "";
+  const avatarInitial = userName.charAt(0).toUpperCase() || "A";
   return (
     <div className="flex flex-col w-full h-full max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
       
@@ -27,8 +37,12 @@ export default function AdminProfilePage() {
             
             <div className="relative group mt-8 mb-4">
               <div className="w-28 h-28 rounded-full bg-white dark:bg-[#0B1120] p-1.5 shadow-md border border-slate-100 dark:border-slate-800 relative z-10">
-                <div className="w-full h-full rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-3xl">
-                  SA
+                <div className="w-full h-full rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-3xl overflow-hidden relative">
+                  {user?.image ? (
+                    <Image src={user.image} alt={userName} fill className="object-cover" />
+                  ) : (
+                    avatarInitial
+                  )}
                 </div>
               </div>
               <button className="absolute inset-0 m-1.5 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm z-20">
@@ -36,7 +50,7 @@ export default function AdminProfilePage() {
               </button>
             </div>
             
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white relative z-10">System Admin</h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white relative z-10">{userName}</h2>
             <div className="flex items-center justify-center gap-1.5 mt-2 px-3 py-1 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-semibold relative z-10">
               <ClientIcon icon="ph:shield-star-fill" className="w-3.5 h-3.5" />
               Super Administrator
@@ -76,7 +90,7 @@ export default function AdminProfilePage() {
                   <ClientIcon icon="ph:user" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4.5 h-4.5" />
                   <input 
                     type="text" 
-                    defaultValue="System"
+                    defaultValue={firstName}
                     className="w-full bg-slate-50 dark:bg-[#1E293B]/50 border border-slate-200 dark:border-slate-700/50 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
                   />
                 </div>
@@ -88,7 +102,7 @@ export default function AdminProfilePage() {
                   <ClientIcon icon="ph:user" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4.5 h-4.5" />
                   <input 
                     type="text" 
-                    defaultValue="Admin"
+                    defaultValue={lastName}
                     className="w-full bg-slate-50 dark:bg-[#1E293B]/50 border border-slate-200 dark:border-slate-700/50 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
                   />
                 </div>
@@ -100,7 +114,7 @@ export default function AdminProfilePage() {
                   <ClientIcon icon="ph:envelope" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4.5 h-4.5" />
                   <input 
                     type="email" 
-                    defaultValue="admin@handyexperts.com"
+                    defaultValue={userEmail}
                     className="w-full bg-slate-50 dark:bg-[#1E293B]/50 border border-slate-200 dark:border-slate-700/50 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
                   />
                 </div>

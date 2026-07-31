@@ -24,3 +24,20 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@media (max-width: 1023px) {
+  body, html {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+}
+
+/* Hide scrollbar for mobile app-like horizontal category navigation strips */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

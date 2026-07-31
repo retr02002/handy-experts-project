@@ -38,7 +38,7 @@ export function FeaturedServices() {
       <div className="max-w-7xl mx-auto flex flex-col">
         {/* Compact Header section */}
         <SectionHeader
-          badgeNumber="03"
+          badgeNumber="04"
           badgeText="Featured"
           title={
             <>

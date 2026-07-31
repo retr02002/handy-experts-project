@@ -2,10 +2,58 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { registerUser, getUserRole } from "@/actions/auth.actions";
 
 export function SignUpForm() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"CUSTOMER" | "TECHNICIAN" | "VENDOR">("CUSTOMER");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const res = await registerUser({ email, password, role });
+
+      if (!res.success) {
+        throw new Error(res.error || "Something went wrong during registration.");
+      }
+
+      // Auto login after successful registration
+      const signInRes = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
+      });
+
+      if (signInRes?.error) {
+        throw new Error("Failed to auto-login. Please sign in manually.");
+      }
+
+      const targetPath = role === "TECHNICIAN" ? "/technician"
+        : role === "VENDOR" ? "/vendor"
+          : "/customer";
+
+      router.push(targetPath);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Something went wrong");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col">
@@ -14,7 +62,11 @@ export function SignUpForm() {
         <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium">Join HandyExperts and get started</p>
       </div>
 
-      <button className="w-full flex items-center justify-center gap-2 bg-transparent border border-slate-200 dark:border-slate-700/80 rounded-xl px-4 py-2 text-[13px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors mb-5 shadow-sm">
+      <button
+        onClick={() => signIn("google", { callbackUrl: "/" })}
+        type="button"
+        className="w-full flex items-center justify-center gap-2 bg-transparent border border-slate-200 dark:border-slate-700/80 rounded-xl px-4 py-2 text-[13px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors mb-5 shadow-sm"
+      >
         <ClientIcon icon="logos:google-icon" className="w-4 h-4" />
         Continue with Google
       </button>
@@ -25,16 +77,43 @@ export function SignUpForm() {
         <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
       </div>
 
-      <form className="flex flex-col gap-4">
+      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-3 rounded-lg text-sm text-center">
+            {error}
+          </div>
+        )}
+        <div className="space-y-1.5">
+          <label className="text-[13px] font-bold text-slate-700 dark:text-slate-300 ml-0.5">Account Type</label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <ClientIcon icon="ph:user-circle" className="w-4 h-4 text-slate-400" />
+            </div>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as "CUSTOMER" | "TECHNICIAN" | "VENDOR")}
+              className="w-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-10 pr-10 py-2.5 text-[13px] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00B4FF]/40 focus:border-[#00B4FF] transition-all appearance-none"
+            >
+              <option value="CUSTOMER">Customer (Book Services)</option>
+              <option value="TECHNICIAN">Technician (Provide Services)</option>
+              <option value="VENDOR">Company/Vendor</option>
+            </select>
+            <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
+              <ClientIcon icon="ph:caret-down" className="w-4 h-4 text-slate-400" />
+            </div>
+          </div>
+        </div>
         <div className="space-y-1.5">
           <label className="text-[13px] font-bold text-slate-700 dark:text-slate-300 ml-0.5">Email</label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
               <ClientIcon icon="ph:envelope-simple" className="w-4 h-4 text-slate-400" />
             </div>
-            <input 
-              type="email" 
-              placeholder="you@homedelhi.in" 
+            <input
+              type="email"
+              placeholder="you@homedelhi.in"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-10 pr-4 py-2.5 text-[13px] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00B4FF]/40 focus:border-[#00B4FF] transition-all"
               required
             />
@@ -47,14 +126,17 @@ export function SignUpForm() {
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
               <ClientIcon icon="ph:lock" className="w-4 h-4 text-slate-400" />
             </div>
-            <input 
-              type={showPassword ? "text" : "password"} 
-              placeholder="••••••••" 
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-10 pr-10 py-2.5 text-[13px] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00B4FF]/40 focus:border-[#00B4FF] transition-all"
               required
+              minLength={6}
             />
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
             >
@@ -65,11 +147,11 @@ export function SignUpForm() {
 
         <div className="flex items-start gap-2 pt-1">
           <div className="flex items-center h-5">
-            <input 
-              id="terms" 
-              type="checkbox" 
-              className="w-4 h-4 border border-slate-300 rounded bg-slate-50 focus:ring-3 focus:ring-[#00B4FF]/30 dark:bg-slate-700 dark:border-slate-600 dark:focus:ring-[#00B4FF]/30 accent-[#00B4FF]" 
-              required 
+            <input
+              id="terms"
+              type="checkbox"
+              className="w-4 h-4 border border-slate-300 rounded bg-slate-50 focus:ring-3 focus:ring-[#00B4FF]/30 dark:bg-slate-700 dark:border-slate-600 dark:focus:ring-[#00B4FF]/30 accent-[#00B4FF]"
+              required
             />
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400">
@@ -77,11 +159,12 @@ export function SignUpForm() {
           </div>
         </div>
 
-        <button 
-          type="submit" 
-          className="mt-1 w-full bg-[#00B4FF] hover:bg-[#0096fa] text-white rounded-lg py-2 text-[13px] font-bold flex items-center justify-center gap-2 transition-colors shadow-sm"
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="mt-1 w-full bg-[#00B4FF] hover:bg-[#0096fa] disabled:opacity-70 text-white rounded-lg py-2 text-[13px] font-bold flex items-center justify-center gap-2 transition-colors shadow-sm"
         >
-          Create account
+          {isLoading ? "Creating account..." : "Create account"}
         </button>
       </form>
 

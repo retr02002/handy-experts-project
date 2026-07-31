@@ -6,6 +6,9 @@ import { ClientIcon } from "./ClientIcon";
 import { Service, ServicePackage } from "@/data/mockServices";
 import { useCart } from "@/context/CartContext";
 import { PackageDetailsModal } from "@/components/services/PackageDetailsModal";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface PackageCardProps {
   parentService: Service;
@@ -15,6 +18,17 @@ interface PackageCardProps {
 export function PackageCard({ parentService, pkg }: PackageCardProps) {
   const { addToCart, updateQuantity, items } = useCart();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { status } = useSession();
+  const router = useRouter();
+  
+  const handleAddToCart = () => {
+    if (status === "unauthenticated") {
+      toast.error("Please sign in first to add items to your cart");
+      router.push("/sign-in");
+      return;
+    }
+    addToCart(parentService, pkg);
+  };
   
   const cartItemId = `${parentService.id}-${pkg.name}`;
   const qtyInCart = items.find((i) => i.id === cartItemId)?.quantity || 0;
@@ -98,7 +112,7 @@ export function PackageCard({ parentService, pkg }: PackageCardProps) {
               </button>
               
               <div className="flex-1 shrink-0">
-                {qtyInCart > 0 ? (
+                {status === "authenticated" && qtyInCart > 0 ? (
                   <div className="flex items-center justify-between w-full h-11 bg-blue-50/50 dark:bg-blue-500/10 border border-[#00B4FF] rounded-xl overflow-hidden shadow-sm">
                     <button onClick={() => updateQuantity(cartItemId, qtyInCart - 1)} className="w-10 h-full flex items-center justify-center text-[#00B4FF] hover:bg-[#00B4FF]/10 transition-colors">
                       <ClientIcon icon="ph:minus-bold" className="w-4 h-4" />
@@ -110,7 +124,7 @@ export function PackageCard({ parentService, pkg }: PackageCardProps) {
                   </div>
                 ) : (
                   <button 
-                    onClick={() => addToCart(parentService, pkg)}
+                    onClick={handleAddToCart}
                     className="w-full h-11 rounded-xl bg-[#00B4FF] hover:bg-[#009EE0] text-white text-[13px] font-bold transition-all shadow-sm hover:shadow-md hover:-translate-y-[1px] active:translate-y-0"
                   >
                     Add
@@ -127,7 +141,7 @@ export function PackageCard({ parentService, pkg }: PackageCardProps) {
         onClose={() => setIsModalOpen(false)}
         service={parentService}
         pkg={pkg}
-        onAdd={() => addToCart(parentService, pkg)}
+        onAdd={handleAddToCart}
         qtyInCart={qtyInCart}
         onUpdateQty={(qty) => updateQuantity(cartItemId, qty)}
       />
