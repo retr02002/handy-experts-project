@@ -10,7 +10,7 @@ import { ViewToggle, type ViewMode } from "@/components/ui/ViewToggle";
 export default function VendorServiceCallsPage() {
   const [calls, setCalls] = useState<ServiceCallSummary[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [view, setView] = useState<ViewMode>("table");
+  const [view, setView] = useState<ViewMode>("cards");
   const [detailCall, setDetailCall] = useState<ServiceCallSummary | null>(null);
 
   const load = useCallback(async () => {

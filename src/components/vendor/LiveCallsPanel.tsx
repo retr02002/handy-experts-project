@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { getNearbyLiveCallsForVendorAction, type NearbyLiveCall } from "@/actions/livecall.actions";
 import { getMyTechniciansAction, type VendorTechnician } from "@/actions/technician.actions";
-import { LOCATION_NOT_SET } from "@/lib/constants";
+import { LOCATION_NOT_SET, VENDOR_INACTIVE } from "@/lib/constants";
 import { usePolling } from "@/hooks/usePolling";
 import { LiveMap } from "@/components/shared/LiveMap";
 import { LiveCallCard } from "./LiveCallCard";
@@ -24,17 +24,20 @@ export function LiveCallsPanel({ vendorLatitude, vendorLongitude }: LiveCallsPan
   const [technicians, setTechnicians] = useState<VendorTechnician[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [locationError, setLocationError] = useState(false);
+  const [inactiveError, setInactiveError] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [acceptingCall, setAcceptingCall] = useState<NearbyLiveCall | null>(null);
 
   const refetchCalls = async () => {
     const res = await getNearbyLiveCallsForVendorAction();
     if (!res.success) {
-      if (res.error === LOCATION_NOT_SET) setLocationError(true);
+      setLocationError(res.error === LOCATION_NOT_SET);
+      setInactiveError(res.error === VENDOR_INACTIVE);
       setLoaded(true);
       return;
     }
     setLocationError(false);
+    setInactiveError(false);
     setCalls(res.data ?? []);
     setLoaded(true);
   };
@@ -45,6 +48,16 @@ export function LiveCallsPanel({ vendorLatitude, vendorLongitude }: LiveCallsPan
     const res = await getMyTechniciansAction();
     if (res.success && res.data) setTechnicians(res.data);
   }, TECHNICIANS_POLL_INTERVAL_MS);
+
+  if (inactiveError) {
+    return (
+      <div className="p-8 text-center bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-2xl">
+        <ClientIcon icon="ph:prohibit-fill" className="w-8 h-8 text-red-500 mx-auto mb-3" />
+        <p className="text-sm font-bold text-red-900 dark:text-red-200 mb-1">Your account is deactivated</p>
+        <p className="text-xs text-red-700/80 dark:text-red-400/80">Contact Handy Experts support to reactivate it.</p>
+      </div>
+    );
+  }
 
   if (locationError) {
     return (

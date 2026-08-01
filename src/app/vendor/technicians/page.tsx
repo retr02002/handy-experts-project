@@ -13,7 +13,7 @@ export default function VendorTechniciansPage() {
   const [technicians, setTechnicians] = useState<VendorTechnician[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [view, setView] = useState<ViewMode>("table");
+  const [view, setView] = useState<ViewMode>("cards");
   const [detailTech, setDetailTech] = useState<VendorTechnician | null>(null);
 
   const load = useCallback(async () => {

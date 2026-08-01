@@ -9,7 +9,7 @@ import { ViewToggle, type ViewMode } from "@/components/ui/ViewToggle";
 export default function ServiceCallsPage() {
   const [data, setData] = useState<AdminServiceCallSummary[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [view, setView] = useState<ViewMode>("table");
+  const [view, setView] = useState<ViewMode>("cards");
 
   useEffect(() => {
     const timer = setTimeout(() => {

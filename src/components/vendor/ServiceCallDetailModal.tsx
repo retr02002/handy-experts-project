@@ -9,10 +9,20 @@ import {
   type ServiceCallSummary,
   type ServiceCallStatusValue,
 } from "@/actions/servicecall.actions";
+import Image from "next/image";
 import { getMyTechniciansAction, type VendorTechnician } from "@/actions/technician.actions";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
 const STATUS_OPTIONS: ServiceCallStatusValue[] = ["ASSIGNED", "EN_ROUTE", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
+
+const PAYMENT_MODE_LABELS: Record<string, string> = {
+  gpay: "Google Pay",
+  phonepe: "PhonePe",
+  paytm: "Paytm",
+  amazonpay: "Amazon Pay",
+  bhim: "BHIM UPI",
+  "other-upi": "Other UPI",
+};
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
@@ -31,6 +41,7 @@ export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCall
   const [selectedTechId, setSelectedTechId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const [zoomOpen, setZoomOpen] = useState(false);
 
   useEffect(() => {
     getMyTechniciansAction().then((res) => {
@@ -116,20 +127,48 @@ export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCall
             </div>
           </div>
           <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Email</p>
+            <p className="text-sm text-slate-700 dark:text-slate-300">{call.customerEmail}</p>
+          </div>
+          <div>
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Address</p>
             <p className="text-sm text-slate-700 dark:text-slate-300">
-              {call.address}, {call.city} {call.pincode}
+              {call.address}, {call.city}, {call.state} {call.pincode}
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Amount</p>
-              <p className="font-bold text-slate-900 dark:text-white">₹{call.total.toFixed(2)}</p>
+
+          <div className="bg-slate-50 dark:bg-slate-900/60 rounded-xl p-3 flex flex-col gap-1.5 text-sm">
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Items</p>
+            {call.items.map((item, i) => (
+              <div key={i} className="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                <span>{item.packageName} {item.quantity > 1 ? `x${item.quantity}` : ""}</span>
+                <span className="font-medium">₹{(item.unitPrice * item.quantity).toFixed(0)}</span>
+              </div>
+            ))}
+            <div className="flex items-center justify-between text-slate-500 pt-1.5 border-t border-slate-200 dark:border-slate-700 text-xs">
+              <span>Subtotal</span><span>₹{call.subtotal.toFixed(0)}</span>
             </div>
-            <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Technician</p>
-              <p className="font-semibold text-slate-900 dark:text-white">{call.technicianName}</p>
+            <div className="flex items-center justify-between text-slate-500 text-xs">
+              <span>GST</span><span>₹{call.tax.toFixed(0)}</span>
             </div>
+            <div className="flex items-center justify-between font-bold text-slate-900 dark:text-white pt-1">
+              <span>Total</span><span>₹{call.total.toFixed(0)}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
+              <ClientIcon icon="ph:device-mobile-camera" className="w-4 h-4 text-slate-400 shrink-0" />
+              {PAYMENT_MODE_LABELS[call.paymentMode] ?? call.paymentMode} &middot; {call.upiRef}
+            </div>
+            <button type="button" onClick={() => setZoomOpen(true)} className="text-[#00B4FF] font-bold underline underline-offset-2 cursor-pointer text-xs">
+              View screenshot
+            </button>
+          </div>
+
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Technician</p>
+            <p className="font-semibold text-slate-900 dark:text-white text-sm">{call.technicianName}</p>
           </div>
           <div className="grid grid-cols-3 gap-3 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-3">
             <div>
@@ -254,6 +293,25 @@ export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCall
           </div>
         )}
       </div>
+
+      {zoomOpen && (
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md"
+          onClick={() => setZoomOpen(false)}
+        >
+          <div className="relative bg-white rounded-2xl p-4 max-w-xs w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setZoomOpen(false)}
+              className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-lg cursor-pointer"
+            >
+              <ClientIcon icon="ph:x-bold" className="w-4 h-4" />
+            </button>
+            <div className="relative w-full aspect-square">
+              <Image src={call.paymentScreenshotUrl} alt="Payment screenshot" fill className="object-contain rounded-lg" unoptimized />
+            </div>
+          </div>
+        </div>
+      )}
     </div>,
     document.body
   );

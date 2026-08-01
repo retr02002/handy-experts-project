@@ -6,3 +6,6 @@
  * import it directly instead of comparing against a magic string.
  */
 export const LOCATION_NOT_SET = "LOCATION_NOT_SET";
+
+/** Sentinel returned when a deactivated vendor tries to act on live calls. */
+export const VENDOR_INACTIVE = "VENDOR_INACTIVE";

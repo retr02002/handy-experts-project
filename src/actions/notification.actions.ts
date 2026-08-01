@@ -64,6 +64,7 @@ export async function markNotificationReadAction(id: string): Promise<ActionResp
   try {
     await prisma.notification.updateMany({ where: { id, userId: session.user.id }, data: { isRead: true } });
     revalidatePath("/technician/notifications");
+    revalidatePath("/admin/notifications");
     return { success: true };
   } catch (err) {
     console.error("Mark notification read error:", err);
@@ -78,9 +79,43 @@ export async function markAllNotificationsReadAction(): Promise<ActionResponse> 
   try {
     await prisma.notification.updateMany({ where: { userId: session.user.id, isRead: false }, data: { isRead: true } });
     revalidatePath("/technician/notifications");
+    revalidatePath("/admin/notifications");
     return { success: true };
   } catch (err) {
     console.error("Mark all notifications read error:", err);
     return { success: false, error: "Failed to update notifications" };
+  }
+}
+
+/**
+ * Fans a notification out to every SUPER_ADMIN account — used to give admin
+ * a real activity feed (new live calls, vendor acceptances) instead of the
+ * empty one that'd result from nothing ever targeting the admin role.
+ * Best-effort: a failure here must never fail the caller's underlying
+ * mutation (order creation, call acceptance), so callers should not await
+ * this in a way that surfaces its errors to the end user.
+ */
+export async function notifyAllAdmins(
+  type: "NEW_LIVE_CALL" | "CALL_ACCEPTED" | "CALL_ASSIGNED" | "CALL_STATUS_UPDATE",
+  title: string,
+  message: string,
+  liveCallId?: string,
+  serviceCallId?: string
+): Promise<void> {
+  try {
+    const admins = await prisma.user.findMany({ where: { role: "SUPER_ADMIN" }, select: { id: true } });
+    if (admins.length === 0) return;
+    await prisma.notification.createMany({
+      data: admins.map((a) => ({
+        userId: a.id,
+        type,
+        title,
+        message,
+        liveCallId: liveCallId ?? null,
+        serviceCallId: serviceCallId ?? null,
+      })),
+    });
+  } catch (err) {
+    console.error("Notify all admins error:", err);
   }
 }

@@ -24,11 +24,19 @@ export interface TechnicianMarkerData {
   isOnDuty: boolean;
 }
 
+export interface VendorMarkerData {
+  id: string;
+  latitude: number;
+  longitude: number;
+  label: string;
+}
+
 interface LiveMapProps {
   centerLatitude: number;
   centerLongitude: number;
   liveCallMarkers?: LiveCallMarkerData[];
   technicianMarkers?: TechnicianMarkerData[];
+  vendorMarkers?: VendorMarkerData[];
   onCallMarkerClick?: (id: string) => void;
   height?: string;
 }
@@ -38,6 +46,7 @@ export function LiveMap({
   centerLongitude,
   liveCallMarkers = [],
   technicianMarkers = [],
+  vendorMarkers = [],
   onCallMarkerClick,
   height = "500px",
 }: LiveMapProps) {
@@ -83,6 +92,14 @@ export function LiveMap({
                 tech.isOnDuty ? "bg-emerald-500" : "bg-slate-400"
               }`}
             >
+              <ClientIcon icon="ph:user-fill" className="w-3 h-3 text-white" />
+            </div>
+          </Marker>
+        ))}
+
+        {vendorMarkers.map((vendor) => (
+          <Marker key={vendor.id} longitude={vendor.longitude} latitude={vendor.latitude} anchor="bottom">
+            <div title={vendor.label} className="w-6 h-6 rounded-full bg-violet-500 border-2 border-white shadow-lg flex items-center justify-center">
               <ClientIcon icon="ph:user-fill" className="w-3 h-3 text-white" />
             </div>
           </Marker>

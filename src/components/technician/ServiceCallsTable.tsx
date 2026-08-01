@@ -50,7 +50,7 @@ function ActionCell({ item, onUpdated }: { item: ServiceCallSummary; onUpdated: 
   );
 }
 
-function buildColumns(onUpdated: () => void): ColumnDef<ServiceCallSummary>[] {
+function buildColumns(onUpdated: () => void, onView: (item: ServiceCallSummary) => void): ColumnDef<ServiceCallSummary>[] {
   return [
     {
       header: "Customer",
@@ -87,7 +87,17 @@ function buildColumns(onUpdated: () => void): ColumnDef<ServiceCallSummary>[] {
     },
     {
       header: "Actions",
-      cell: (item) => <ActionCell item={item} onUpdated={onUpdated} />,
+      cell: (item) => (
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => onView(item)}
+            className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white font-medium text-sm cursor-pointer"
+          >
+            View
+          </button>
+          <ActionCell item={item} onUpdated={onUpdated} />
+        </div>
+      ),
     },
   ];
 }
@@ -105,11 +115,19 @@ const filters = [
   },
 ];
 
-export function ServiceCallsTable({ data, onUpdated }: { data: ServiceCallSummary[]; onUpdated: () => void }) {
+export function ServiceCallsTable({
+  data,
+  onUpdated,
+  onView,
+}: {
+  data: ServiceCallSummary[];
+  onUpdated: () => void;
+  onView: (item: ServiceCallSummary) => void;
+}) {
   return (
     <DataTable
       data={data}
-      columns={buildColumns(onUpdated)}
+      columns={buildColumns(onUpdated, onView)}
       filters={filters}
       searchPlaceholder="Search assigned calls..."
       searchableFields={["customerName", "itemSummary", "city"]}

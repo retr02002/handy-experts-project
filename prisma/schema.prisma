@@ -82,6 +82,10 @@ model VendorProfile {
   // have it set; matching logic must treat null as "not yet locatable".
   latitude          Float?
   longitude         Float?
+  // Deactivated vendors keep their account and history intact but stop
+  // receiving new live-call broadcasts — the safe alternative to deleting a
+  // vendor outright, which would cascade-delete their ServiceCall history.
+  isActive          Boolean             @default(true)
   incorporationDate DateTime
   technicians       TechnicianProfile[]
   liveCallsAccepted LiveCall[]

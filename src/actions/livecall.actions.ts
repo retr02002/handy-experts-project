@@ -7,8 +7,9 @@ import { revalidatePath } from "next/cache";
 import type { ActionResponse } from "@/actions/auth.actions";
 import { createLiveCallSchema, type CreateLiveCallInput } from "@/lib/validations/livecall.schema";
 import { haversineKm, DEFAULT_RADIUS_KM } from "@/lib/geo";
-import { LOCATION_NOT_SET } from "@/lib/constants";
+import { LOCATION_NOT_SET, VENDOR_INACTIVE } from "@/lib/constants";
 import { requireAdmin } from "@/lib/require-admin";
+import { notifyAllAdmins } from "@/actions/notification.actions";
 
 async function requireCustomerId(): Promise<{ userId: string | null; error: string | null }> {
   const session = await getServerSession(authOptions);
@@ -150,6 +151,13 @@ export async function createLiveCallAction(input: CreateLiveCallInput): Promise<
     });
 
     revalidatePath("/cart");
+    // Best-effort — never let a notification failure fail the order itself.
+    notifyAllAdmins(
+      "NEW_LIVE_CALL",
+      "New live call",
+      `${data.customerName} placed an order in ${data.city} — ₹${total}.`,
+      liveCall.id
+    );
     return { success: true, data: { liveCallId: liveCall.id } };
   } catch (err) {
     console.error("Create live call error:", err);
@@ -167,9 +175,10 @@ async function requireVendorProfile(): Promise<
 
   const profile = await prisma.vendorProfile.findUnique({
     where: { userId: session.user.id },
-    select: { id: true, latitude: true, longitude: true },
+    select: { id: true, latitude: true, longitude: true, isActive: true },
   });
   if (!profile) return { vendor: null, error: "Vendor profile not found" };
+  if (!profile.isActive) return { vendor: null, error: VENDOR_INACTIVE };
   if (profile.latitude === null || profile.longitude === null) {
     return { vendor: null, error: LOCATION_NOT_SET };
   }
@@ -177,19 +186,33 @@ async function requireVendorProfile(): Promise<
   return { vendor: { id: profile.id, latitude: profile.latitude, longitude: profile.longitude }, error: null };
 }
 
+export interface LiveCallItemDetail {
+  packageName: string;
+  quantity: number;
+  unitPrice: number;
+}
+
 export interface NearbyLiveCall {
   id: string;
   customerName: string;
   customerPhone: string;
+  customerEmail: string;
   address: string;
   city: string;
+  state: string;
   pincode: string;
   latitude: number;
   longitude: number;
+  paymentMode: string;
+  upiRef: string;
+  paymentScreenshotUrl: string;
+  subtotal: number;
+  tax: number;
   total: number;
   createdAt: string;
+  expiresAt: string | null;
   distanceKm: number;
-  items: { packageName: string; quantity: number; unitPrice: number }[];
+  items: LiveCallItemDetail[];
 }
 
 export async function getNearbyLiveCallsForVendorAction(): Promise<ActionResponse<NearbyLiveCall[]>> {
@@ -215,13 +238,21 @@ export async function getNearbyLiveCallsForVendorAction(): Promise<ActionRespons
         id: call.id,
         customerName: call.customerName,
         customerPhone: call.customerPhone,
+        customerEmail: call.customerEmail,
         address: call.address,
         city: call.city,
+        state: call.state,
         pincode: call.pincode,
         latitude: call.latitude,
         longitude: call.longitude,
+        paymentMode: call.paymentMode,
+        upiRef: call.upiRef,
+        paymentScreenshotUrl: call.paymentScreenshotUrl,
+        subtotal: call.subtotal,
+        tax: call.tax,
         total: call.total,
         createdAt: call.createdAt.toISOString(),
+        expiresAt: call.expiresAt?.toISOString() ?? null,
         distanceKm: haversineKm(vendor.latitude, vendor.longitude, call.latitude, call.longitude),
         items: call.items.map((i) => ({ packageName: i.packageName, quantity: i.quantity, unitPrice: i.unitPrice })),
       }))
@@ -239,13 +270,24 @@ export interface AdminLiveCall {
   id: string;
   status: string;
   customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  address: string;
   city: string;
+  state: string;
   pincode: string;
   latitude: number;
   longitude: number;
+  paymentMode: string;
+  upiRef: string;
+  paymentScreenshotUrl: string;
+  subtotal: number;
+  tax: number;
   total: number;
   createdAt: string;
+  expiresAt: string | null;
   acceptedByVendorName: string | null;
+  items: LiveCallItemDetail[];
 }
 
 /** Admin sees every live call, unfiltered by proximity or status. */
@@ -260,7 +302,7 @@ export async function getAllLiveCallsAction(): Promise<ActionResponse<AdminLiveC
     });
 
     const calls = await prisma.liveCall.findMany({
-      include: { acceptedByVendor: { select: { companyName: true } } },
+      include: { acceptedByVendor: { select: { companyName: true } }, items: true },
       orderBy: { createdAt: "desc" },
       take: 200,
     });
@@ -271,13 +313,24 @@ export async function getAllLiveCallsAction(): Promise<ActionResponse<AdminLiveC
         id: c.id,
         status: c.status,
         customerName: c.customerName,
+        customerPhone: c.customerPhone,
+        customerEmail: c.customerEmail,
+        address: c.address,
         city: c.city,
+        state: c.state,
         pincode: c.pincode,
         latitude: c.latitude,
         longitude: c.longitude,
+        paymentMode: c.paymentMode,
+        upiRef: c.upiRef,
+        paymentScreenshotUrl: c.paymentScreenshotUrl,
+        subtotal: c.subtotal,
+        tax: c.tax,
         total: c.total,
         createdAt: c.createdAt.toISOString(),
+        expiresAt: c.expiresAt?.toISOString() ?? null,
         acceptedByVendorName: c.acceptedByVendor?.companyName ?? null,
+        items: c.items.map((i) => ({ packageName: i.packageName, quantity: i.quantity, unitPrice: i.unitPrice })),
       })),
     };
   } catch (err) {

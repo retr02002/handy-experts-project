@@ -7,6 +7,8 @@ import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import type { ActionResponse } from "@/actions/auth.actions";
 import { requireAdmin } from "@/lib/require-admin";
+import { notifyAllAdmins } from "@/actions/notification.actions";
+import type { LiveCallItemDetail } from "@/actions/livecall.actions";
 
 async function requireVendorId(): Promise<{ vendorId: string | null; error: string | null }> {
   const session = await getServerSession(authOptions);
@@ -34,6 +36,14 @@ export async function acceptAndAssignLiveCallAction(
   if (!vendorId) return { success: false, error: error! };
 
   try {
+    const vendorProfile = await prisma.vendorProfile.findUnique({
+      where: { id: vendorId },
+      select: { isActive: true, companyName: true },
+    });
+    if (!vendorProfile?.isActive) {
+      return { success: false, error: "Your account is deactivated and can't accept new calls." };
+    }
+
     const technician = await prisma.technicianProfile.findFirst({
       where: { id: technicianId, vendorId },
       select: { id: true, userId: true },
@@ -77,6 +87,13 @@ export async function acceptAndAssignLiveCallAction(
 
     revalidatePath("/vendor/live-calls");
     revalidatePath("/vendor/service-calls");
+    notifyAllAdmins(
+      "CALL_ACCEPTED",
+      "Live call accepted",
+      `${vendorProfile.companyName} accepted a call at ${liveCall.address}, ${liveCall.city}.`,
+      liveCallId,
+      serviceCall.id
+    );
     return { success: true, data: { serviceCallId: serviceCall.id } };
   } catch (err) {
     console.error("Accept and assign live call error:", err);
@@ -89,11 +106,19 @@ export interface ServiceCallSummary {
   status: string;
   customerName: string;
   customerPhone: string;
+  customerEmail: string;
   address: string;
   city: string;
+  state: string;
   pincode: string;
+  paymentMode: string;
+  upiRef: string;
+  paymentScreenshotUrl: string;
+  subtotal: number;
+  tax: number;
   total: number;
   itemSummary: string;
+  items: LiveCallItemDetail[];
   technicianId: string;
   technicianName: string;
   assignedAt: string;
@@ -117,10 +142,18 @@ function mapServiceCallRow(r: ServiceCallRow): ServiceCallSummary {
     customerName: r.liveCall.customerName,
     customerPhone: r.liveCall.customerPhone,
     address: r.liveCall.address,
+    customerEmail: r.liveCall.customerEmail,
     city: r.liveCall.city,
+    state: r.liveCall.state,
     pincode: r.liveCall.pincode,
+    paymentMode: r.liveCall.paymentMode,
+    upiRef: r.liveCall.upiRef,
+    paymentScreenshotUrl: r.liveCall.paymentScreenshotUrl,
+    subtotal: r.liveCall.subtotal,
+    tax: r.liveCall.tax,
     total: r.liveCall.total,
     itemSummary: r.liveCall.items.map((i) => i.packageName).join(", "),
+    items: r.liveCall.items.map((i) => ({ packageName: i.packageName, quantity: i.quantity, unitPrice: i.unitPrice })),
     technicianId: r.technicianId,
     technicianName: r.technician.user.name ?? "",
     assignedAt: r.assignedAt.toISOString(),

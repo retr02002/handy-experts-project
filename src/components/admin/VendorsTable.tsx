@@ -1,96 +1,106 @@
 "use client";
 
 import { DataTable, ColumnDef } from "@/components/ui/DataTable";
-import { Vendor } from "@/lib/mockData";
-import { ClientIcon } from "@/components/ui/ClientIcon";
+import type { AdminVendor } from "@/actions/admin.actions";
 
-const columns: ColumnDef<Vendor>[] = [
-  {
-    header: "Company Name",
-    accessorKey: "companyName",
-    sortable: true,
-    cell: (item) => (
-      <div className="font-medium text-slate-900 dark:text-white">
-        {item.companyName}
-      </div>
-    ),
-  },
-  {
-    header: "Contact",
-    accessorKey: "contactPerson",
-    sortable: true,
-    cell: (item) => (
-      <div className="flex flex-col">
-        <span className="text-sm">{item.contactPerson}</span>
-        <span className="text-xs text-slate-500">{item.email}</span>
-      </div>
-    ),
-  },
-  {
-    header: "Status",
-    accessorKey: "status",
-    sortable: true,
-    cell: (item) => {
-      const colors = {
-        active: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-        inactive: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-        pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-      };
-      return (
-        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${colors[item.status]}`}>
-          {item.status}
-        </span>
-      );
+function buildColumns(onView: (vendor: AdminVendor) => void): ColumnDef<AdminVendor>[] {
+  return [
+    {
+      header: "Company",
+      accessorKey: "companyName",
+      sortable: true,
+      cell: (item) => (
+        <div>
+          <div className="font-medium text-slate-900 dark:text-white">{item.companyName}</div>
+          <div className="text-xs text-slate-400">{item.companyType}</div>
+        </div>
+      ),
     },
-  },
-  {
-    header: "Rating",
-    accessorKey: "rating",
-    sortable: true,
-    cell: (item) => (
-      <div className="flex items-center text-amber-500">
-        <ClientIcon icon="heroicons:star-solid" className="w-4 h-4 mr-1" />
-        <span className="text-slate-700 dark:text-slate-300 font-medium">
-          {item.rating > 0 ? item.rating.toFixed(1) : "N/A"}
+    {
+      header: "Contact",
+      accessorKey: "contactName",
+      sortable: true,
+      cell: (item) => (
+        <div className="flex flex-col">
+          <span className="text-sm">{item.contactName}</span>
+          <span className="text-xs text-slate-500">{item.email}</span>
+        </div>
+      ),
+    },
+    {
+      header: "GST / PAN",
+      cell: (item) => (
+        <div className="flex flex-col text-xs">
+          <span>{item.gstNumber}</span>
+          <span className="text-slate-500">{item.panNumber}</span>
+        </div>
+      ),
+    },
+    {
+      header: "Location",
+      cell: (item) => (
+        <span className="text-sm">
+          {item.city}, {item.pincode}
         </span>
-      </div>
-    ),
-  },
-  {
-    header: "Completed Jobs",
-    accessorKey: "completedJobs",
-    sortable: true,
-  },
-  {
-    header: "Actions",
-    cell: () => (
-      <button className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-sm">
-        View Details
-      </button>
-    ),
-  },
-];
+      ),
+    },
+    {
+      header: "Technicians",
+      accessorKey: "technicianCount",
+      sortable: true,
+    },
+    {
+      header: "Service Calls",
+      accessorKey: "serviceCallCount",
+      sortable: true,
+    },
+    {
+      header: "Status",
+      cell: (item) => (
+        <span
+          className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+            item.isActive
+              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+              : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+          }`}
+        >
+          {item.isActive ? "Active" : "Deactivated"}
+        </span>
+      ),
+    },
+    {
+      header: "Actions",
+      cell: (item) => (
+        <button
+          onClick={() => onView(item)}
+          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-sm cursor-pointer"
+        >
+          Manage
+        </button>
+      ),
+    },
+  ];
+}
 
 const filters = [
   {
-    id: "status",
+    id: "isActive",
     label: "Status",
     options: [
-      { label: "Active", value: "active" },
-      { label: "Inactive", value: "inactive" },
-      { label: "Pending", value: "pending" },
+      { label: "Active", value: "true" },
+      { label: "Deactivated", value: "false" },
     ],
   },
 ];
 
-export function VendorsTable({ data }: { data: Vendor[] }) {
+export function VendorsTable({ data, onView }: { data: AdminVendor[]; onView: (vendor: AdminVendor) => void }) {
   return (
     <DataTable
       data={data}
-      columns={columns}
+      columns={buildColumns(onView)}
       filters={filters}
-      searchPlaceholder="Search vendors..."
-      searchableFields={["companyName", "contactPerson", "email"]}
+      searchPlaceholder="Search vendors by company, contact..."
+      searchableFields={["companyName", "contactName", "email"]}
     />
   );
 }
