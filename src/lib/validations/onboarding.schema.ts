@@ -53,6 +53,11 @@ export const vendorOnboardingSchema = z.object({
   city: citySchema,
   state: stateSchema,
   pincode: pincodeSchema,
+  // Captured from "use current location" — optional because a vendor may
+  // type their address manually instead; they can set it later from their
+  // profile page (needed for nearby-vendor live-call matching).
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
   incorporationDate: z
     .string()
     .refine((v) => !Number.isNaN(Date.parse(v)), "Enter a valid incorporation date"),

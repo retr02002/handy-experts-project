@@ -73,6 +73,8 @@ export async function completeVendorOnboarding(input: VendorOnboardingInput): Pr
     city,
     state,
     pincode,
+    latitude,
+    longitude,
     incorporationDate,
   } = validated.data;
 
@@ -95,6 +97,8 @@ export async function completeVendorOnboarding(input: VendorOnboardingInput): Pr
           city,
           state,
           pincode,
+          latitude,
+          longitude,
           incorporationDate: new Date(incorporationDate),
         },
         update: {
@@ -107,6 +111,10 @@ export async function completeVendorOnboarding(input: VendorOnboardingInput): Pr
           city,
           state,
           pincode,
+          // Only overwrite coordinates if this submission actually provided
+          // them — repeat calls into this upsert (e.g. a repair flow) with no
+          // location captured shouldn't wipe a previously-set one.
+          ...(latitude !== undefined && longitude !== undefined ? { latitude, longitude } : {}),
           incorporationDate: new Date(incorporationDate),
         },
       }),

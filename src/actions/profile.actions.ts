@@ -81,6 +81,39 @@ export async function changePassword(input: ChangePasswordInput): Promise<Action
   }
 }
 
+/**
+ * Backfill for vendors who onboarded before business coordinates were
+ * captured (or skipped "use current location" at the time) — without this,
+ * they're permanently invisible to nearby-vendor live-call matching.
+ */
+export async function updateVendorLocationAction(latitude: number, longitude: number): Promise<ActionResponse> {
+  const userId = await requireUserId();
+  if (!userId) return { success: false, error: "Not signed in" };
+
+  if (
+    typeof latitude !== "number" ||
+    typeof longitude !== "number" ||
+    Number.isNaN(latitude) ||
+    Number.isNaN(longitude) ||
+    latitude < -90 ||
+    latitude > 90 ||
+    longitude < -180 ||
+    longitude > 180
+  ) {
+    return { success: false, error: "Invalid coordinates" };
+  }
+
+  try {
+    const result = await prisma.vendorProfile.updateMany({ where: { userId }, data: { latitude, longitude } });
+    if (result.count === 0) return { success: false, error: "No vendor profile found" };
+    revalidatePath("/vendor/profile");
+    return { success: true };
+  } catch (error) {
+    console.error("Update vendor location error:", error);
+    return { success: false, error: "Failed to update your business location" };
+  }
+}
+
 export interface ProfileDetails {
   name: string | null;
   email: string | null;
@@ -98,6 +131,8 @@ export interface ProfileDetails {
     city: string;
     state: string;
     pincode: string;
+    latitude: number | null;
+    longitude: number | null;
     incorporationDate: Date;
   } | null;
   technicianProfile: {
@@ -132,6 +167,8 @@ export async function getProfileDetails(): Promise<ProfileDetails | null> {
           city: true,
           state: true,
           pincode: true,
+          latitude: true,
+          longitude: true,
           incorporationDate: true,
         },
       },

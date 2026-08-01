@@ -56,6 +56,9 @@ model User {
   cartItems         CartItem[]
   vendorProfile     VendorProfile?
   technicianProfile TechnicianProfile?
+  liveCalls         LiveCall[]
+  serviceCalls      ServiceCall[]
+  notifications     Notification[]
 }
 
 // Company type is a free-form string (not an enum) so new legal structures
@@ -74,8 +77,15 @@ model VendorProfile {
   city              String
   state             String
   pincode           String
+  // Business location — captured via "use current location" at onboarding.
+  // Nullable because vendors who onboarded before this field existed won't
+  // have it set; matching logic must treat null as "not yet locatable".
+  latitude          Float?
+  longitude         Float?
   incorporationDate DateTime
   technicians       TechnicianProfile[]
+  liveCallsAccepted LiveCall[]
+  serviceCalls      ServiceCall[]
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
 }
@@ -98,6 +108,8 @@ model TechnicianProfile {
   // part of the public self-signup flow this schema currently supports.
   vendorId        String?
   vendor          VendorProfile? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  serviceCalls    ServiceCall[]
+  location        TechnicianLocation?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 }
@@ -148,6 +160,7 @@ model ServicePackage {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   cartItems     CartItem[]
+  liveCallItems LiveCallItem[]
 
   @@index([serviceId])
 }
@@ -170,4 +183,135 @@ model CartItem {
 
   @@unique([userId, packageId])
   @@index([userId, status])
+}
+
+enum LiveCallStatus {
+  BROADCASTING
+  ACCEPTED
+  CONVERTED
+  EXPIRED
+  CANCELLED
+}
+
+enum ServiceCallStatus {
+  ASSIGNED
+  EN_ROUTE
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum NotificationType {
+  NEW_LIVE_CALL
+  CALL_ACCEPTED
+  CALL_ASSIGNED
+  CALL_STATUS_UPDATE
+}
+
+// Created when a customer completes checkout. Broadcast (by proximity) to
+// nearby vendors until one accepts and assigns a technician, at which point
+// it converts into a ServiceCall. Customer contact fields are snapshotted
+// here rather than joined from User, so vendors/technicians always see the
+// details as they were at order time even if the customer edits their
+// profile later.
+model LiveCall {
+  id                  String          @id @default(cuid())
+  customerId          String
+  customer            User            @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerName        String
+  customerPhone       String
+  customerEmail       String
+  address             String
+  city                String
+  state               String
+  pincode             String
+  latitude            Float
+  longitude           Float
+  paymentMode         String
+  upiRef              String
+  paymentScreenshotUrl String
+  subtotal            Float
+  tax                 Float
+  total               Float
+  status              LiveCallStatus  @default(BROADCASTING)
+  acceptedByVendorId  String?
+  acceptedByVendor    VendorProfile?  @relation(fields: [acceptedByVendorId], references: [id], onDelete: SetNull)
+  acceptedAt          DateTime?
+  expiresAt           DateTime?
+  items               LiveCallItem[]
+  serviceCall         ServiceCall?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  @@index([status])
+  @@index([customerId])
+}
+
+// Snapshot of a cart line item at the moment the LiveCall was created —
+// packageId is nullable/SetNull so a later ServicePackage deletion never
+// breaks historical order records.
+model LiveCallItem {
+  id          String          @id @default(cuid())
+  liveCallId  String
+  liveCall    LiveCall        @relation(fields: [liveCallId], references: [id], onDelete: Cascade)
+  packageId   String?
+  package     ServicePackage? @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  packageName String
+  unitPrice   Float
+  quantity    Int
+
+  @@index([liveCallId])
+}
+
+// The execution record once a vendor accepts a LiveCall and assigns a
+// technician — one-to-one with the LiveCall it was converted from.
+model ServiceCall {
+  id            String            @id @default(cuid())
+  liveCallId    String            @unique
+  liveCall      LiveCall          @relation(fields: [liveCallId], references: [id], onDelete: Cascade)
+  vendorId      String
+  vendor        VendorProfile     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  technicianId  String
+  technician    TechnicianProfile @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  customerId    String
+  customer      User              @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  status        ServiceCallStatus @default(ASSIGNED)
+  assignedAt    DateTime          @default(now())
+  startedAt     DateTime?
+  completedAt   DateTime?
+  cancelledAt   DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([vendorId])
+  @@index([technicianId])
+  @@index([customerId])
+}
+
+model Notification {
+  id            String           @id @default(cuid())
+  userId        String
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          NotificationType
+  title         String
+  message       String
+  liveCallId    String?
+  serviceCallId String?
+  isRead        Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+
+  @@index([userId, isRead])
+}
+
+// One row per technician, upserted — keeps high-frequency position writes
+// off the TechnicianProfile row itself. isOnDuty lets a vendor's live map
+// grey out a marker instead of removing it when a technician clocks off.
+model TechnicianLocation {
+  id           String            @id @default(cuid())
+  technicianId String            @unique
+  technician   TechnicianProfile @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  latitude     Float
+  longitude    Float
+  isOnDuty     Boolean           @default(false)
+  updatedAt    DateTime          @updatedAt
 }

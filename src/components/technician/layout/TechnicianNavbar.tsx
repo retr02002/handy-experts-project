@@ -6,6 +6,11 @@ import { useTheme } from "next-themes";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { LocationPicker } from "@/components/shared/LocationPicker";
 import { UserDropdown } from "@/components/shared/UserDropdown";
+import { OnDutyToggle } from "@/components/technician/OnDutyToggle";
+import { getUnreadNotificationCountAction } from "@/actions/notification.actions";
+import { usePolling } from "@/hooks/usePolling";
+
+const NOTIFICATIONS_POLL_INTERVAL_MS = 30000;
 
 interface TechnicianNavbarProps {
   isMobileMenuOpen: boolean;
@@ -15,11 +20,17 @@ interface TechnicianNavbarProps {
 export function TechnicianNavbar({ isMobileMenuOpen, setMobileMenuOpen }: TechnicianNavbarProps) {
   const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 0);
     return () => clearTimeout(timer);
   }, []);
+
+  usePolling(async () => {
+    const res = await getUnreadNotificationCountAction();
+    if (res.success && typeof res.data === "number") setUnreadCount(res.data);
+  }, NOTIFICATIONS_POLL_INTERVAL_MS);
 
   return (
     <header className="h-16 bg-white dark:bg-[#0B1120] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 md:px-6 sticky top-0 z-40 transition-colors">
@@ -51,7 +62,9 @@ export function TechnicianNavbar({ isMobileMenuOpen, setMobileMenuOpen }: Techni
 
       {/* Right: Actions */}
       <div className="flex items-center gap-2 md:gap-3">
-        
+
+        <OnDutyToggle />
+
         {/* Actions Container Pill */}
         <div className="flex items-center gap-0.5 md:gap-1 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-sm p-1 rounded-full border border-slate-200/50 dark:border-slate-700/50">
           
@@ -70,7 +83,9 @@ export function TechnicianNavbar({ isMobileMenuOpen, setMobileMenuOpen }: Techni
           {/* Notifications */}
           <Link href="/technician/notifications" className="relative p-1.5 md:p-2 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white rounded-full transition-all hover:shadow-sm">
             <ClientIcon icon="ph:bell" className="w-4 h-4 md:w-5 md:h-5" />
-            <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 md:w-2 md:h-2 bg-rose-500 rounded-full ring-2 ring-white dark:ring-slate-800" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 md:w-2 md:h-2 bg-rose-500 rounded-full ring-2 ring-white dark:ring-slate-800" />
+            )}
           </Link>
 
           {/* Wallet Link */}

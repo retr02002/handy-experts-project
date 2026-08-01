@@ -2,15 +2,19 @@ import React from "react";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { ServiceCallCard } from "@/components/shared/ServiceCallCard";
 import { mockServiceCalls, mockTechnicians } from "@/lib/mockData";
+import { getProfileDetails } from "@/actions/profile.actions";
 
-export default function VendorDashboardPage() {
+export default async function VendorDashboardPage() {
+  const profile = await getProfileDetails();
+  const greetingName = profile?.vendorProfile?.companyName || profile?.name || "Vendor";
+
   return (
     <div className="flex flex-col gap-6">
-      
+
       {/* Welcome Banner */}
       <div className="w-full bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-[#1E1B4B] dark:to-[#312E81] rounded-2xl p-8 shadow-sm dark:shadow-lg border border-blue-100 dark:border-indigo-900/50 transition-colors">
         <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-2 flex items-center gap-3">
-          Welcome to your Vendor Portal <span className="text-4xl">🛠️</span>
+          Welcome, {greetingName} <span className="text-4xl">🛠️</span>
         </h1>
         <p className="text-slate-600 dark:text-indigo-200">
           Manage your technicians, review live service calls, and track your earnings.

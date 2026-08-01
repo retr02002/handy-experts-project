@@ -1,97 +1,104 @@
 "use client";
 
 import { DataTable, ColumnDef } from "@/components/ui/DataTable";
-import { Technician } from "@/lib/mockData";
+import type { VendorTechnician } from "@/actions/technician.actions";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
-const columns: ColumnDef<Technician>[] = [
-  {
-    header: "Name",
-    accessorKey: "name",
-    sortable: true,
-    cell: (item) => (
-      <div className="font-medium text-slate-900 dark:text-white">
-        {item.name}
-      </div>
-    ),
-  },
-  {
-    header: "Skills",
-    cell: (item) => (
-      <div className="flex flex-wrap gap-1">
-        {item.skills.map((skill, idx) => (
-          <span key={idx} className="px-2 py-0.5 rounded text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-            {skill}
-          </span>
-        ))}
-      </div>
-    ),
-  },
-  {
-    header: "Status",
-    accessorKey: "status",
-    sortable: true,
-    cell: (item) => {
-      const colors = {
-        available: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-        on_job: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-        offline: "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400",
-      };
-      return (
-        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${colors[item.status]}`}>
-          {item.status.replace("_", " ")}
-        </span>
-      );
+function buildColumns(onView: (tech: VendorTechnician) => void): ColumnDef<VendorTechnician>[] {
+  return [
+    {
+      header: "Name",
+      accessorKey: "name",
+      sortable: true,
+      cell: (item) => <div className="font-medium text-slate-900 dark:text-white">{item.name}</div>,
     },
-  },
-  {
-    header: "Rating",
-    accessorKey: "rating",
-    sortable: true,
-    cell: (item) => (
-      <div className="flex items-center text-amber-500">
-        <ClientIcon icon="heroicons:star-solid" className="w-4 h-4 mr-1" />
-        <span className="text-slate-700 dark:text-slate-300 font-medium">
-          {item.rating > 0 ? item.rating.toFixed(1) : "N/A"}
+    {
+      header: "Email",
+      accessorKey: "email",
+      cell: (item) => <span className="text-sm text-slate-600 dark:text-slate-400">{item.email}</span>,
+    },
+    {
+      header: "Phone",
+      accessorKey: "phone",
+    },
+    {
+      header: "Skill",
+      accessorKey: "skillCategory",
+      sortable: true,
+      cell: (item) => (
+        <span className="px-2 py-0.5 rounded text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+          {item.skillCategory}
         </span>
-      </div>
-    ),
-  },
-  {
-    header: "Jobs",
-    accessorKey: "completedJobs",
-    sortable: true,
-  },
-  {
-    header: "Actions",
-    cell: () => (
-      <button className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-sm">
-        Manage
-      </button>
-    ),
-  },
-];
+      ),
+    },
+    {
+      header: "Experience",
+      accessorKey: "experienceYears",
+      sortable: true,
+      cell: (item) => <span>{item.experienceYears} yrs</span>,
+    },
+    {
+      header: "Service Area",
+      accessorKey: "servicePincode",
+    },
+    {
+      header: "Added",
+      accessorKey: "createdAt",
+      sortable: true,
+      cell: (item) => (
+        <span className="text-sm text-slate-500">
+          {new Date(item.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+        </span>
+      ),
+    },
+    {
+      header: "Status",
+      cell: (item) => (
+        <span
+          className={`px-2.5 py-0.5 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 ${
+            item.isOnDuty
+              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+              : "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400"
+          }`}
+        >
+          <ClientIcon icon="ph:circle-fill" className="w-2 h-2" />
+          {item.isOnDuty ? "On Duty" : "Off Duty"}
+        </span>
+      ),
+    },
+    {
+      header: "Actions",
+      cell: (item) => (
+        <button
+          onClick={() => onView(item)}
+          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-sm cursor-pointer"
+        >
+          Manage
+        </button>
+      ),
+    },
+  ];
+}
 
 const filters = [
   {
-    id: "status",
+    id: "isOnDuty",
     label: "Status",
     options: [
-      { label: "Available", value: "available" },
-      { label: "On Job", value: "on_job" },
-      { label: "Offline", value: "offline" },
+      { label: "On Duty", value: "true" },
+      { label: "Off Duty", value: "false" },
     ],
   },
 ];
 
-export function TechniciansTable({ data }: { data: Technician[] }) {
+export function TechniciansTable({ data, onView }: { data: VendorTechnician[]; onView: (tech: VendorTechnician) => void }) {
   return (
     <DataTable
       data={data}
-      columns={columns}
+      columns={buildColumns(onView)}
       filters={filters}
       searchPlaceholder="Search technicians by name..."
-      searchableFields={["name"]}
+      searchableFields={["name", "email"]}
     />
   );
 }

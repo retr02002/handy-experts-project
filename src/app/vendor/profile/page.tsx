@@ -5,6 +5,7 @@ import Image from "next/image";
 import { getProfileDetails } from "@/actions/profile.actions";
 import { AccountSettingsCard } from "@/components/shared/AccountSettingsCard";
 import { LogoutMenuItem } from "@/components/shared/LogoutMenuItem";
+import { SetLocationBanner } from "@/components/vendor/SetLocationBanner";
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
@@ -83,6 +84,8 @@ export default async function VendorProfilePage() {
 
         {/* Right Column - Forms */}
         <div className="lg:col-span-8 space-y-8">
+          {vendor && vendor.latitude === null && <SetLocationBanner />}
+
           {vendor && (
             <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm">
               <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">

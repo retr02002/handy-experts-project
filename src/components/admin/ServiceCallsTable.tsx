@@ -1,85 +1,72 @@
 "use client";
 
 import { DataTable, ColumnDef } from "@/components/ui/DataTable";
-import { ServiceCall } from "@/lib/mockData";
+import type { AdminServiceCallSummary } from "@/actions/servicecall.actions";
 
-const columns: ColumnDef<ServiceCall>[] = [
-  {
-    header: "ID",
-    accessorKey: "id",
-    sortable: true,
-    cell: (item) => (
-      <span className="font-medium text-slate-900 dark:text-white">
-        {item.id}
-      </span>
-    ),
-  },
+const statusColors: Record<string, string> = {
+  ASSIGNED: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+  EN_ROUTE: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
+  IN_PROGRESS: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
+  COMPLETED: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+  CANCELLED: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+};
+
+const columns: ColumnDef<AdminServiceCallSummary>[] = [
   {
     header: "Customer",
     accessorKey: "customerName",
     sortable: true,
   },
   {
-    header: "Service",
-    accessorKey: "serviceType",
-    sortable: true,
+    header: "Phone",
+    accessorKey: "customerPhone",
   },
   {
-    header: "Date & Time",
-    accessorKey: "date",
-    sortable: true,
+    header: "Service",
+    accessorKey: "itemSummary",
+  },
+  {
+    header: "Location",
     cell: (item) => (
-      <div className="flex flex-col">
-        <span>{item.date}</span>
-        <span className="text-xs text-slate-500">{item.time}</span>
-      </div>
+      <span className="text-sm max-w-[180px] truncate block">
+        {item.city}, {item.pincode}
+      </span>
     ),
   },
   {
     header: "Status",
     accessorKey: "status",
     sortable: true,
-    cell: (item) => {
-      const colors = {
-        pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-        assigned: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-        in_progress: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
-        completed: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-        cancelled: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-      };
-      return (
-        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${colors[item.status]}`}>
-          {item.status.replace("_", " ")}
-        </span>
-      );
-    },
-  },
-  {
-    header: "Vendor/Tech",
     cell: (item) => (
-      <div className="flex flex-col">
-        <span className="text-sm font-medium">{item.vendorName || "Unassigned"}</span>
-        <span className="text-xs text-slate-500">{item.technicianName || ""}</span>
-      </div>
-    ),
-  },
-  {
-    header: "Amount",
-    accessorKey: "amount",
-    sortable: true,
-    cell: (item) => (
-      <span className="font-medium text-slate-900 dark:text-white">
-        ₹{item.amount.toFixed(2)}
+      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${statusColors[item.status] ?? ""}`}>
+        {item.status.replace("_", " ").toLowerCase()}
       </span>
     ),
   },
   {
-    header: "Actions",
-    cell: () => (
-      <button className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-sm">
-        View Details
-      </button>
+    header: "Vendor / Technician",
+    cell: (item) => (
+      <div className="flex flex-col">
+        <span className="text-sm font-medium">{item.vendorName}</span>
+        <span className="text-xs text-slate-500">{item.technicianName}</span>
+      </div>
     ),
+  },
+  {
+    header: "Assigned",
+    accessorKey: "assignedAt",
+    sortable: true,
+    cell: (item) => (
+      <span className="text-sm text-slate-500">
+        {new Date(item.assignedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+      </span>
+    ),
+  },
+  {
+    header: "Amount",
+    accessorKey: "total",
+    sortable: true,
+    cell: (item) => <span className="font-medium text-slate-900 dark:text-white">₹{item.total.toFixed(2)}</span>,
   },
 ];
 
@@ -88,23 +75,23 @@ const filters = [
     id: "status",
     label: "Status",
     options: [
-      { label: "Pending", value: "pending" },
-      { label: "Assigned", value: "assigned" },
-      { label: "In Progress", value: "in_progress" },
-      { label: "Completed", value: "completed" },
-      { label: "Cancelled", value: "cancelled" },
+      { label: "Assigned", value: "ASSIGNED" },
+      { label: "En Route", value: "EN_ROUTE" },
+      { label: "In Progress", value: "IN_PROGRESS" },
+      { label: "Completed", value: "COMPLETED" },
+      { label: "Cancelled", value: "CANCELLED" },
     ],
   },
 ];
 
-export function ServiceCallsTable({ data }: { data: ServiceCall[] }) {
+export function ServiceCallsTable({ data }: { data: AdminServiceCallSummary[] }) {
   return (
     <DataTable
       data={data}
       columns={columns}
       filters={filters}
-      searchPlaceholder="Search calls by ID, customer, service..."
-      searchableFields={["id", "customerName", "serviceType", "location"]}
+      searchPlaceholder="Search calls by customer, vendor, service..."
+      searchableFields={["customerName", "itemSummary", "vendorName", "technicianName"]}
     />
   );
 }

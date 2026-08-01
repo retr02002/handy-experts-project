@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useCart } from "@/context/CartContext";
+import { createLiveCallAction } from "@/actions/livecall.actions";
 import { CartItemCard } from "./CartItemCard";
 import { OrderSummaryPanel } from "./OrderSummaryPanel";
 import { DiscountCodeForm } from "./DiscountCodeForm";
@@ -16,6 +17,7 @@ import {
   type CheckoutStep,
   type CustomerDetails,
   type PaymentDetails,
+  type PaymentMode,
   EMPTY_CUSTOMER_DETAILS,
   EMPTY_PAYMENT_DETAILS,
   isDetailsComplete,
@@ -33,6 +35,7 @@ export function CartContainer() {
   const [customerDetails, setCustomerDetails] = useState<CustomerDetails>(EMPTY_CUSTOMER_DETAILS);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails>(EMPTY_PAYMENT_DETAILS);
   const [orderId, setOrderId] = useState("");
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 0);
@@ -55,15 +58,57 @@ export function CartContainer() {
     setCheckoutStep("payment");
   };
 
-  const placeOrder = () => {
-    if (!isPaymentComplete(paymentDetails)) {
+  const placeOrder = async () => {
+    if (!isDetailsComplete(customerDetails)) {
+      toast.error("Please go back and complete your details first.");
+      return;
+    }
+    if (!isPaymentComplete(paymentDetails) || !paymentDetails.screenshotFile) {
       toast.error("Please select a payment app, enter your UPI/reference ID and upload a screenshot.");
       return;
     }
-    const id = `HX${Date.now().toString().slice(-8)}`;
-    setOrderId(id);
-    clearCart();
-    setCheckoutStep("success");
+
+    setIsPlacingOrder(true);
+    try {
+      const uploadForm = new FormData();
+      uploadForm.append("file", paymentDetails.screenshotFile);
+      const uploadRes = await fetch("/api/upload/payment-screenshot", { method: "POST", body: uploadForm });
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok || !uploadData.url) {
+        toast.error(uploadData.error || "Failed to upload payment screenshot. Please try again.");
+        return;
+      }
+
+      const res = await createLiveCallAction({
+        customerName: customerDetails.name,
+        customerEmail: customerDetails.email,
+        customerPhone: customerDetails.phone,
+        address: customerDetails.address,
+        city: customerDetails.city,
+        state: customerDetails.state,
+        pincode: customerDetails.pincode,
+        latitude: customerDetails.latitude,
+        longitude: customerDetails.longitude,
+        paymentMode: paymentDetails.mode as PaymentMode,
+        upiRef: paymentDetails.upiRef,
+        paymentScreenshotUrl: uploadData.url,
+      });
+
+      if (!res.success) {
+        toast.error(res.error || "Failed to place your order. Please try again.");
+        return;
+      }
+      if (!res.data) {
+        toast.error("Failed to place your order. Please try again.");
+        return;
+      }
+
+      setOrderId(res.data.liveCallId);
+      clearCart();
+      setCheckoutStep("success");
+    } finally {
+      setIsPlacingOrder(false);
+    }
   };
 
   if (checkoutStep === "success") {
@@ -163,9 +208,10 @@ export function CartContainer() {
             <PaymentStep payment={paymentDetails} onChange={setPaymentDetails} amountDue={grandTotal} />
           </div>
           <OrderSummaryPanel
-            primaryLabel="Place Order"
-            primaryIcon="ph:check-circle-bold"
+            primaryLabel={isPlacingOrder ? "Placing Order..." : "Place Order"}
+            primaryIcon={isPlacingOrder ? "svg-spinners:180-ring" : "ph:check-circle-bold"}
             onPrimary={placeOrder}
+            primaryDisabled={isPlacingOrder}
             onBack={() => setCheckoutStep("details")}
             backLabel="Back to Details"
           />

@@ -26,6 +26,8 @@ const EMPTY_FORM = {
   city: "",
   state: "",
   pincode: "",
+  latitude: null as number | null,
+  longitude: null as number | null,
   incorporationDate: "",
 };
 
@@ -67,6 +69,8 @@ export function VendorDetailsStep({ initialName = "", onBack, onSuccess }: Props
             city: data.rawCity || prev.city,
             state: data.rawState || prev.state,
             pincode: data.pincode.replace(/^,\s*/, "") || prev.pincode,
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
           }));
           toast.success("Location detected");
         } catch {
@@ -78,7 +82,8 @@ export function VendorDetailsStep({ initialName = "", onBack, onSuccess }: Props
       () => {
         toast.error("Location access denied.");
         setIsLocating(false);
-      }
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
 
@@ -91,6 +96,8 @@ export function VendorDetailsStep({ initialName = "", onBack, onSuccess }: Props
       const res = await completeVendorOnboarding({
         ...form,
         companyType: form.companyType as (typeof COMPANY_TYPES)[number],
+        latitude: form.latitude ?? undefined,
+        longitude: form.longitude ?? undefined,
       });
       if (!res.success) {
         if (res.errors) {

@@ -141,9 +141,9 @@ export function LocationPicker() {
         const lng = pos.coords.longitude;
         handleMapClick([lat, lng]);
         setIsAddingNew(true); // Move to the pin adjustment screen
-      }, (err) => {
+      }, () => {
         alert("Location access denied or failed.");
-      });
+      }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
     }
   };
 

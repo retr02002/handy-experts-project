@@ -8,6 +8,12 @@ export interface CustomerDetails {
   city: string;
   state: string;
   pincode: string;
+  // Captured from "use current location" — null if the customer typed their
+  // address manually instead. Used to find nearby vendors for the live call;
+  // if null at order time, the server falls back to geocoding the typed
+  // address rather than blocking checkout outright.
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export const EMPTY_CUSTOMER_DETAILS: CustomerDetails = {
@@ -18,6 +24,8 @@ export const EMPTY_CUSTOMER_DETAILS: CustomerDetails = {
   city: "",
   state: "",
   pincode: "",
+  latitude: null,
+  longitude: null,
 };
 
 export type PaymentMode = "gpay" | "phonepe" | "paytm" | "amazonpay" | "bhim" | "other-upi";

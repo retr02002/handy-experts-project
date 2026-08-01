@@ -16,6 +16,7 @@ const navItems = [
   { label: "Dashboard", href: "/vendor", icon: "ph:squares-four" },
   { label: "Live Calls", href: "/vendor/live-calls", icon: "ph:phone-call" },
   { label: "Service Calls", href: "/vendor/service-calls", icon: "ph:wrench" },
+  { label: "Technicians", href: "/vendor/technicians", icon: "ph:users-three" },
   { label: "Bookings", href: "/vendor/bookings", icon: "ph:calendar-check" },
   { label: "Revenue", href: "/vendor/revenue", icon: "ph:chart-line-up" },
   { label: "Reviews", href: "/vendor/reviews", icon: "ph:star" },

@@ -28,8 +28,17 @@ export function DetailsStep({ details, onChange }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
+  const LOCATION_FIELDS = ["address", "city", "state", "pincode"] as const;
+
   const setField = <K extends keyof CustomerDetails>(key: K, value: CustomerDetails[K]) => {
-    onChange({ ...details, [key]: value });
+    // Editing the address by hand after an auto-detect means the previously
+    // captured coordinates no longer match what's on screen — clear them so
+    // checkout falls back to geocoding the final typed address instead of
+    // silently sending a stale/wrong pin.
+    const staleCoords = (LOCATION_FIELDS as readonly string[]).includes(key)
+      ? { latitude: null, longitude: null }
+      : {};
+    onChange({ ...details, [key]: value, ...staleCoords });
   };
 
   const detectLocation = () => {
@@ -54,6 +63,8 @@ export function DetailsStep({ details, onChange }: Props) {
             city: rawCity || details.city,
             state: rawState || details.state,
             pincode: pincode.replace(/^,\s*/, "") || details.pincode,
+            latitude,
+            longitude,
           });
           if (!pincode) toast.error("Couldn't detect a pincode — please enter it manually.");
           else toast.success("Location detected");
@@ -66,7 +77,12 @@ export function DetailsStep({ details, onChange }: Props) {
       () => {
         toast.error("Location access denied.");
         setLocating(false);
-      }
+      },
+      // Without enableHighAccuracy, browsers often return a coarse
+      // WiFi/IP-based position that can be off by many kilometers — that's
+      // what causes a customer who's genuinely nearby to show up "far" from
+      // a vendor on the live-calls map.
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
 
