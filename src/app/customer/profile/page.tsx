@@ -39,7 +39,14 @@ export default async function CustomerProfilePage() {
         </div>
       </div>
 
-      <AccountSettingsCard name={userName} email={profile.email || ""} hasPassword={profile.hasPassword} />
+      <AccountSettingsCard
+        name={userName}
+        email={profile.email || ""}
+        hasPassword={profile.hasPassword}
+        showPassword={false}
+        allowEditEmail
+        hasGoogleAccount={profile.hasGoogleAccount}
+      />
 
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
         <div className="p-4 border-b border-slate-200 dark:border-slate-700">

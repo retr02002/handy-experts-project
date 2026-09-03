@@ -49,7 +49,13 @@ model User {
   emailVerified     DateTime?
   image             String?
   password          String?
-  phone             String?
+  // Globally unique across every role — OTP login looks accounts up by
+  // phone, so a phone number can only ever belong to one account, whichever
+  // role it registered under first.
+  phone             String?            @unique
+  // Technician-only login handle (self-chosen at signup, or auto-generated
+  // when a vendor creates the account). Null for every other role.
+  username          String?            @unique
   role              Role               @default(PENDING)
   accounts          Account[]
   sessions          Session[]
@@ -116,6 +122,34 @@ model TechnicianProfile {
   location        TechnicianLocation?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+}
+
+enum OtpChannel {
+  SMS
+  WHATSAPP
+}
+
+enum OtpPurpose {
+  CUSTOMER_LOGIN
+  TECHNICIAN_LOGIN
+}
+
+// Codes we generate and verify ourselves — ApiTxt (or any provider) is only
+// ever used as a delivery pipe for the `codeHash`'d value. Deliberately not
+// tied to a User row via FK: a customer OTP send happens before any account
+// exists for that phone yet.
+model OtpCode {
+  id         String     @id @default(cuid())
+  phone      String
+  channel    OtpChannel
+  purpose    OtpPurpose
+  codeHash   String
+  attempts   Int        @default(0)
+  consumedAt DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime   @default(now())
+
+  @@index([phone, purpose, createdAt])
 }
 
 model VerificationToken {

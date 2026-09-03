@@ -8,8 +8,10 @@ import { revalidatePath } from "next/cache";
 import type { ActionResponse } from "@/actions/auth.actions";
 import {
   updateNameSchema,
+  updateEmailSchema,
   changePasswordSchema,
   type UpdateNameInput,
+  type UpdateEmailInput,
   type ChangePasswordInput,
 } from "@/lib/validations/profile.schema";
 
@@ -36,6 +38,38 @@ export async function updateProfileName(input: UpdateNameInput): Promise<ActionR
   } catch (error) {
     console.error("Update name error:", error);
     return { success: false, error: "Failed to update name" };
+  }
+}
+
+/**
+ * Lets a phone/OTP-first account (no email at signup) add one later —
+ * purely optional, and never offered to a Google-linked account (that email
+ * is the OAuth identity and can't be changed here).
+ */
+export async function updateProfileEmail(input: UpdateEmailInput): Promise<ActionResponse> {
+  const userId = await requireUserId();
+  if (!userId) return { success: false, error: "Not signed in" };
+
+  const validated = updateEmailSchema.safeParse(input);
+  if (!validated.success) {
+    return { success: false, error: "Invalid input", errors: validated.error.flatten().fieldErrors };
+  }
+
+  try {
+    const taken = await prisma.user.findFirst({
+      where: { email: validated.data.email, NOT: { id: userId } },
+      select: { id: true },
+    });
+    if (taken) {
+      return { success: false, error: "That email is already in use", errors: { email: ["Already in use"] } };
+    }
+
+    await prisma.user.update({ where: { id: userId }, data: { email: validated.data.email } });
+    revalidatePath("/customer/profile");
+    return { success: true };
+  } catch (error) {
+    console.error("Update email error:", error);
+    return { success: false, error: "Failed to update email" };
   }
 }
 
@@ -120,6 +154,7 @@ export interface ProfileDetails {
   image: string | null;
   phone: string | null;
   hasPassword: boolean;
+  hasGoogleAccount: boolean;
   role: string;
   vendorProfile: {
     companyName: string;
@@ -156,6 +191,7 @@ export async function getProfileDetails(): Promise<ProfileDetails | null> {
       phone: true,
       password: true,
       role: true,
+      accounts: { where: { provider: "google" }, select: { id: true }, take: 1 },
       vendorProfile: {
         select: {
           companyName: true,
@@ -185,6 +221,7 @@ export async function getProfileDetails(): Promise<ProfileDetails | null> {
     image: user.image,
     phone: user.phone,
     hasPassword: !!user.password,
+    hasGoogleAccount: user.accounts.length > 0,
     role: user.role,
     vendorProfile: user.vendorProfile,
     technicianProfile: user.technicianProfile,

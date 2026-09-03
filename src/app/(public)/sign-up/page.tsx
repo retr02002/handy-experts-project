@@ -1,17 +1,9 @@
-import React from "react";
-import { AuthLayout } from "@/components/auth/AuthLayout";
-import { SignUpForm } from "@/components/auth/SignUpForm";
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Sign Up - Handyzo",
-  description: "Create your Handyzo account.",
-};
-
+// OTP unifies login-or-register into one step now (verifying a phone that
+// has no matching account creates one on the spot) — there's no longer a
+// meaningfully different "create account" page for customers, so old links
+// to /sign-up just land on /sign-in instead of 404ing.
 export default function SignUpPage() {
-  return (
-    <AuthLayout badgeText="Join us">
-      <SignUpForm />
-    </AuthLayout>
-  );
+  redirect("/sign-in");
 }

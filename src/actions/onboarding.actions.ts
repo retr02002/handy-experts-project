@@ -13,6 +13,25 @@ import {
   type TechnicianOnboardingInput,
 } from "@/lib/validations/onboarding.schema";
 
+/**
+ * Phone is globally unique across every role (OTP login depends on this).
+ * Any onboarding path that writes phone needs this check first — otherwise
+ * a second account (most commonly: someone who signed up with Google, then
+ * enters a phone already used by an existing account) would either hit a
+ * raw DB unique-constraint crash or silently take over someone else's
+ * number. Blocking here means that PENDING row just never gets promoted to
+ * a real account — no separate cleanup needed.
+ */
+async function checkPhoneAvailable(phone: string, excludeUserId: string): Promise<ActionResponse | null> {
+  const owner = await prisma.user.findFirst({ where: { phone, NOT: { id: excludeUserId } }, select: { role: true } });
+  if (!owner) return null;
+  return {
+    success: false,
+    error: `This phone number is already registered as a ${owner.role.toLowerCase()} — log in instead.`,
+    errors: { phone: ["Already in use"] },
+  };
+}
+
 async function requireOnboardableUser(
   targetRole: "CUSTOMER" | "VENDOR" | "TECHNICIAN"
 ): Promise<{ userId: string | null; error: string | null }> {
@@ -41,6 +60,9 @@ export async function completeCustomerOnboarding(input: CustomerOnboardingInput)
   }
 
   try {
+    const phoneConflict = await checkPhoneAvailable(validated.data.phone, userId);
+    if (phoneConflict) return phoneConflict;
+
     await prisma.user.update({
       where: { id: userId },
       data: { role: "CUSTOMER", name: validated.data.name, phone: validated.data.phone },
@@ -79,6 +101,9 @@ export async function completeVendorOnboarding(input: VendorOnboardingInput): Pr
   } = validated.data;
 
   try {
+    const phoneConflict = await checkPhoneAvailable(phone, userId);
+    if (phoneConflict) return phoneConflict;
+
     await prisma.$transaction([
       prisma.user.update({
         where: { id: userId },
@@ -138,6 +163,9 @@ export async function completeTechnicianOnboarding(input: TechnicianOnboardingIn
   const { name, phone, skillCategory, experienceYears, aadhaarNumber, servicePincode } = validated.data;
 
   try {
+    const phoneConflict = await checkPhoneAvailable(phone, userId);
+    if (phoneConflict) return phoneConflict;
+
     await prisma.$transaction([
       prisma.user.update({
         where: { id: userId },

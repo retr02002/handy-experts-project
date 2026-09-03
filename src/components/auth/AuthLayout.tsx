@@ -8,17 +8,16 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ children }: AuthLayoutProps) {
   return (
-    <div className="relative min-h-[100dvh] flex items-start justify-center w-full px-4 sm:px-8 lg:px-12 pt-28 pb-12 lg:pt-40 lg:pb-20">
-      {/* Full Page Background Image */}
+    // Responsive flex container that integrates naturally with the main site layout
+    <div className="relative w-full flex-1 flex flex-col lg:min-h-[100dvh] lg:items-center lg:justify-center bg-transparent lg:px-8 xl:px-12 lg:py-16">
+      {/* Full Page Background Image — desktop only */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/images/auth-hero.png" alt="Background" className="absolute inset-0 w-full h-full object-cover" />
+      <img src="/images/auth-hero.png" alt="" className="hidden lg:block absolute inset-0 w-full h-full object-cover" />
+      <div className="hidden lg:block absolute inset-0 bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-slate-900/40" />
 
-      {/* Gradient overlays for readability */}
-      <div className="absolute inset-0 bg-slate-900/60 lg:bg-gradient-to-r lg:from-slate-900/90 lg:via-slate-900/70 lg:to-slate-900/40" />
-
-      <div className="relative z-10 w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-24">
-
-        {/* Left Column (Content directly on background) - Hidden on mobile */}
+      <div className="relative z-10 w-full max-w-6xl mx-auto flex-1 flex flex-col lg:flex-row items-stretch sm:items-center justify-start lg:justify-between gap-8 lg:gap-24 pt-24 lg:pt-28 pb-32 sm:pb-12 px-4 sm:px-0">
+        
+        {/* Left Column (Content directly on background) - Hidden below lg */}
         <div className="hidden lg:flex w-full lg:w-1/2 flex-col items-start justify-center text-left">
 
           {/* Top Rating Badge */}
@@ -59,8 +58,8 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         </div>
 
         {/* Right Column (Form) */}
-        <div className="w-full lg:w-1/2 flex justify-center lg:justify-end">
-          <div className="w-full max-w-[480px] bg-white dark:bg-[#0A101D] border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl shadow-black/30 backdrop-blur-xl relative">
+        <div className="w-full sm:flex-initial lg:w-1/2 flex flex-col items-center lg:justify-center lg:items-end">
+          <div className="w-full sm:max-w-[440px] lg:max-w-[480px] bg-white dark:bg-[#0A101D] sm:border sm:border-slate-200/60 sm:dark:border-slate-800/60 rounded-3xl px-5 py-8 sm:p-8 lg:p-10 shadow-xl shadow-slate-200/40 dark:shadow-black/30 lg:backdrop-blur-xl relative flex flex-col">
             {children}
           </div>
         </div>

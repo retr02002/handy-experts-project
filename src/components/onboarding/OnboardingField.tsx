@@ -28,8 +28,12 @@ interface SelectProps extends BaseProps {
 
 type Props = InputProps | TextareaProps | SelectProps;
 
+// h-12 (48px) meets the standard minimum touch-target size — textarea opts
+// out via min-h since a fixed height doesn't make sense for multi-line text.
 const fieldClass =
-  "w-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-10 pr-4 py-2.5 text-[13px] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00B4FF]/40 focus:border-[#00B4FF] transition-all disabled:opacity-60";
+  "w-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-10 pr-4 h-12 text-[14px] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00B4FF]/40 focus:border-[#00B4FF] transition-all disabled:opacity-60";
+const textareaClass =
+  "w-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-10 pr-4 py-3 text-[14px] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00B4FF]/40 focus:border-[#00B4FF] transition-all disabled:opacity-60 resize-none";
 
 export function OnboardingField(props: Props) {
   const { label, error, icon } = props;
@@ -44,7 +48,7 @@ export function OnboardingField(props: Props) {
           </div>
         )}
         {props.as === "textarea" ? (
-          <textarea rows={3} {...props} className={`${fieldClass} resize-none`} />
+          <textarea rows={3} {...props} className={textareaClass} />
         ) : props.as === "select" ? (
           <>
             <select

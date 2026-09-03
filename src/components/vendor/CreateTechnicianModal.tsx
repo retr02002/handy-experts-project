@@ -89,10 +89,16 @@ export function CreateTechnicianModal({ onClose, onCreated }: CreateTechnicianMo
             <div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">Technician added</h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                Share these sign-in details with them — this password is shown only once.
+                {credentials.smsDelivered
+                  ? "We've also texted these details to them — this password is shown only once."
+                  : "Couldn't text these details — share them manually. Shown only once."}
               </p>
             </div>
             <div className="bg-slate-50 dark:bg-slate-900/60 rounded-xl p-4 flex flex-col gap-3 border border-slate-200 dark:border-slate-800">
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Username</p>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white break-all">{credentials.username}</p>
+              </div>
               <div>
                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Email</p>
                 <p className="text-sm font-semibold text-slate-900 dark:text-white break-all">{credentials.email}</p>

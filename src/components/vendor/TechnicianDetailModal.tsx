@@ -125,6 +125,9 @@ export function TechnicianDetailModal({ technician, onClose, onChanged }: Techni
         return;
       }
       setResetPassword(res.data.tempPassword);
+      toast[res.data.smsDelivered ? "success" : "error"](
+        res.data.smsDelivered ? "New password also texted to the technician" : "Couldn't text the technician — please share this manually"
+      );
     } finally {
       setIsResetting(false);
     }

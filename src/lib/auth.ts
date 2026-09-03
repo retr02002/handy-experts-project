@@ -5,6 +5,7 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "./prisma";
 import bcrypt from "bcrypt";
 import type { PrismaClient } from "@prisma/client";
+import { consumeOtp } from "@/actions/otp.actions";
 
 declare module "next-auth" {
   interface Session {
@@ -33,21 +34,22 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     }),
     CredentialsProvider({
+      // id defaults to "credentials" (kept as-is — every existing caller
+      // already targets this id). Only the field name changed: "identifier"
+      // accepts either an email or a technician's username.
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        identifier: { label: "Email or username", type: "text" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.identifier || !credentials?.password) {
           throw new Error("Invalid credentials");
         }
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email
-          }
-        });
+        const user = credentials.identifier.includes("@")
+          ? await prisma.user.findUnique({ where: { email: credentials.identifier } })
+          : await prisma.user.findUnique({ where: { username: credentials.identifier } });
 
         if (!user || !user?.password) {
           throw new Error("Invalid credentials");
@@ -64,7 +66,53 @@ export const authOptions: NextAuthOptions = {
 
         return user;
       }
-    })
+    }),
+    CredentialsProvider({
+      id: "otp-customer",
+      name: "Customer OTP",
+      credentials: {
+        phone: { label: "Phone", type: "text" },
+        code: { label: "Code", type: "text" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.phone || !credentials?.code) {
+          throw new Error("Invalid code");
+        }
+
+        const result = await consumeOtp({ phone: credentials.phone, purpose: "CUSTOMER_LOGIN", code: credentials.code });
+        if (!result.ok) throw new Error(result.error);
+
+        const existing = await prisma.user.findUnique({ where: { phone: credentials.phone } });
+        if (existing) return existing;
+
+        return prisma.user.create({ data: { phone: credentials.phone, role: "PENDING" } });
+      },
+    }),
+    CredentialsProvider({
+      id: "otp-technician",
+      name: "Technician OTP",
+      credentials: {
+        username: { label: "Username", type: "text" },
+        code: { label: "Code", type: "text" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.username || !credentials?.code) {
+          throw new Error("Invalid code");
+        }
+
+        const technician = await prisma.user.findFirst({
+          where: { username: credentials.username, role: "TECHNICIAN" },
+        });
+        if (!technician?.phone) {
+          throw new Error("No technician account found for that username");
+        }
+
+        const result = await consumeOtp({ phone: technician.phone, purpose: "TECHNICIAN_LOGIN", code: credentials.code });
+        if (!result.ok) throw new Error(result.error);
+
+        return technician;
+      },
+    }),
   ],
   pages: {
     signIn: "/sign-in",

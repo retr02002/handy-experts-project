@@ -28,7 +28,7 @@ export async function registerUser(input: RegisterInput): Promise<ActionResponse
       };
     }
 
-    const { email, password, name } = validatedData.data;
+    const { email, password, name, username } = validatedData.data;
 
     // 2. Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -39,16 +39,25 @@ export async function registerUser(input: RegisterInput): Promise<ActionResponse
       return { success: false, error: "A user with this email already exists" };
     }
 
+    if (username) {
+      const usernameTaken = await prisma.user.findUnique({ where: { username } });
+      if (usernameTaken) {
+        return { success: false, error: "That username is already taken", errors: { username: ["Already taken"] } };
+      }
+    }
+
     // 3. Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // 4. Create the user — role defaults to PENDING; they pick an account
-    // type (customer/vendor/technician) on the /onboarding step right after.
+    // type (vendor/technician) on the /onboarding step right after (customer
+    // signup goes through OTP instead, never through this action).
     await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name: name || null,
+        username: username || null,
       }
     });
 

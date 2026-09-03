@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { ClientIcon } from "@/components/ui/ClientIcon";
-import { updateProfileName, changePassword } from "@/actions/profile.actions";
+import { updateProfileName, updateProfileEmail, changePassword } from "@/actions/profile.actions";
 
 const inputClass =
   "w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all";
@@ -14,13 +14,34 @@ interface Props {
   email: string;
   hasPassword: boolean;
   accentClass?: string;
+  // Password auth only applies to vendor/technician/admin accounts —
+  // customers are Google/OTP-only and should never be prompted to set one.
+  showPassword?: boolean;
+  // Lets an account with no email yet (phone/OTP-first signup) add one
+  // optionally. Never offered when the email is Google-linked — that one
+  // is the OAuth identity and can't be changed here.
+  allowEditEmail?: boolean;
+  hasGoogleAccount?: boolean;
 }
 
-export function AccountSettingsCard({ name: initialName, email, hasPassword, accentClass = "text-blue-500" }: Props) {
+export function AccountSettingsCard({
+  name: initialName,
+  email: initialEmail,
+  hasPassword,
+  accentClass = "text-blue-500",
+  showPassword = true,
+  allowEditEmail = false,
+  hasGoogleAccount = false,
+}: Props) {
   const { update } = useSession();
   const [name, setName] = useState(initialName);
   const [isSavingName, setIsSavingName] = useState(false);
   const [nameError, setNameError] = useState("");
+
+  const [email, setEmail] = useState(initialEmail);
+  const [isSavingEmail, setIsSavingEmail] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const emailIsEditable = allowEditEmail && !hasGoogleAccount;
 
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -44,6 +65,23 @@ export function AccountSettingsCard({ name: initialName, email, hasPassword, acc
       toast.success("Name updated");
     } finally {
       setIsSavingName(false);
+    }
+  };
+
+  const handleSaveEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEmailError("");
+    setIsSavingEmail(true);
+    try {
+      const res = await updateProfileEmail({ email });
+      if (!res.success) {
+        setEmailError(res.errors?.email?.[0] || res.error || "Failed to update email");
+        toast.error(res.error || "Failed to update email");
+        return;
+      }
+      toast.success("Email updated");
+    } finally {
+      setIsSavingEmail(false);
     }
   };
 
@@ -87,8 +125,8 @@ export function AccountSettingsCard({ name: initialName, email, hasPassword, acc
           <ClientIcon icon="ph:user-circle-fill" className={`${accentClass} w-5 h-5`} />
           Account Details
         </h2>
-        <form onSubmit={handleSaveName} className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
-          <div className="space-y-1.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+          <form onSubmit={handleSaveName} className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">Full Name</label>
             <input
               type="text"
@@ -99,28 +137,53 @@ export function AccountSettingsCard({ name: initialName, email, hasPassword, acc
               minLength={2}
             />
             {nameError && <p className="text-xs font-medium text-red-500">{nameError}</p>}
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-              Email Address
-              <span className="text-[10px] font-normal text-slate-400 normal-case">(can't be changed)</span>
-            </label>
-            <input type="email" value={email} disabled className={`${inputClass} opacity-60 cursor-not-allowed`} />
-          </div>
-          <div className="sm:col-span-2">
             <button
               type="submit"
               disabled={isSavingName || name.trim() === initialName.trim()}
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+              className="mt-1 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
             >
               <ClientIcon icon="ph:floppy-disk" className="w-4 h-4" />
               {isSavingName ? "Saving..." : "Save Name"}
             </button>
-          </div>
-        </form>
+          </form>
+
+          {emailIsEditable ? (
+            <form onSubmit={handleSaveEmail} className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                Email Address
+                <span className="text-[10px] font-normal text-slate-400 normal-case">(optional)</span>
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className={inputClass}
+              />
+              {emailError && <p className="text-xs font-medium text-red-500">{emailError}</p>}
+              <button
+                type="submit"
+                disabled={isSavingEmail || email.trim() === initialEmail.trim() || !email.trim()}
+                className="mt-1 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <ClientIcon icon="ph:floppy-disk" className="w-4 h-4" />
+                {isSavingEmail ? "Saving..." : initialEmail ? "Update Email" : "Add Email"}
+              </button>
+            </form>
+          ) : (
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                Email Address
+                <span className="text-[10px] font-normal text-slate-400 normal-case">(can't be changed)</span>
+              </label>
+              <input type="email" value={email} disabled className={`${inputClass} opacity-60 cursor-not-allowed`} />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Password */}
+      {showPassword && (
       <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
         <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-5 flex items-center gap-2">
           <ClientIcon icon="ph:lock-key-fill" className="text-slate-500 w-5 h-5" />
@@ -226,6 +289,7 @@ export function AccountSettingsCard({ name: initialName, email, hasPassword, acc
           </form>
         )}
       </div>
+      )}
     </div>
   );
 }

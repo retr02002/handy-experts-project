@@ -14,6 +14,18 @@ import {
   type UpdateTechnicianInput,
 } from "@/lib/validations/technician.schema";
 import { requireAdmin } from "@/lib/require-admin";
+import { sendTextMessage } from "@/lib/apitxt";
+
+/** Slugified name + random suffix, retried on collision. @unique on User.username is the hard backstop. */
+async function generateUsername(name: string): Promise<string> {
+  const slug = name.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 10) || "tech";
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const candidate = `${slug}${crypto.randomInt(1000, 10000)}`;
+    const existing = await prisma.user.findUnique({ where: { username: candidate }, select: { id: true } });
+    if (!existing) return candidate;
+  }
+  throw new Error("Could not generate a unique username");
+}
 
 async function requireVendorId(): Promise<{ vendorId: string | null; error: string | null }> {
   const session = await getServerSession(authOptions);
@@ -37,13 +49,17 @@ async function requireTechnicianId(): Promise<{ technicianId: string | null; err
 
 export interface CreatedTechnicianCredentials {
   email: string;
+  username: string;
   tempPassword: string;
+  smsDelivered: boolean;
 }
 
 /**
  * Vendor-initiated technician creation. Generates a one-time-shown temp
- * password (no email/SMTP infra exists to deliver it any other way) — the
- * vendor is expected to relay it to the technician manually.
+ * password and an auto-generated username, and best-effort texts both to
+ * the technician's phone — delivery failure never fails the whole action,
+ * since the credentials are always also shown to the vendor to relay
+ * manually as a fallback.
  */
 export async function createTechnicianAction(
   input: CreateTechnicianInput
@@ -58,17 +74,27 @@ export async function createTechnicianAction(
   const { name, email, phone, skillCategory, experienceYears, servicePincode } = validated.data;
 
   try {
-    const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
-    if (existing) {
+    const existingEmail = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+    if (existingEmail) {
       return { success: false, error: "A user with this email already exists", errors: { email: ["Already in use"] } };
     }
 
+    const existingPhone = await prisma.user.findUnique({ where: { phone }, select: { role: true } });
+    if (existingPhone) {
+      return {
+        success: false,
+        error: `This phone number is already registered as a ${existingPhone.role.toLowerCase()} — log in instead.`,
+        errors: { phone: ["Already in use"] },
+      };
+    }
+
+    const username = await generateUsername(name);
     const tempPassword = crypto.randomBytes(9).toString("base64url");
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
     await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
-        data: { email, name, phone, password: hashedPassword, role: "TECHNICIAN" },
+        data: { email, name, phone, username, password: hashedPassword, role: "TECHNICIAN" },
       });
       await tx.technicianProfile.create({
         data: {
@@ -82,8 +108,14 @@ export async function createTechnicianAction(
       });
     });
 
+    const sendResult = await sendTextMessage({
+      phone,
+      channel: "SMS",
+      message: `Your Handyzo technician login — Username: ${username}  Temp password: ${tempPassword}. Please log in and change your password.`,
+    });
+
     revalidatePath("/vendor/technicians");
-    return { success: true, data: { email, tempPassword } };
+    return { success: true, data: { email, username, tempPassword, smsDelivered: sendResult.ok } };
   } catch (err) {
     console.error("Create technician error:", err);
     return { success: false, error: "Failed to create technician" };
@@ -110,6 +142,18 @@ export async function updateTechnicianAction(input: UpdateTechnicianInput): Prom
     });
     if (emailTaken) {
       return { success: false, error: "That email is already in use", errors: { email: ["Already in use"] } };
+    }
+
+    const phoneTaken = await prisma.user.findFirst({
+      where: { phone, NOT: { id: technician.userId } },
+      select: { role: true },
+    });
+    if (phoneTaken) {
+      return {
+        success: false,
+        error: `This phone number is already registered as a ${phoneTaken.role.toLowerCase()} — can't reuse it here.`,
+        errors: { phone: ["Already in use"] },
+      };
     }
 
     await prisma.$transaction([
@@ -156,19 +200,34 @@ export async function deleteTechnicianAction(id: string): Promise<ActionResponse
 }
 
 /** Vendor-initiated password reset for a technician they manage — same one-time-shown temp-password UX as creation. */
-export async function resetTechnicianPasswordAction(id: string): Promise<ActionResponse<{ tempPassword: string }>> {
+export async function resetTechnicianPasswordAction(
+  id: string
+): Promise<ActionResponse<{ tempPassword: string; smsDelivered: boolean }>> {
   const { vendorId, error } = await requireVendorId();
   if (!vendorId) return { success: false, error: error! };
 
   try {
-    const technician = await prisma.technicianProfile.findFirst({ where: { id, vendorId }, select: { userId: true } });
+    const technician = await prisma.technicianProfile.findFirst({
+      where: { id, vendorId },
+      select: { userId: true, user: { select: { phone: true, username: true } } },
+    });
     if (!technician) return { success: false, error: "Technician not found" };
 
     const tempPassword = crypto.randomBytes(9).toString("base64url");
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
     await prisma.user.update({ where: { id: technician.userId }, data: { password: hashedPassword } });
 
-    return { success: true, data: { tempPassword } };
+    let smsDelivered = false;
+    if (technician.user.phone) {
+      const sendResult = await sendTextMessage({
+        phone: technician.user.phone,
+        channel: "SMS",
+        message: `Your Handyzo technician password was reset. Username: ${technician.user.username ?? ""}  New temp password: ${tempPassword}`,
+      });
+      smsDelivered = sendResult.ok;
+    }
+
+    return { success: true, data: { tempPassword, smsDelivered } };
   } catch (err) {
     console.error("Reset technician password error:", err);
     return { success: false, error: "Failed to reset password" };

@@ -8,15 +8,20 @@ import { ClientIcon } from "@/components/ui/ClientIcon";
 
 interface Props {
   initialName?: string;
+  // Already-verified phone (e.g. from OTP sign-in) — when set, the phone
+  // field is hidden entirely instead of re-collecting (and risking
+  // silently overwriting) a number that's already confirmed.
+  initialPhone?: string;
   onBack?: () => void;
   onSuccess: () => void;
 }
 
-export function CustomerDetailsStep({ initialName = "", onBack, onSuccess }: Props) {
+export function CustomerDetailsStep({ initialName = "", initialPhone = "", onBack, onSuccess }: Props) {
   const [name, setName] = useState(initialName);
   const [phone, setPhone] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const phoneAlreadyVerified = Boolean(initialPhone);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +29,7 @@ export function CustomerDetailsStep({ initialName = "", onBack, onSuccess }: Pro
     setErrors({});
 
     try {
-      const res = await completeCustomerOnboarding({ name, phone });
+      const res = await completeCustomerOnboarding({ name, phone: phoneAlreadyVerified ? initialPhone : phone });
       if (!res.success) {
         if (res.errors) {
           setErrors(Object.fromEntries(Object.entries(res.errors).map(([k, v]) => [k, v?.[0] ?? ""])));
@@ -73,17 +78,19 @@ export function CustomerDetailsStep({ initialName = "", onBack, onSuccess }: Pro
             error={errors.name}
             required
           />
-          <OnboardingField
-            label="Phone Number"
-            icon="ph:phone"
-            type="tel"
-            inputMode="numeric"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-            placeholder="10-digit mobile number"
-            error={errors.phone}
-            required
-          />
+          {!phoneAlreadyVerified && (
+            <OnboardingField
+              label="Phone Number"
+              icon="ph:phone"
+              type="tel"
+              inputMode="numeric"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+              placeholder="10-digit mobile number"
+              error={errors.phone}
+              required
+            />
+          )}
         </div>
       </div>
 
@@ -91,7 +98,7 @@ export function CustomerDetailsStep({ initialName = "", onBack, onSuccess }: Pro
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-[#00B4FF] hover:bg-[#0096fa] disabled:opacity-70 text-white rounded-xl py-3.5 sm:py-3 text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer"
+          className="w-full h-12 bg-[#00B4FF] hover:bg-[#0096fa] disabled:opacity-70 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-sm cursor-pointer"
         >
           {isSubmitting ? "Saving..." : "Continue to Dashboard"}
         </button>

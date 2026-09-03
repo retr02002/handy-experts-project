@@ -7,13 +7,6 @@ export type OnboardingRole = "CUSTOMER" | "VENDOR" | "TECHNICIAN";
 
 const ROLE_OPTIONS: { role: OnboardingRole; icon: string; title: string; description: string; accent: string }[] = [
   {
-    role: "CUSTOMER",
-    icon: "ph:house-line-fill",
-    title: "Customer",
-    description: "Book trusted pros for your home",
-    accent: "from-[#00B4FF] to-blue-600",
-  },
-  {
     role: "VENDOR",
     icon: "ph:buildings-fill",
     title: "Company / Vendor",

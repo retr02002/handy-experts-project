@@ -5,6 +5,11 @@ export const updateNameSchema = z.object({
 });
 export type UpdateNameInput = z.infer<typeof updateNameSchema>;
 
+export const updateEmailSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Enter a valid email address"),
+});
+export type UpdateEmailInput = z.infer<typeof updateEmailSchema>;
+
 export const changePasswordSchema = z.object({
   currentPassword: z.string().optional(),
   newPassword: z.string().min(6, "Password must be at least 6 characters").max(100),
