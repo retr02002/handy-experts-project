@@ -8,7 +8,8 @@ import { getUserRole } from "@/actions/auth.actions";
 import { sendCustomerOtp } from "@/actions/otp.actions";
 import { OtpCodeInput } from "./OtpCodeInput";
 
-const WHATSAPP_ENABLED = process.env.NEXT_PUBLIC_APITXT_WHATSAPP_ENABLED === "true";
+// Hardcoded rather than env-gated — see src/lib/apitxt.ts for why.
+const WHATSAPP_ENABLED = true;
 
 type Step = "start" | "code";
 type Channel = "SMS" | "WHATSAPP";

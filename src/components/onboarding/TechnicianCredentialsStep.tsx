@@ -8,7 +8,8 @@ import { OnboardingField } from "./OnboardingField";
 import { OtpCodeInput } from "@/components/auth/OtpCodeInput";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
-const WHATSAPP_ENABLED = process.env.NEXT_PUBLIC_APITXT_WHATSAPP_ENABLED === "true";
+// Hardcoded rather than env-gated — see src/lib/apitxt.ts for why.
+const WHATSAPP_ENABLED = true;
 
 type Mode = "signup" | "login" | "otp";
 type OtpStep = "start" | "code";

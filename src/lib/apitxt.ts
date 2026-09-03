@@ -18,8 +18,12 @@ const DEFAULT_COUNTRY_CODE = "91";
 
 export type OtpChannel = "SMS" | "WHATSAPP";
 
+// Hardcoded on rather than env-gated — the env-var toggle kept getting lost
+// across Vercel deploys (NEXT_PUBLIC_ vars only take effect on the *next*
+// build, easy to forget), so WhatsApp OTP is just always on now. Flip this
+// back to `false` directly if WhatsApp ever needs to be disabled again.
 function isWhatsAppEnabled(): boolean {
-  return process.env.APITXT_WHATSAPP_ENABLED === "true";
+  return true;
 }
 
 async function postToApitxt(body: Record<string, string>): Promise<{ ok: true } | { ok: false; error: string }> {
