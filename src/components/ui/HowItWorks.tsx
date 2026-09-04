@@ -50,7 +50,7 @@ const STEPS = [
 
 export function HowItWorks() {
   return (
-    <section className="w-full bg-slate-50 dark:bg-[#0A0F1C] py-16 sm:py-24 px-4 sm:px-8 lg:px-16 overflow-hidden">
+    <section className="w-full bg-slate-50 dark:bg-[#0A0F1C] py-6 sm:py-24 px-4 sm:px-8 lg:px-16 overflow-hidden">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
         <SectionHeader

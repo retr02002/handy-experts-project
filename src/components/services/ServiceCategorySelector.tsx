@@ -37,7 +37,7 @@ export function MobileCategoryChipBar({ categoryNames }: { categoryNames: string
   const { activeTab, scrollTo } = useScrollTo();
 
   return (
-    <div className="lg:hidden sticky top-[68px] sm:top-20 z-30 bg-white/95 dark:bg-[#060B15]/95 backdrop-blur-xl border-y border-slate-200 dark:border-slate-800 px-3 sm:px-4 py-2 mb-4 shadow-xs w-full overflow-x-auto no-scrollbar flex items-center gap-2">
+    <div className="lg:hidden sticky top-[68px] sm:top-20 z-30 bg-white/95 dark:bg-[#060B15]/95 backdrop-blur-xl border-y border-slate-200 dark:border-slate-800 px-3 sm:px-4 py-2 mb-6 sm:mb-8 shadow-xs w-full overflow-x-auto no-scrollbar flex items-center gap-2">
       {categoryNames.map((cat, index) => (
         <button
           key={cat}

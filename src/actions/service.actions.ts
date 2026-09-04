@@ -6,6 +6,15 @@ import { serviceSchema, ServiceInput } from "@/lib/validations/service.schema";
 import type { ActionResponse } from "@/actions/auth.actions";
 import { requireAdmin } from "@/lib/require-admin";
 
+/**
+ * P2003 = foreign key constraint failure. Happens when an admin submits a
+ * service against a categoryId that was deleted in another tab since the form
+ * loaded — worth a specific message rather than a generic failure.
+ */
+function isMissingCategoryError(error: unknown): boolean {
+  return typeof error === "object" && error !== null && (error as { code?: string }).code === "P2003";
+}
+
 export async function createService(input: ServiceInput): Promise<ActionResponse<{ id: string }>> {
   if (!(await requireAdmin())) {
     return { success: false, error: "Unauthorized" };
@@ -29,12 +38,17 @@ export async function createService(input: ServiceInput): Promise<ActionResponse
     });
 
     revalidatePath("/admin/services");
+    // Per-category service counts on the categories manager go stale otherwise.
+    revalidatePath("/admin/categories");
     revalidatePath("/services");
     revalidatePath("/");
     revalidatePath(`/services/${service.slug}`);
     return { success: true, data: { id: service.id } };
   } catch (error) {
     console.error("Create service error:", error);
+    if (isMissingCategoryError(error)) {
+      return { success: false, error: "That category no longer exists", errors: { categoryId: ["Selected category no longer exists"] } };
+    }
     return { success: false, error: "Failed to create service" };
   }
 }
@@ -65,6 +79,8 @@ export async function updateService(id: string, input: ServiceInput): Promise<Ac
     });
 
     revalidatePath("/admin/services");
+    // Per-category service counts on the categories manager go stale otherwise.
+    revalidatePath("/admin/categories");
     revalidatePath("/services");
     revalidatePath("/");
     revalidatePath(`/services/${rest.slug}`);
@@ -74,6 +90,9 @@ export async function updateService(id: string, input: ServiceInput): Promise<Ac
     return { success: true };
   } catch (error) {
     console.error("Update service error:", error);
+    if (isMissingCategoryError(error)) {
+      return { success: false, error: "That category no longer exists", errors: { categoryId: ["Selected category no longer exists"] } };
+    }
     return { success: false, error: "Failed to update service" };
   }
 }
@@ -86,6 +105,8 @@ export async function deleteService(id: string): Promise<ActionResponse> {
   try {
     const deleted = await prisma.service.delete({ where: { id } });
     revalidatePath("/admin/services");
+    // Per-category service counts on the categories manager go stale otherwise.
+    revalidatePath("/admin/categories");
     revalidatePath("/services");
     revalidatePath("/");
     revalidatePath(`/services/${deleted.slug}`);

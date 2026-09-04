@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Service, ServicePackage } from "@prisma/client";
+import type { Category, Service, ServicePackage } from "@prisma/client";
 import {
   serviceBenefitSchema,
   serviceStepSchema,
@@ -8,7 +8,7 @@ import {
   ServicePackageInput,
 } from "@/lib/validations/service.schema";
 
-export type ServiceWithPackages = Service & { packages: ServicePackage[] };
+export type ServiceWithPackages = Service & { packages: ServicePackage[]; category: Category | null };
 export type PackageWithService = ServicePackage & { service: Pick<Service, "id" | "title" | "image"> };
 
 function parseJsonArray<T>(schema: z.ZodType<T>, value: unknown): T[] {
@@ -20,7 +20,7 @@ export function serviceToFormInput(service: ServiceWithPackages | Service): Serv
   return {
     title: service.title,
     slug: service.slug,
-    category: service.category,
+    categoryId: service.categoryId ?? "",
     badge: service.badge ?? "",
     badgeColor: service.badgeColor ?? "",
     rating: service.rating ?? "",
@@ -55,7 +55,7 @@ export function emptyServiceInput(): ServiceInput {
   return {
     title: "",
     slug: "",
-    category: "",
+    categoryId: "",
     badge: "",
     badgeColor: "",
     rating: "",

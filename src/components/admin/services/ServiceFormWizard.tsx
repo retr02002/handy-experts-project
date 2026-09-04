@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { WizardModal } from "./WizardModal";
@@ -34,11 +35,12 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  categories: { id: string; name: string }[];
   initialData?: ServiceInput;
   serviceId?: string;
 };
 
-export function ServiceFormWizard({ isOpen, onClose, onSuccess, initialData, serviceId }: Props) {
+export function ServiceFormWizard({ isOpen, onClose, onSuccess, categories, initialData, serviceId }: Props) {
   const isEdit = Boolean(serviceId);
   const [step, setStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,7 +66,7 @@ export function ServiceFormWizard({ isOpen, onClose, onSuccess, initialData, ser
     if (step === 0) {
       if (form.title.trim().length < 3) newErrors.title = "Title must be at least 3 characters";
       if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(form.slug)) newErrors.slug = "Slug must be lowercase, alphanumeric, hyphen-separated";
-      if (!form.category.trim()) newErrors.category = "Category is required";
+      if (!form.categoryId) newErrors.categoryId = "Category is required";
     }
 
     if (step === 1) {
@@ -174,13 +176,29 @@ export function ServiceFormWizard({ isOpen, onClose, onSuccess, initialData, ser
             />
           </Field>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Category" error={errors.category}>
-              <input className={inputClass} value={form.category} onChange={(e) => set("category", e.target.value)} placeholder="AC & Appliance" />
+            <Field label="Category" error={errors.categoryId}>
+              <select className={inputClass} value={form.categoryId} onChange={(e) => set("categoryId", e.target.value)}>
+                <option value="">Select a category...</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
             </Field>
             <Field label="Rating">
               <input className={inputClass} value={form.rating} onChange={(e) => set("rating", e.target.value)} placeholder="4.9 (12,480 reviews)" />
             </Field>
           </div>
+          {categories.length === 0 && (
+            <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+              No categories exist yet —{" "}
+              <Link href="/admin/categories" className="underline hover:no-underline">
+                create a category
+              </Link>{" "}
+              first before adding services.
+            </p>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <Field label="Badge Text">
               <input className={inputClass} value={form.badge} onChange={(e) => set("badge", e.target.value)} placeholder="TRENDING" />
@@ -282,7 +300,7 @@ export function ServiceFormWizard({ isOpen, onClose, onSuccess, initialData, ser
           <div className="grid grid-cols-2 gap-3 text-sm">
             <SummaryItem label="Title" value={form.title} />
             <SummaryItem label="Slug" value={form.slug} />
-            <SummaryItem label="Category" value={form.category} />
+            <SummaryItem label="Category" value={categories.find((c) => c.id === form.categoryId)?.name ?? "—"} />
             <SummaryItem label="Rating" value={form.rating || "—"} />
             <SummaryItem label="Time" value={form.time || "—"} />
             <SummaryItem label="Warranty" value={form.warranty || "—"} />

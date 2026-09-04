@@ -16,7 +16,11 @@ function FooterLink({ href, children }: { href: string; children: React.ReactNod
   );
 }
 
-export function Footer() {
+type FooterProps = {
+  categories?: { id: string; name: string; slug: string }[];
+};
+
+export function Footer({ categories = [] }: FooterProps) {
   return (
     <footer className="w-full bg-slate-50 dark:bg-[#020813] border-t border-slate-200 dark:border-slate-800/50 pt-16 pb-8 px-4 sm:px-6 lg:px-8 mt-auto">
       <div className="max-w-7xl mx-auto">
@@ -45,11 +49,15 @@ export function Footer() {
               Our Services
             </h4>
             <ul className="flex flex-col gap-3.5 text-sm text-slate-600 dark:text-slate-400 font-medium">
-              <li><FooterLink href="#">Cleaning Services</FooterLink></li>
-              <li><FooterLink href="#">AC & Appliance</FooterLink></li>
-              <li><FooterLink href="#">Plumbing Fixes</FooterLink></li>
-              <li><FooterLink href="#">Electrical</FooterLink></li>
-              <li><FooterLink href="#">Carpentry</FooterLink></li>
+              {categories.length === 0 ? (
+                <li><FooterLink href="/services">All Services</FooterLink></li>
+              ) : (
+                categories.slice(0, 5).map((cat) => (
+                  <li key={cat.id}>
+                    <FooterLink href={`/services?category=${cat.slug}`}>{cat.name}</FooterLink>
+                  </li>
+                ))
+              )}
             </ul>
           </div>
 

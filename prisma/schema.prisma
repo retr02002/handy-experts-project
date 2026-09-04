@@ -160,11 +160,35 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+// Storefront taxonomy. Drives the homepage category grid, the popular-services
+// slider tabs, the /services filter tabs and the footer links — previously all
+// five of those were separate hardcoded lists that drifted apart.
+model Category {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  name        String
+  description String?
+  // Iconify name (e.g. "ph:broom"). Rendered icon-only on /services tabs.
+  icon        String?
+  // Tile photo for the homepage grid, which shows an image with an icon pill
+  // overlaid — hence both fields rather than one.
+  image       String?
+  isActive    Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  services    Service[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
 model Service {
   id          String    @id @default(cuid())
   slug        String    @unique
   title       String
-  category    String
+  // Nullable so deleting a category degrades gracefully (SetNull) rather than
+  // blocking at the DB layer — the app-level guard in category.actions.ts is
+  // what actually refuses a delete while services are still attached.
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   badge       String?
   badgeColor  String?
   rating      String?
@@ -179,6 +203,8 @@ model Service {
   packages    ServicePackage[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  @@index([categoryId])
 }
 
 model ServicePackage {

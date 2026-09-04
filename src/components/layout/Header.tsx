@@ -44,9 +44,8 @@ export function Header() {
               <div className="flex-1 flex items-center justify-start">
                 {/* Desktop Nav */}
                 <nav className="hidden lg:flex items-center gap-5 text-[14px] font-medium text-slate-600 dark:text-slate-300">
+                  <Link href="/" className="hover:text-slate-900 dark:hover:text-white transition-colors py-2">Home</Link>
                   <Link href="/services" className="hover:text-slate-900 dark:hover:text-white transition-colors py-2">Services</Link>
-                  <Link href="/about" className="hover:text-slate-900 dark:hover:text-white transition-colors py-2">About</Link>
-                  <Link href="/blog" className="hover:text-slate-900 dark:hover:text-white transition-colors py-2">Blog</Link>
                   <Link href="/contact" className="hover:text-slate-900 dark:hover:text-white transition-colors py-2">Contact</Link>
                 </nav>
 
@@ -106,18 +105,13 @@ export function Header() {
       <div className={`fixed bottom-0 left-0 right-0 w-full z-[60] lg:hidden`}>
         <div className="bg-white dark:bg-[#0B1120] border-t border-slate-200 dark:border-slate-800 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] px-1 pb-safe h-16 flex items-center justify-between">
           <Link href="/" className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${pathname === '/' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
-            <ClientIcon icon={pathname === '/' ? "ph:house-fill" : "ph:house"} className={`w-5 h-5 transition-transform ${pathname === '/' ? 'scale-110' : ''}`} />
-            <span className="text-[9px] font-medium leading-none mt-0.5">Home</span>
-          </Link>
-
-          <Link href="/about" className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${pathname === '/about' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
-            <ClientIcon icon={pathname === '/about' ? "ph:info-fill" : "ph:info"} className={`w-5 h-5 transition-transform ${pathname === '/about' ? 'scale-110' : ''}`} />
-            <span className="text-[9px] font-medium leading-none mt-0.5">About</span>
+            <ClientIcon icon={pathname === '/' ? "ph:house-fill" : "ph:house"} className={`w-6 h-6 transition-transform ${pathname === '/' ? 'scale-110' : ''}`} />
+            <span className="text-[11px] font-medium leading-none mt-0.5">Home</span>
           </Link>
 
           <Link href="/services" className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${pathname.startsWith('/services') ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
-            <ClientIcon icon={pathname.startsWith('/services') ? "ph:wrench-fill" : "ph:wrench"} className={`w-5 h-5 transition-transform ${pathname.startsWith('/services') ? 'scale-110' : ''}`} />
-            <span className="text-[9px] font-medium leading-none mt-0.5">Services</span>
+            <ClientIcon icon={pathname.startsWith('/services') ? "ph:wrench-fill" : "ph:wrench"} className={`w-6 h-6 transition-transform ${pathname.startsWith('/services') ? 'scale-110' : ''}`} />
+            <span className="text-[11px] font-medium leading-none mt-0.5">Services</span>
           </Link>
 
           {/* AI Chatbot Center Button */}
@@ -125,25 +119,20 @@ export function Header() {
             onClick={toggleChat}
             className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors group px-1 ${isOpen ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}
           >
-            <div className={`flex items-center justify-center w-[40px] h-[40px] -mt-6 rounded-full border-[3px] border-white dark:border-[#0B1120] shadow-md transition-transform group-hover:scale-110 group-active:scale-95 ${isOpen ? 'bg-slate-800 text-white dark:bg-slate-700' : 'bg-gradient-to-tr from-[#00B4FF] to-[#0096d6] text-white'}`}>
-              <ClientIcon icon="ph:robot-fill" className="w-5 h-5" />
+            <div className={`flex items-center justify-center w-[48px] h-[48px] -mt-6 rounded-full border-[3px] border-white dark:border-[#0B1120] shadow-md transition-transform group-hover:scale-110 group-active:scale-95 ${isOpen ? 'bg-slate-800 text-white dark:bg-slate-700' : 'bg-gradient-to-tr from-[#00B4FF] to-[#0096d6] text-white'}`}>
+              <ClientIcon icon="ph:robot-fill" className="w-6 h-6" />
             </div>
-            <span className={`text-[9px] font-bold -mt-1 leading-none ${isOpen ? 'font-semibold' : ''}`}>Ask AI</span>
+            <span className={`text-[11px] font-bold -mt-1 leading-none ${isOpen ? 'font-semibold' : ''}`}>Ask AI</span>
           </button>
 
-          <Link href="/blog" className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${pathname === '/blog' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
-            <ClientIcon icon={pathname === '/blog' ? "ph:article-fill" : "ph:article"} className={`w-5 h-5 transition-transform ${pathname === '/blog' ? 'scale-110' : ''}`} />
-            <span className="text-[9px] font-medium leading-none mt-0.5">Blog</span>
-          </Link>
-
           <Link href="/contact" className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${pathname === '/contact' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
-            <ClientIcon icon={pathname === '/contact' ? "ph:envelope-simple-fill" : "ph:envelope-simple"} className={`w-5 h-5 transition-transform ${pathname === '/contact' ? 'scale-110' : ''}`} />
-            <span className="text-[9px] font-medium leading-none mt-0.5">Contact</span>
+            <ClientIcon icon={pathname === '/contact' ? "ph:envelope-simple-fill" : "ph:envelope-simple"} className={`w-6 h-6 transition-transform ${pathname === '/contact' ? 'scale-110' : ''}`} />
+            <span className="text-[11px] font-medium leading-none mt-0.5">Contact</span>
           </Link>
 
           <Link href="/book-now" className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${pathname === '/book-now' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
-            <ClientIcon icon={pathname === '/book-now' ? "ph:calendar-plus-fill" : "ph:calendar-plus"} className={`w-5 h-5 transition-transform ${pathname === '/book-now' ? 'scale-110' : ''}`} />
-            <span className="text-[9px] font-medium leading-none mt-0.5">Book</span>
+            <ClientIcon icon={pathname === '/book-now' ? "ph:calendar-plus-fill" : "ph:calendar-plus"} className={`w-6 h-6 transition-transform ${pathname === '/book-now' ? 'scale-110' : ''}`} />
+            <span className="text-[11px] font-medium leading-none mt-0.5">Book</span>
           </Link>
         </div>
       </div>

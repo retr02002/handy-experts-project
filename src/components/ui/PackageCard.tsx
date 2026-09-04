@@ -47,12 +47,14 @@ export function PackageCard({ parentService, pkg }: PackageCardProps) {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80"></div>
           
-          {/* Badge */}
-          <div className="absolute top-4 left-4">
-            <span className="px-3 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase bg-white/90 dark:bg-black/60 backdrop-blur-md text-slate-900 dark:text-white shadow-sm">
-              {parentService.category}
-            </span>
-          </div>
+          {/* Badge — skipped entirely when uncategorised, so no empty pill floats over the image */}
+          {parentService.category && (
+            <div className="absolute top-4 left-4">
+              <span className="px-3 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase bg-white/90 dark:bg-black/60 backdrop-blur-md text-slate-900 dark:text-white shadow-sm">
+                {parentService.category.name}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Details Section */}

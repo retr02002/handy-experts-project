@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import type { Service, ServiceBenefit, ServiceFaq, ServicePackage, ServiceStep } from "@/types/service";
+import type { Category, CategoryWithServices } from "@/types/category";
 
 const serviceWithPackages = Prisma.validator<Prisma.ServiceDefaultArgs>()({
-  include: { packages: { orderBy: { createdAt: "asc" } } },
+  include: { packages: { orderBy: { createdAt: "asc" } }, category: true },
 });
 
 type PrismaServiceWithPackages = Prisma.ServiceGetPayload<typeof serviceWithPackages>;
@@ -33,7 +34,14 @@ export function mapPrismaService(service: PrismaServiceWithPackages): Service {
   return {
     id: service.id,
     slug: service.slug,
-    category: service.category,
+    category: service.category
+      ? {
+          id: service.category.id,
+          name: service.category.name,
+          slug: service.category.slug,
+          icon: service.category.icon,
+        }
+      : null,
     badge: service.badge ?? "",
     badgeColor: service.badgeColor ?? "bg-slate-900 text-white dark:bg-white dark:text-slate-900",
     rating: service.rating ?? "",
@@ -69,4 +77,71 @@ export async function getServiceBySlug(slug: string): Promise<Service | null> {
 export async function getAllServiceSlugs(): Promise<string[]> {
   const rows = await prisma.service.findMany({ select: { slug: true } });
   return rows.map((r) => r.slug);
+}
+
+type PrismaCategory = Prisma.CategoryGetPayload<Record<string, never>>;
+
+function mapPrismaCategory(category: PrismaCategory): Category {
+  return {
+    id: category.id,
+    slug: category.slug,
+    name: category.name,
+    description: category.description ?? undefined,
+    icon: category.icon ?? undefined,
+    image: category.image ?? undefined,
+    isActive: category.isActive,
+    sortOrder: category.sortOrder,
+  };
+}
+
+/**
+ * Active categories for the storefront (grid, slider tabs, /services tabs,
+ * footer). The `name` tiebreak matters — sortOrder defaults to 0 for anything
+ * the admin hasn't explicitly ordered, so without it the order is
+ * nondeterministic between queries.
+ */
+export async function getAllCategories(): Promise<Category[]> {
+  const rows = await prisma.category.findMany({
+    where: { isActive: true },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+  });
+  return rows.map(mapPrismaCategory);
+}
+
+/** Homepage grid + its modal, in a single query (no N+1). */
+export async function getCategoriesWithServices(): Promise<CategoryWithServices[]> {
+  const rows = await prisma.category.findMany({
+    where: { isActive: true },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    include: {
+      services: {
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          image: true,
+          rating: true,
+          badge: true,
+          time: true,
+          packages: { select: { price: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      },
+    },
+  });
+
+  return rows.map((row) => ({
+    ...mapPrismaCategory(row),
+    services: row.services.map((s) => ({
+      id: s.id,
+      slug: s.slug,
+      title: s.title,
+      image: s.image,
+      rating: s.rating ?? "",
+      badge: s.badge ?? "",
+      time: s.time ?? "",
+      packageCount: s.packages.length,
+      fromPrice: s.packages.length > 0 ? Math.min(...s.packages.map((p) => p.price)) : null,
+    })),
+  }));
 }

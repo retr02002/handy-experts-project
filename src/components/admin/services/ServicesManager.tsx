@@ -15,9 +15,17 @@ import type { ServiceWithPackages } from "./utils";
 
 type Props = {
   services: ServiceWithPackages[];
+  categories: { id: string; name: string }[];
 };
 
-export function ServicesManager({ services }: Props) {
+/**
+ * DataTable searches with `String(val)` and sorts with raw `<`/`>` on the raw
+ * accessor value, so an object accessor would search as "[object Object]" and
+ * never sort. The category name has to be flattened onto the row itself.
+ */
+type ServiceRow = ServiceWithPackages & { categoryName: string };
+
+export function ServicesManager({ services, categories }: Props) {
   const router = useRouter();
   const [view, setView] = useState<"table" | "card">("card");
   const [cardSearch, setCardSearch] = useState("");
@@ -54,13 +62,20 @@ export function ServicesManager({ services }: Props) {
     }
   };
 
+  const rows: ServiceRow[] = useMemo(
+    () => services.map((s) => ({ ...s, categoryName: s.category?.name ?? "" })),
+    [services]
+  );
+
   const filteredCardServices = useMemo(() => {
     const q = cardSearch.trim().toLowerCase();
     if (!q) return services;
-    return services.filter((s) => s.title.toLowerCase().includes(q) || s.category.toLowerCase().includes(q));
+    return services.filter(
+      (s) => s.title.toLowerCase().includes(q) || (s.category?.name ?? "").toLowerCase().includes(q)
+    );
   }, [services, cardSearch]);
 
-  const columns: ColumnDef<ServiceWithPackages>[] = [
+  const columns: ColumnDef<ServiceRow>[] = [
     {
       header: "Service",
       accessorKey: "title",
@@ -75,7 +90,7 @@ export function ServicesManager({ services }: Props) {
         </div>
       ),
     },
-    { header: "Category", accessorKey: "category", sortable: true },
+    { header: "Category", accessorKey: "categoryName", sortable: true, cell: (item) => item.category?.name ?? "—" },
     { header: "Rating", accessorKey: "rating", sortable: true, cell: (item) => item.rating || "—" },
     {
       header: "Packages",
@@ -135,7 +150,7 @@ export function ServicesManager({ services }: Props) {
           <p className="text-sm text-slate-500 dark:text-slate-400">No services yet. Create your first one to get started.</p>
         </div>
       ) : view === "table" ? (
-        <DataTable data={services} columns={columns} searchPlaceholder="Search services..." searchableFields={["title", "category", "slug"]} />
+        <DataTable data={rows} columns={columns} searchPlaceholder="Search services..." searchableFields={["title", "categoryName", "slug"]} />
       ) : (
         <div className="flex flex-col gap-4">
           <input
@@ -156,7 +171,9 @@ export function ServicesManager({ services }: Props) {
                   )}
                 </div>
                 <div className="p-4 flex flex-col gap-2 flex-1">
-                  <span className="text-[11px] font-bold uppercase tracking-wide text-blue-600 dark:text-blue-400">{service.category}</span>
+                  <span className="text-[11px] font-bold uppercase tracking-wide text-blue-600 dark:text-blue-400">
+                    {service.category?.name ?? "Uncategorised"}
+                  </span>
                   <h3 className="font-black text-slate-900 dark:text-white leading-tight">{service.title}</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">{service.description}</p>
                   <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -196,6 +213,7 @@ export function ServicesManager({ services }: Props) {
           onSuccess={() => router.refresh()}
           initialData={editingService ? serviceToFormInput(editingService) : undefined}
           serviceId={editingService?.id}
+          categories={categories}
         />
       )}
 

@@ -42,7 +42,7 @@ const TRUST_FEATURES = [
 
 export function TrustSection() {
   return (
-    <section className="relative w-full bg-slate-50 dark:bg-[#060A13] py-16 sm:py-24 px-4 sm:px-8 lg:px-16 overflow-hidden">
+    <section className="relative w-full bg-slate-50 dark:bg-[#060A13] py-6 sm:py-24 px-4 sm:px-8 lg:px-16 overflow-hidden">
       {/* Subtle Background Grid Pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
       

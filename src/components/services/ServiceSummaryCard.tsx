@@ -7,14 +7,18 @@ interface ServiceSummaryCardProps {
 }
 
 export function ServiceSummaryCard({ service }: ServiceSummaryCardProps) {
+  const label = service.badge || service.category?.name;
+
   return (
     <div className="bg-white dark:bg-[#0E172B] rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs w-full min-w-0 relative overflow-hidden group">
       <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl from-[#00B4FF]/10 via-purple-500/5 to-transparent rounded-bl-full pointer-events-none"></div>
 
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-[#00B4FF] dark:bg-blue-500/10 text-[10px] font-black uppercase tracking-wider border border-blue-100/60 dark:border-blue-500/20 mb-2.5 shadow-2xs">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#00B4FF] animate-pulse"></span>
-        {service.badge || service.category}
-      </span>
+      {label && (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-[#00B4FF] dark:bg-blue-500/10 text-[10px] font-black uppercase tracking-wider border border-blue-100/60 dark:border-blue-500/20 mb-2.5 shadow-2xs">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#00B4FF] animate-pulse"></span>
+          {label}
+        </span>
+      )}
 
       <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mb-2 break-words">
         {service.title}

@@ -29,10 +29,18 @@ export type ServiceFaq = {
   answer: string;
 };
 
+/** Narrow, read-only view of a category for public service consumers. */
+export type ServiceCategoryRef = {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string | null;
+};
+
 export type Service = {
   id: string;
   slug: string;
-  category: string;
+  category: ServiceCategoryRef | null;
   badge: string;
   badgeColor: string;
   rating: string;

@@ -3,7 +3,7 @@ import { Banner } from '@/components/ui/Banner';
 import { GlobalSearchBar } from '@/components/ui/GlobalSearchBar';
 import { ServicesFilterMenu } from '@/components/ui/ServicesFilterMenu';
 import { ServicesList } from '@/components/services/ServicesList';
-import { getAllServices } from '@/lib/services-data';
+import { getAllServices, getAllCategories } from '@/lib/services-data';
 import { CategoryTabs } from '@/components/ui/CategoryTabs';
 
 export const metadata = {
@@ -41,7 +41,7 @@ export default async function ServicesPage(props: {
   const minPrice = typeof searchParams.minPrice === 'string' ? parseInt(searchParams.minPrice) : 0;
   const maxPrice = typeof searchParams.maxPrice === 'string' ? parseInt(searchParams.maxPrice) : 10000;
 
-  const allServices = await getAllServices();
+  const [allServices, categories] = await Promise.all([getAllServices(), getAllCategories()]);
 
   // Filter logic
   const filteredServices = allServices.filter(service => {
@@ -49,9 +49,13 @@ export default async function ServicesPage(props: {
     if (query && !service.title.toLowerCase().includes(query) && !service.description.toLowerCase().includes(query)) {
       return false;
     }
-    // 2. Categories
-    if (selectedCategories.length > 0 && !selectedCategories.includes(service.category)) {
-      return false;
+    // 2. Categories. Matched on slug, but the name is accepted too so links
+    // shared before categories moved to the DB don't silently return nothing.
+    if (selectedCategories.length > 0) {
+      const cat = service.category;
+      if (!cat || !selectedCategories.some(sel => sel === cat.slug || sel === cat.name)) {
+        return false;
+      }
     }
     // 3. Ratings
     if (ratingParam > 0) {
@@ -150,7 +154,7 @@ export default async function ServicesPage(props: {
 
               {/* Category Tabs */}
               <Suspense fallback={<div className="h-24 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse"></div>}>
-                <CategoryTabs />
+                <CategoryTabs categories={categories} />
               </Suspense>
             </div>
 

@@ -42,7 +42,7 @@ export function ServicePreviewModal({ isOpen, onClose, service }: Props) {
             <ClientIcon icon="ph:x-bold" className="w-4 h-4" />
           </button>
           <div className="absolute bottom-0 left-0 p-4">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-400">{data.category}</span>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-400">{service.category?.name ?? "Uncategorised"}</span>
             <h2 className="text-xl font-black text-white">{data.title}</h2>
           </div>
         </div>

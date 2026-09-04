@@ -26,7 +26,7 @@ export const serviceSchema = z.object({
     .string()
     .min(3, "Slug must be at least 3 characters")
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase, alphanumeric, and hyphen-separated"),
-  category: z.string().min(1, "Category is required"),
+  categoryId: z.string().min(1, "Category is required"),
   badge: z.string().optional(),
   badgeColor: z.string().optional(),
   rating: z.string().optional(),

@@ -17,6 +17,7 @@ const navItems = [
   { label: "Live Calls", href: "/admin/live-calls", icon: "ph:phone-call" },
   { label: "Service Calls", href: "/admin/service-calls", icon: "ph:wrench" },
   { label: "Service Catalog", href: "/admin/services", icon: "ph:storefront" },
+  { label: "Categories", href: "/admin/categories", icon: "ph:tag" },
   { label: "Packages", href: "/admin/packages", icon: "ph:package" },
   { label: "Vendors & Co", href: "/admin/vendors", icon: "ph:buildings" },
   { label: "Bills & Mgmt", href: "/admin/bills", icon: "ph:receipt" },

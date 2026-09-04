@@ -38,7 +38,7 @@ export function PromoBanner({
         <div className={`absolute inset-0 bg-gradient-to-t sm:bg-gradient-to-${reverse ? 'l' : 'r'} from-[#0A0F1C]/95 via-[#0A0F1C]/70 to-transparent`} />
       </div>
 
-      <ScrollReveal className="relative z-10 w-full px-4 sm:px-8 lg:px-16 py-10 sm:py-16">
+      <ScrollReveal className="relative z-10 w-full px-4 sm:px-8 lg:px-16 py-4 sm:py-16">
         <div className={`max-w-7xl mx-auto flex flex-col ${reverse ? 'sm:items-end sm:text-right' : 'sm:items-start sm:text-left'} text-center`}>
           
           {/* Glassmorphism Text Container */}

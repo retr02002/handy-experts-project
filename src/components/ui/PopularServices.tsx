@@ -1,14 +1,21 @@
 import React from "react";
 import { SectionHeader } from "./SectionHeader";
 import { PopularServicesClient } from "./PopularServicesClient";
-import { getAllServices } from "@/lib/services-data";
+import { getAllServices, getAllCategories } from "@/lib/services-data";
 import { ClientIcon } from "./ClientIcon";
 
 export async function PopularServices() {
   const services = await getAllServices();
 
+  // Tabs are derived from what the catalog actually holds, so creating an empty
+  // category in the admin never adds a dead tab to the homepage.
+  const populated = new Map(
+    services.flatMap((s) => (s.category ? [[s.category.slug, s.category] as const] : []))
+  );
+  const categories = (await getAllCategories()).filter((c) => populated.has(c.slug));
+
   return (
-    <section className="py-20 sm:py-28 bg-white dark:bg-[#060b14] overflow-hidden border-t border-slate-100 dark:border-slate-800/50">
+    <section className="py-6 sm:py-28 bg-white dark:bg-[#060b14] overflow-hidden border-t border-slate-100 dark:border-slate-800/50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         
         <SectionHeader
@@ -23,7 +30,7 @@ export async function PopularServices() {
         />
 
         {/* Client Component handles tabs and swiper interactvity */}
-        <PopularServicesClient services={services} />
+        <PopularServicesClient services={services} categories={categories} />
 
         {/* Mobile Navigation Buttons */}
         <div className="mt-8 flex md:hidden justify-center gap-3">

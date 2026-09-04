@@ -5,32 +5,30 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Navigation } from "swiper/modules";
 import { ClientIcon } from "./ClientIcon";
 import { Service } from "@/types/service";
+import type { Category } from "@/types/category";
 import { ServiceCard } from "./ServiceCard";
 import { motion, AnimatePresence } from "framer-motion";
 
-const CATEGORIES = [
-  "All Services",
-  "AC & Appliance",
-  "Cleaning",
-  "Plumbing",
-  "Electrical",
-  "Carpentry",
-];
+const ALL = "__all__";
 
 type PopularServicesClientProps = {
   services: Service[];
+  /** Only categories that actually hold a service — see PopularServices. */
+  categories: Category[];
 };
 
-export function PopularServicesClient({ services }: PopularServicesClientProps) {
-  const [activeCategory, setActiveCategory] = useState("All Services");
+export function PopularServicesClient({ services, categories }: PopularServicesClientProps) {
+  const [activeCategory, setActiveCategory] = useState(ALL);
   const isMounted = React.useSyncExternalStore(
     () => () => {},
     () => true,
     () => false
   );
 
-  const filteredServices = services.filter((service) => 
-    activeCategory === "All Services" || service.category === activeCategory
+  const tabs = [{ id: ALL, slug: ALL, name: "All Services" }, ...categories];
+
+  const filteredServices = services.filter(
+    (service) => activeCategory === ALL || service.category?.slug === activeCategory
   );
 
   return (
@@ -44,9 +42,9 @@ export function PopularServicesClient({ services }: PopularServicesClientProps) 
             onChange={(e) => setActiveCategory(e.target.value)}
             className="w-full appearance-none bg-slate-100 dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white py-3 pl-4 pr-10 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-[#00B4FF]/50 transition-shadow"
           >
-            {CATEGORIES.map((category) => (
-              <option key={category} value={category}>
-                {category}
+            {tabs.map((tab) => (
+              <option key={tab.id} value={tab.slug}>
+                {tab.name}
               </option>
             ))}
           </select>
@@ -58,17 +56,17 @@ export function PopularServicesClient({ services }: PopularServicesClientProps) 
 
         {/* Desktop Tabs */}
         <div className="hidden md:flex flex-wrap gap-2">
-          {CATEGORIES.map((category) => (
+          {tabs.map((tab) => (
             <button
-              key={category}
-              onClick={() => setActiveCategory(category)}
+              key={tab.id}
+              onClick={() => setActiveCategory(tab.slug)}
               className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 ${
-                activeCategory === category
+                activeCategory === tab.slug
                   ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md scale-105"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-[#0f172a] dark:text-slate-400 dark:hover:bg-[#1e293b] hover:text-slate-900 dark:hover:text-white"
               }`}
             >
-              {category}
+              {tab.name}
             </button>
           ))}
         </div>
@@ -103,15 +101,10 @@ export function PopularServicesClient({ services }: PopularServicesClientProps) 
             >
               <Swiper
                 key={`swiper-${activeCategory}`}
-                modules={[Autoplay, Navigation]}
+                modules={[Navigation]}
                 spaceBetween={20}
                 slidesPerView={1}
                 loop={filteredServices.length > 3}
-                autoplay={{
-                  delay: 3000,
-                  disableOnInteraction: false,
-                  pauseOnMouseEnter: true,
-                }}
                 navigation={{
                   prevEl: '.popular-swiper-prev',
                   nextEl: '.popular-swiper-next',

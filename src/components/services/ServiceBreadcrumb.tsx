@@ -18,8 +18,17 @@ export function ServiceBreadcrumb({ service }: ServiceBreadcrumbProps) {
           <ClientIcon icon="ph:arrow-left-bold" className="w-3.5 h-3.5 sm:hidden text-[#00B4FF]" />
           <span>Home</span>
         </Link>
-        <ClientIcon icon="ph:caret-right-bold" className="w-3 h-3 text-slate-400 shrink-0 hidden sm:inline-block" />
-        <span className="font-semibold text-slate-600 dark:text-slate-300 shrink-0 hidden sm:inline-block">{service.category}</span>
+        {service.category && (
+          <>
+            <ClientIcon icon="ph:caret-right-bold" className="w-3 h-3 text-slate-400 shrink-0 hidden sm:inline-block" />
+            <Link
+              href={`/services?category=${service.category.slug}`}
+              className="font-semibold text-slate-600 dark:text-slate-300 hover:text-[#00B4FF] transition-colors shrink-0 hidden sm:inline-block"
+            >
+              {service.category.name}
+            </Link>
+          </>
+        )}
         <ClientIcon icon="ph:caret-right-bold" className="w-3 h-3 text-slate-400 shrink-0" />
         <span className="text-slate-900 dark:text-white font-extrabold truncate pr-1">{service.title}</span>
       </div>

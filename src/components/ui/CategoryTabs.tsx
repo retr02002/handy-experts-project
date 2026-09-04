@@ -3,36 +3,34 @@
 import React from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import type { Category } from "@/types/category";
 
-const CATEGORIES = [
-  { name: "Cleaning", icon: "ph:broom" },
-  { name: "Electrical", icon: "ph:lightning" },
-  { name: "Plumbing", icon: "ph:drop" },
-  { name: "AC & Appliance", icon: "ph:fan" },
-  { name: "Carpentry", icon: "ph:hammer" },
-  { name: "Painting", icon: "ph:paint-roller" },
-  { name: "Pest Control", icon: "ph:bug" },
-];
+type Props = {
+  categories: Category[];
+};
 
-export function CategoryTabs() {
+export function CategoryTabs({ categories }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const selectedCategories = searchParams.getAll("category");
 
-  const handleCategoryClick = (cat: string) => {
+  const handleCategoryClick = (slug: string) => {
     const current = new URLSearchParams(Array.from(searchParams.entries()));
-    if (cat === "All") {
-      current.delete("category");
-    } else {
-      current.delete("category");
-      current.append("category", cat);
+    current.delete("category");
+    if (slug !== "All") {
+      current.append("category", slug);
     }
     router.push(`${pathname}?${current.toString()}`, { scroll: false });
   };
 
   const isAllSelected = selectedCategories.length === 0;
+
+  // A category can be selected by name via a legacy link, so match on both.
+  const isSelected = (cat: Category) => selectedCategories.includes(cat.slug) || selectedCategories.includes(cat.name);
+
+  const selectedValue = categories.find(isSelected)?.slug ?? "All";
 
   return (
     <>
@@ -40,13 +38,13 @@ export function CategoryTabs() {
       <div className="md:hidden w-full mb-6 mt-2 px-4 sm:px-0">
         <div className="relative">
           <select
-            value={isAllSelected ? "All" : selectedCategories[0] || "All"}
+            value={selectedValue}
             onChange={(e) => handleCategoryClick(e.target.value)}
             className="w-full appearance-none bg-white dark:bg-[#131B2C] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white py-3.5 pl-4 pr-10 rounded-xl text-sm font-bold shadow-sm focus:outline-none focus:ring-2 focus:ring-[#00B4FF]/50"
           >
             <option value="All">All Services</option>
-            {CATEGORIES.map((cat) => (
-              <option key={cat.name} value={cat.name}>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.slug}>
                 {cat.name}
               </option>
             ))}
@@ -71,21 +69,21 @@ export function CategoryTabs() {
           </span>
         </button>
 
-        {CATEGORIES.map((cat) => {
-          const isSelected = selectedCategories.includes(cat.name);
+        {categories.map((cat) => {
+          const selected = isSelected(cat);
           return (
             <button
-              key={cat.name}
-              onClick={() => handleCategoryClick(cat.name)}
+              key={cat.id}
+              onClick={() => handleCategoryClick(cat.slug)}
               className={`shrink-0 flex flex-col items-center justify-center w-24 h-24 rounded-2xl border transition-all ${
-                isSelected
+                selected
                   ? "bg-white border-[#00B4FF] shadow-[0_4px_16px_rgba(0,180,255,0.15)] text-[#00B4FF]"
                   : "bg-white border-slate-100 hover:border-slate-300 text-slate-500 shadow-sm"
               }`}
             >
-              <ClientIcon icon={cat.icon} className="w-8 h-8 mb-2" />
-              <span className={`text-xs font-bold ${isSelected ? "text-[#00B4FF]" : "text-slate-600"}`}>
-                {cat.name.replace(" & Appliance", "")}
+              <ClientIcon icon={cat.icon || "ph:tag"} className="w-8 h-8 mb-2" />
+              <span className={`text-xs font-bold text-center px-1 leading-tight ${selected ? "text-[#00B4FF]" : "text-slate-600"}`}>
+                {cat.name}
               </span>
             </button>
           );
