@@ -1,6 +1,6 @@
 import React from "react";
 import { Service, ServicePackage } from "@/types/service";
-import { ServiceCard } from "@/components/ui/ServiceCard";
+import { ServicesPageServiceCard } from "@/components/ui/ServicesPageServiceCard";
 import { PackageCard } from "@/components/ui/PackageCard";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
@@ -61,7 +61,7 @@ export function ServicesList({ services, viewType }: ServicesListProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
       {services.map((service) => (
-        <ServiceCard key={service.id} service={service} />
+        <ServicesPageServiceCard key={service.id} service={service} />
       ))}
     </div>
   );

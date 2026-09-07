@@ -23,61 +23,69 @@ export function ServicesFilterMenu() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = React.useTransition();
 
-  const viewType = searchParams.get("type") || "services";
-  const selectedTags = searchParams.getAll("tag");
-  const selectedDurations = searchParams.getAll("duration");
-  const selectedRating = searchParams.get("rating") || "";
-  const sortBy = searchParams.get("sort") || "recommended";
+  // Local state for all filters so UI updates instantly in the modal
+  const [localViewType, setLocalViewType] = useState(searchParams.get("type") || "services");
+  const [localTags, setLocalTags] = useState(searchParams.getAll("tag"));
+  const [localDurations, setLocalDurations] = useState(searchParams.getAll("duration"));
+  const [localRating, setLocalRating] = useState(searchParams.get("rating") || "");
+  const [localSortBy, setLocalSortBy] = useState(searchParams.get("sort") || "recommended");
+  const [localMaxPrice, setLocalMaxPrice] = useState(searchParams.get("maxPrice") || "10000");
 
-  const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "10000");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const updateURL = (params: Record<string, string | string[] | null>) => {
-    const current = new URLSearchParams(Array.from(searchParams.entries()));
-    
-    Object.entries(params).forEach(([key, value]) => {
-      if (value === null || value === "") {
-        current.delete(key);
-      } else if (Array.isArray(value)) {
-        current.delete(key);
-        value.forEach((v) => current.append(key, v));
-      } else {
-        current.set(key, value);
-      }
-    });
+  const syncFiltersWithURL = () => {
+    setLocalViewType(searchParams.get("type") || "services");
+    setLocalTags(searchParams.getAll("tag"));
+    setLocalDurations(searchParams.getAll("duration"));
+    setLocalRating(searchParams.get("rating") || "");
+    setLocalSortBy(searchParams.get("sort") || "recommended");
+    setLocalMaxPrice(searchParams.get("maxPrice") || "10000");
+  };
 
-    router.push(`${pathname}?${current.toString()}`, { scroll: false });
+  // Sync local state when search params change externally
+  const [prevSearchString, setPrevSearchString] = useState(searchParams.toString());
+  if (searchParams.toString() !== prevSearchString) {
+    setPrevSearchString(searchParams.toString());
+    syncFiltersWithURL();
+  }
+
+  const applyFiltersToURL = () => {
+    const current = new URLSearchParams();
+    
+    if (localViewType !== "services") current.set("type", localViewType);
+    localTags.forEach(tag => current.append("tag", tag));
+    localDurations.forEach(dur => current.append("duration", dur));
+    if (localRating) current.set("rating", localRating);
+    if (localSortBy !== "recommended") current.set("sort", localSortBy);
+    if (localMaxPrice !== "10000") current.set("maxPrice", localMaxPrice);
+
+    startTransition(() => {
+      router.push(`${pathname}?${current.toString()}`, { scroll: false });
+      setIsMobileMenuOpen(false);
+    });
   };
 
   const handleTagToggle = (tag: string) => {
-    const updated = selectedTags.includes(tag)
-      ? selectedTags.filter((t) => t !== tag)
-      : [...selectedTags, tag];
-    updateURL({ tag: updated });
+    setLocalTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
 
   const handleDurationToggle = (dur: string) => {
-    const updated = selectedDurations.includes(dur)
-      ? selectedDurations.filter((d) => d !== dur)
-      : [...selectedDurations, dur];
-    updateURL({ duration: updated });
-  };
-
-  const handleViewType = (type: string) => {
-    updateURL({ type });
+    setLocalDurations(prev => prev.includes(dur) ? prev.filter(d => d !== dur) : [...prev, dur]);
   };
 
   const handleClearAll = () => {
-    setMaxPrice("10000");
-    const current = new URLSearchParams(Array.from(searchParams.entries()));
-    current.delete("type");
-    current.delete("tag");
-    current.delete("duration");
-    current.delete("rating");
-    current.delete("sort");
-    current.delete("maxPrice");
-    router.push(`${pathname}?${current.toString()}`, { scroll: false });
+    setLocalViewType("services");
+    setLocalTags([]);
+    setLocalDurations([]);
+    setLocalRating("");
+    setLocalSortBy("recommended");
+    setLocalMaxPrice("10000");
+    
+    startTransition(() => {
+      router.push(pathname, { scroll: false });
+    });
   };
 
   // Header component used in both mobile and desktop
@@ -86,7 +94,8 @@ export function ServicesFilterMenu() {
       <h3 className="font-bold text-lg text-slate-900 dark:text-white">Filter Options</h3>
       <button
         onClick={handleClearAll}
-        className="text-sm font-bold text-[#00B4FF] hover:text-[#009EE0] transition-colors"
+        disabled={isPending}
+        className="text-sm font-bold text-[#00B4FF] hover:text-[#009EE0] transition-colors disabled:opacity-50"
       >
         Clear All
       </button>
@@ -101,8 +110,8 @@ export function ServicesFilterMenu() {
         <h4 className="text-sm font-bold text-slate-900 dark:text-white">View Mode</h4>
         <div className="flex p-1 bg-slate-100 dark:bg-slate-800/50 rounded-xl">
           <button
-            onClick={() => handleViewType("services")}
-            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${viewType === "services"
+            onClick={() => setLocalViewType("services")}
+            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${localViewType === "services"
               ? "bg-white dark:bg-slate-700 text-[#00B4FF] shadow-sm"
               : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
               }`}
@@ -110,8 +119,8 @@ export function ServicesFilterMenu() {
             Services
           </button>
           <button
-            onClick={() => handleViewType("packages")}
-            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${viewType === "packages"
+            onClick={() => setLocalViewType("packages")}
+            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${localViewType === "packages"
               ? "bg-white dark:bg-slate-700 text-[#00B4FF] shadow-sm"
               : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
               }`}
@@ -130,16 +139,16 @@ export function ServicesFilterMenu() {
               <input
                 type="checkbox"
                 className="hidden"
-                checked={selectedTags.includes(tag)}
+                checked={localTags.includes(tag)}
                 onChange={() => handleTagToggle(tag)}
               />
-              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${selectedTags.includes(tag)
+              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${localTags.includes(tag)
                 ? "bg-[#00B4FF] border-[#00B4FF]"
                 : "bg-white dark:bg-[#131B2C] border-slate-300 dark:border-slate-700 group-hover:border-[#00B4FF]"
                 }`}>
-                {selectedTags.includes(tag) && <ClientIcon icon="ph:check-bold" className="w-3.5 h-3.5 text-white" />}
+                {localTags.includes(tag) && <ClientIcon icon="ph:check-bold" className="w-3.5 h-3.5 text-white" />}
               </div>
-              <span className={`text-sm font-medium transition-colors ${selectedTags.includes(tag) ? "text-slate-900 dark:text-white font-bold" : "text-slate-600 dark:text-slate-400"
+              <span className={`text-sm font-medium transition-colors ${localTags.includes(tag) ? "text-slate-900 dark:text-white font-bold" : "text-slate-600 dark:text-slate-400"
                 }`}>{tag}</span>
             </label>
           ))}
@@ -155,16 +164,16 @@ export function ServicesFilterMenu() {
               <input
                 type="checkbox"
                 className="hidden"
-                checked={selectedDurations.includes(dur)}
+                checked={localDurations.includes(dur)}
                 onChange={() => handleDurationToggle(dur)}
               />
-              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${selectedDurations.includes(dur)
+              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${localDurations.includes(dur)
                 ? "bg-[#00B4FF] border-[#00B4FF]"
                 : "bg-white dark:bg-[#131B2C] border-slate-300 dark:border-slate-700 group-hover:border-[#00B4FF]"
                 }`}>
-                {selectedDurations.includes(dur) && <ClientIcon icon="ph:check-bold" className="w-3.5 h-3.5 text-white" />}
+                {localDurations.includes(dur) && <ClientIcon icon="ph:check-bold" className="w-3.5 h-3.5 text-white" />}
               </div>
-              <span className={`text-sm font-medium transition-colors ${selectedDurations.includes(dur) ? "text-slate-900 dark:text-white font-bold" : "text-slate-600 dark:text-slate-400"
+              <span className={`text-sm font-medium transition-colors ${localDurations.includes(dur) ? "text-slate-900 dark:text-white font-bold" : "text-slate-600 dark:text-slate-400"
                 }`}>{dur}</span>
             </label>
           ))}
@@ -175,18 +184,15 @@ export function ServicesFilterMenu() {
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <h4 className="text-sm font-bold text-slate-900 dark:text-white">Price Range</h4>
-          <span className="text-xs font-bold text-[#00B4FF]">Up to ₹{maxPrice}</span>
+          <span className="text-xs font-bold text-[#00B4FF]">Up to ₹{localMaxPrice}</span>
         </div>
         <input
           type="range"
           min="199"
           max="10000"
           step="100"
-          value={maxPrice}
-          onChange={(e) => {
-            setMaxPrice(e.target.value);
-            updateURL({ maxPrice: e.target.value });
-          }}
+          value={localMaxPrice}
+          onChange={(e) => setLocalMaxPrice(e.target.value)}
           className="w-full accent-[#00B4FF]"
         />
         <div className="flex justify-between text-xs text-slate-500 font-medium">
@@ -203,15 +209,15 @@ export function ServicesFilterMenu() {
             <button
               key={rating.value}
               onClick={() => {
-                const newVal = selectedRating === rating.value ? "" : rating.value;
-                updateURL({ rating: newVal });
+                const newVal = localRating === rating.value ? "" : rating.value;
+                setLocalRating(newVal);
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-1.5 transition-all ${selectedRating === rating.value
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-1.5 transition-all ${localRating === rating.value
                 ? "bg-orange-50 dark:bg-orange-500/10 border-orange-500 text-orange-600 dark:text-orange-400"
                 : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-orange-300"
                 }`}
             >
-              <ClientIcon icon="ph:star-fill" className={`w-3.5 h-3.5 ${selectedRating === rating.value ? "text-orange-500" : "text-slate-400"}`} />
+              <ClientIcon icon="ph:star-fill" className={`w-3.5 h-3.5 ${localRating === rating.value ? "text-orange-500" : "text-slate-400"}`} />
               {rating.label}
             </button>
           ))}
@@ -223,10 +229,8 @@ export function ServicesFilterMenu() {
         <h4 className="text-sm font-bold text-slate-900 dark:text-white">Sort By</h4>
         <div className="relative">
           <select
-            value={sortBy}
-            onChange={(e) => {
-              updateURL({ sort: e.target.value });
-            }}
+            value={localSortBy}
+            onChange={(e) => setLocalSortBy(e.target.value)}
             className="w-full appearance-none bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white py-2.5 pl-4 pr-10 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#00B4FF]/50"
           >
             {SORT_OPTIONS.map((opt) => (
@@ -244,7 +248,10 @@ export function ServicesFilterMenu() {
   return (
     <>
       <button
-        onClick={() => setIsMobileMenuOpen(true)}
+        onClick={() => {
+          syncFiltersWithURL();
+          setIsMobileMenuOpen(true);
+        }}
         className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-white dark:bg-[#131B2C] border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white font-bold shadow-sm shrink-0 hover:bg-slate-50 dark:hover:bg-[#1A2438] transition-colors"
       >
         <ClientIcon icon="ph:faders-horizontal" className="w-5 h-5 text-[#00B4FF]" />
@@ -279,15 +286,21 @@ export function ServicesFilterMenu() {
               <div className="grid grid-cols-2 gap-3 mb-2">
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="w-full h-12 lg:h-14 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-sm font-bold rounded-2xl transition-all flex items-center justify-center"
+                  disabled={isPending}
+                  className="w-full h-12 lg:h-14 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-sm font-bold rounded-2xl transition-all flex items-center justify-center disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="w-full h-12 lg:h-14 bg-[#00B4FF] hover:bg-[#009EE0] text-white text-sm font-bold rounded-2xl shadow-lg shadow-[#00B4FF]/25 transition-all flex items-center justify-center"
+                  onClick={applyFiltersToURL}
+                  disabled={isPending}
+                  className="w-full h-12 lg:h-14 bg-[#00B4FF] hover:bg-[#009EE0] text-white text-sm font-bold rounded-2xl shadow-lg shadow-[#00B4FF]/25 transition-all flex items-center justify-center disabled:opacity-50"
                 >
-                  Apply Filters
+                  {isPending ? (
+                    <ClientIcon icon="ph:spinner-gap-bold" className="w-5 h-5 animate-spin" />
+                  ) : (
+                    "Apply Filters"
+                  )}
                 </button>
               </div>
             </div>
