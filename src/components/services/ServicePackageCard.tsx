@@ -45,7 +45,7 @@ export function ServicePackageCard({ service, pkg, idx, catIdx }: ServicePackage
 
   return (
     <>
-      <div className="bg-white dark:bg-[#0E172B] rounded-[22px] sm:rounded-3xl p-4 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-[0_4px_18px_rgba(0,0,0,0.04)] hover:shadow-[0_14px_38px_rgba(0,180,255,0.12)] hover:border-[#00B4FF]/60 dark:hover:border-[#00B4FF]/50 transition-all duration-300 relative group/card flex flex-col gap-3 sm:gap-4 w-full min-w-0 overflow-hidden">
+      <div className="bg-white dark:bg-[#0E172B] rounded-[20px] sm:rounded-3xl p-3 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-[0_4px_18px_rgba(0,0,0,0.04)] hover:shadow-[0_14px_38px_rgba(0,180,255,0.12)] hover:border-[#00B4FF]/60 dark:hover:border-[#00B4FF]/50 transition-all duration-300 relative group/card flex flex-col gap-2.5 sm:gap-4 w-full min-w-0 overflow-hidden">
         {/* Ambient radial glow on hover */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-[#00B4FF]/5 via-purple-500/5 to-transparent rounded-bl-full pointer-events-none group-hover/card:from-[#00B4FF]/14 transition-all duration-500"></div>
 
@@ -95,12 +95,12 @@ export function ServicePackageCard({ service, pkg, idx, catIdx }: ServicePackage
           <div className="w-[102px] sm:w-[136px] md:w-[140px] flex flex-col items-center sm:items-end shrink-0 relative mt-0.5 sm:mt-0 z-10">
 
             {/* Image Thumbnail */}
-            <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-2xl overflow-hidden shadow-md relative border border-slate-200/90 dark:border-slate-700/80 bg-slate-100 dark:bg-slate-800 shrink-0 group-hover/card:shadow-lg transition-all duration-300">
+            <div className="w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden shadow-sm relative border border-slate-200/90 dark:border-slate-700/80 bg-slate-100 dark:bg-slate-800 shrink-0 group-hover/card:shadow-md transition-all duration-300">
               <Image
                 src={displayImage}
                 alt={pkg.name}
                 fill
-                className="object-cover group-hover/card:scale-108 transition-transform duration-500"
+                className="object-cover group-hover/card:scale-105 transition-transform duration-500"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity"></div>
             </div>
@@ -142,8 +142,8 @@ export function ServicePackageCard({ service, pkg, idx, catIdx }: ServicePackage
         </div>
 
         {/* TIER 2: FULL-WIDTH INCLUSIONS & SPECS BOX */}
-        <div className="w-full bg-slate-50/80 dark:bg-slate-800/40 rounded-2xl p-3 sm:p-4 border border-slate-200/60 dark:border-slate-700/60 flex flex-col gap-2 relative z-10">
-          <div className="flex flex-col gap-1.5 sm:gap-2">
+        <div className="w-full bg-slate-50/80 dark:bg-slate-800/40 rounded-2xl p-2.5 sm:p-4 border border-slate-200/60 dark:border-slate-700/60 flex flex-col gap-1.5 relative z-10">
+          <div className="flex flex-col gap-1 sm:gap-2">
             {pkg.features.map((feat, fIdx) => (
               <div key={fIdx} className="flex items-start gap-2 text-xs sm:text-[13px] font-semibold text-slate-700 dark:text-slate-200">
                 <ClientIcon icon="ph:check-circle-fill" className="w-4 h-4 sm:w-4 sm:h-4 text-emerald-500 shrink-0 mt-0.5" />
@@ -154,16 +154,10 @@ export function ServicePackageCard({ service, pkg, idx, catIdx }: ServicePackage
 
           <button
             onClick={() => setIsModalOpen(true)}
-            className="w-full mt-1 sm:mt-1.5 pt-2 sm:pt-2.5 border-t border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between text-xs sm:text-[13px] font-black text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors group/btn cursor-pointer"
+            className="w-full mt-1.5 py-1.5 sm:py-2 bg-slate-200/50 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl flex items-center justify-center gap-1.5 text-[10px] sm:text-xs font-black text-slate-700 dark:text-slate-300 transition-colors group/btn cursor-pointer uppercase tracking-wider"
           >
-            <span className="flex items-center gap-1.5">
-              <ClientIcon icon="ph:sparkle-fill" className="w-3.5 h-3.5 text-purple-500" />
-              <span>View package specifications & inclusions</span>
-            </span>
-            <span className="flex items-center gap-0.5 uppercase tracking-wider text-[11px] bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded-lg border border-purple-200/60 dark:border-purple-800/60">
-              <span>Details</span>
-              <ClientIcon icon="ph:caret-right-bold" className="w-3 h-3 group-hover/btn:translate-x-1 transition-transform" />
-            </span>
+            <span>View Details</span>
+            <ClientIcon icon="ph:caret-right-bold" className="w-3 h-3 group-hover/btn:translate-x-1 transition-transform" />
           </button>
         </div>
       </div>

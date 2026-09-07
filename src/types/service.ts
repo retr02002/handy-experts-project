@@ -35,6 +35,7 @@ export type ServiceCategoryRef = {
   name: string;
   slug: string;
   icon: string | null;
+  isPopular: boolean;
 };
 
 export type Service = {
@@ -54,4 +55,5 @@ export type Service = {
   benefits?: ServiceBenefit[];
   howItWorks?: ServiceStep[];
   faqs?: ServiceFaq[];
+  isPopular: boolean;
 };

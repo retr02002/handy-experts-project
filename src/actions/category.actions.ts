@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { categorySchema, CategoryInput } from "@/lib/validations/category.schema";
 import type { ActionResponse } from "@/actions/auth.actions";
 import { requireAdmin } from "@/lib/require-admin";
@@ -14,6 +14,15 @@ import { requireAdmin } from "@/lib/require-admin";
  * which a literal path list can't do without querying for them first.
  */
 function revalidateCategorySurfaces(includeServicePages: boolean) {
+  // getAllCategories/getCategoriesWithServices are unstable_cache-wrapped
+  // (services-data.ts) — the revalidatePath calls below refresh the RSC
+  // payload for these specific routes, but the underlying cached query
+  // itself only invalidates via this tag, which is why it also needs to
+  // fire here rather than relying on revalidatePath alone.
+  // Next 16's revalidateTag requires a cache-life profile as the 2nd arg —
+  // matches the { revalidate: 300 } used in the unstable_cache calls this
+  // invalidates (services-data.ts's getAllCategories/getCategoriesWithServices).
+  revalidateTag("categories", { expire: 300 });
   revalidatePath("/admin/categories");
   revalidatePath("/admin/services");
   revalidatePath("/");

@@ -34,7 +34,7 @@ const FEATURED_CARDS = [
 
 export function FeaturedServices() {
   return (
-    <section className="w-full bg-slate-50 dark:bg-[#020813] py-4 sm:py-12 px-4 sm:px-8 xl:px-0 transition-colors duration-300 border-t border-slate-200 dark:border-slate-800/50">
+    <section className="w-full bg-slate-50 dark:bg-[#020813] py-8 sm:py-12 px-4 sm:px-8 xl:px-0 transition-colors duration-300 border-t border-slate-200 dark:border-slate-800/50">
       <div className="max-w-7xl mx-auto flex flex-col">
         {/* Compact Header section */}
         <SectionHeader

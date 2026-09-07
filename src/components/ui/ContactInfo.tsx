@@ -2,82 +2,35 @@ import React from "react";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
 export function ContactInfo() {
+  const actions = [
+    { id: 'call', icon: 'ph:phone-fill', title: 'Call Us', desc: '+91 9403892784', link: 'tel:+919403892784', color: 'bg-emerald-500', shadow: 'shadow-emerald-500/20' },
+    { id: 'whatsapp', icon: 'ph:whatsapp-logo-fill', title: 'WhatsApp', desc: 'Message us', link: 'https://wa.me/919403892784', color: 'bg-[#25D366]', shadow: 'shadow-[#25D366]/20' },
+    { id: 'email', icon: 'ph:envelope-simple-fill', title: 'Email', desc: 'contact@handyzo.com', link: 'mailto:contact@handyzo.com', color: 'bg-[#00B4FF]', shadow: 'shadow-[#00B4FF]/20' },
+    { id: 'visit', icon: 'ph:map-pin-fill', title: 'Visit', desc: 'Hyderabad HQ', link: 'https://maps.google.com/?q=Mf-2+p.s+nagar+masab+tank+Mehdipatnam+Hyderabad+500028', color: 'bg-purple-500', shadow: 'shadow-purple-500/20' },
+  ];
+
   return (
-    <div className="h-auto lg:h-full w-full bg-slate-50 dark:bg-[#0B1120] rounded-[24px] border border-slate-200 dark:border-slate-800/60 p-6 sm:p-8 shadow-sm flex flex-col">
-      
-      <div className="mb-8">
-        <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-2">Contact Information</h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400">Reach out to us directly through any of these channels.</p>
-      </div>
-
-      <div className="flex flex-col gap-8 flex-1 justify-center">
-        
-        {/* Chat to us */}
-        <div className="flex items-start gap-5 group cursor-pointer w-full">
-          <div className="w-12 h-12 rounded-2xl border border-slate-200 dark:border-slate-800/80 flex items-center justify-center shrink-0 bg-white dark:bg-[#131B2C] group-hover:bg-[#00B4FF] group-hover:border-[#00B4FF] transition-all duration-300 shadow-sm group-hover:shadow-[0_0_20px_rgba(0,180,255,0.3)]">
-            <ClientIcon icon="ph:envelope-simple" className="w-5 h-5 text-[#00B4FF] group-hover:text-white transition-colors duration-300" />
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+      {actions.map((action) => (
+        <a 
+          key={action.id}
+          href={action.link}
+          target={action.id === 'visit' || action.id === 'whatsapp' ? '_blank' : undefined}
+          rel="noopener noreferrer"
+          className="group relative flex flex-col items-center p-4 sm:p-6 bg-white dark:bg-slate-900/40 backdrop-blur-xl rounded-[24px] sm:rounded-[32px] border border-slate-100 dark:border-slate-700/50 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-xl hover:shadow-slate-200/50 dark:shadow-none dark:hover:border-[#00B4FF]/40 transition-all duration-300 hover:-translate-y-2 overflow-hidden"
+        >
+          {/* Subtle colored glow in the background */}
+          <div className={`absolute -top-8 -right-8 w-24 h-24 ${action.color} opacity-5 blur-2xl rounded-full transition-all duration-500 group-hover:scale-150 group-hover:opacity-15`} />
+          
+          <div className={`w-12 h-12 sm:w-14 sm:h-14 mb-3 sm:mb-4 rounded-[16px] sm:rounded-[20px] ${action.color} text-white flex items-center justify-center shadow-lg ${action.shadow} transition-all duration-300 group-hover:scale-110 group-hover:rotate-3`}>
+            <ClientIcon icon={action.icon} className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
-          <div className="min-w-0 flex-1">
-            <h4 className="text-slate-900 dark:text-white font-bold text-base mb-1 tracking-tight group-hover:text-[#00B4FF] transition-colors truncate">Chat to us</h4>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mb-1 truncate">Our friendly team is here to help.</p>
-            <a href="mailto:contact@Handyzo.com" className="text-[#00B4FF] font-bold text-sm hover:underline break-all inline-block">
-              contact@Handyzo.com
-            </a>
-          </div>
-        </div>
-
-        {/* Call us */}
-        <div className="flex items-start gap-5 group cursor-pointer w-full">
-          <div className="w-12 h-12 rounded-2xl border border-slate-200 dark:border-slate-800/80 flex items-center justify-center shrink-0 bg-white dark:bg-[#131B2C] group-hover:bg-[#00B4FF] group-hover:border-[#00B4FF] transition-all duration-300 shadow-sm group-hover:shadow-[0_0_20px_rgba(0,180,255,0.3)]">
-            <ClientIcon icon="ph:phone" className="w-5 h-5 text-[#00B4FF] group-hover:text-white transition-colors duration-300" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h4 className="text-slate-900 dark:text-white font-bold text-base mb-1 tracking-tight group-hover:text-[#00B4FF] transition-colors truncate">Call us</h4>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mb-1 truncate">Mon-Sat from 8am to 8pm.</p>
-            <a href="tel:+919403892784" className="text-[#00B4FF] font-bold text-sm hover:underline break-words inline-block">
-              +91 9403892784
-            </a>
-          </div>
-        </div>
-
-        {/* Visit us */}
-        <div className="flex items-start gap-5 group cursor-pointer w-full">
-          <div className="w-12 h-12 rounded-2xl border border-slate-200 dark:border-slate-800/80 flex items-center justify-center shrink-0 bg-white dark:bg-[#131B2C] group-hover:bg-[#00B4FF] group-hover:border-[#00B4FF] transition-all duration-300 shadow-sm group-hover:shadow-[0_0_20px_rgba(0,180,255,0.3)]">
-            <ClientIcon icon="ph:map-pin" className="w-5 h-5 text-[#00B4FF] group-hover:text-white transition-colors duration-300" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h4 className="text-slate-900 dark:text-white font-bold text-base mb-1 tracking-tight group-hover:text-[#00B4FF] transition-colors truncate">Visit us</h4>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mb-1 truncate">Come say hello at our office.</p>
-            <p className="text-[#00B4FF] font-bold text-sm leading-relaxed break-words">
-              Mf-2 p.s nagar masab tank Mehdipatnam Hyderabad 500028
-            </p>
-          </div>
-        </div>
-
-      </div>
-
-      {/* Map Card */}
-      <a 
-        href="https://maps.google.com/?q=Mf-2+p.s+nagar+masab+tank+Mehdipatnam+Hyderabad+500028" 
-        target="_blank" 
-        rel="noopener noreferrer"
-        className="block mt-8 h-[150px] relative rounded-2xl overflow-hidden group border border-slate-200 dark:border-slate-800/80 shadow-sm shrink-0"
-      >
-        <div className="absolute inset-0 bg-slate-100 dark:bg-[#131B2C]">
-          <div className="absolute inset-0 opacity-40 dark:opacity-30 bg-[url('https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=800&auto=format&fit=crop')] bg-cover bg-center transition-transform duration-700 group-hover:scale-105" />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent dark:from-[#0B1120] dark:via-[#0B1120]/60" />
-        </div>
-        
-        <div className="absolute inset-x-0 bottom-0 p-5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <ClientIcon icon="ph:map-trifold" className="w-5 h-5 shrink-0 text-[#00B4FF]" />
-            <span className="text-white font-bold text-sm tracking-tight truncate">Hyderabad HQ</span>
-          </div>
-          <div className="w-8 h-8 shrink-0 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm border border-white/20 group-hover:bg-[#00B4FF] group-hover:border-[#00B4FF] transition-colors shadow-sm">
-            <ClientIcon icon="ph:arrow-up-right" className="w-4 h-4 text-white" />
-          </div>
-        </div>
-      </a>
+          <h3 className="text-slate-900 dark:text-white font-bold text-base sm:text-lg mb-1">{action.title}</h3>
+          <span className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm font-medium text-center truncate w-full px-1 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors">
+            {action.desc}
+          </span>
+        </a>
+      ))}
     </div>
   );
 }

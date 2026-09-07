@@ -6,6 +6,7 @@ export type Category = {
   icon?: string;
   image?: string;
   isActive: boolean;
+  isPopular: boolean;
   sortOrder: number;
 };
 
@@ -25,6 +26,7 @@ export type CategoryServiceSummary = {
   time: string;
   packageCount: number;
   fromPrice: number | null;
+  isPopular: boolean;
 };
 
 export type CategoryWithServices = Category & {

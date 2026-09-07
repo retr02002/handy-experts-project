@@ -45,7 +45,7 @@ export function ServicesList({ services, viewType }: ServicesListProps) {
     }
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
         {allPackages.map((item, idx) => (
           <PackageCard
             key={`${item.parentService.id}-${item.pkg.name}-${idx}`}
@@ -59,7 +59,7 @@ export function ServicesList({ services, viewType }: ServicesListProps) {
 
   // viewType === "services"
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
       {services.map((service) => (
         <ServiceCard key={service.id} service={service} />
       ))}

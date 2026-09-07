@@ -199,6 +199,18 @@ export function ServiceFormWizard({ isOpen, onClose, onSuccess, categories, init
               first before adding services.
             </p>
           )}
+          <label className="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.isPopular}
+              onChange={(e) => set("isPopular", e.target.checked)}
+              className="w-4 h-4 accent-amber-500 cursor-pointer"
+            />
+            <span className="flex flex-col">
+              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Is Popular</span>
+              <span className="text-xs text-slate-400">Popular services appear in the "Popular Services" section on the homepage.</span>
+            </span>
+          </label>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Badge Text">
               <input className={inputClass} value={form.badge} onChange={(e) => set("badge", e.target.value)} placeholder="TRENDING" />
@@ -304,6 +316,7 @@ export function ServiceFormWizard({ isOpen, onClose, onSuccess, categories, init
             <SummaryItem label="Rating" value={form.rating || "—"} />
             <SummaryItem label="Time" value={form.time || "—"} />
             <SummaryItem label="Warranty" value={form.warranty || "—"} />
+            <SummaryItem label="Popular" value={form.isPopular ? "Yes" : "No"} />
           </div>
           <SummaryItem label="Description" value={form.description} />
           <SummaryItem label="Demo Video" value={form.videoUrl ? "Attached" : "None"} />

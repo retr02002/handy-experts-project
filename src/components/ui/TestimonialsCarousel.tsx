@@ -73,7 +73,7 @@ export function TestimonialsCarousel({ testimonials, hideBadge }: TestimonialsCa
           modules={[Autoplay]}
           onSwiper={setSwiperInstance}
           spaceBetween={20}
-          slidesPerView={1}
+          slidesPerView={1.15}
           loop={true}
           autoplay={{ delay: 5000, disableOnInteraction: false }}
           breakpoints={{

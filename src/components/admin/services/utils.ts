@@ -32,6 +32,7 @@ export function serviceToFormInput(service: ServiceWithPackages | Service): Serv
     benefits: parseJsonArray(serviceBenefitSchema, service.benefits),
     howItWorks: parseJsonArray(serviceStepSchema, service.howItWorks),
     faqs: parseJsonArray(serviceFaqSchema, service.faqs),
+    isPopular: service.isPopular,
   };
 }
 
@@ -67,6 +68,7 @@ export function emptyServiceInput(): ServiceInput {
     benefits: [],
     howItWorks: [],
     faqs: [],
+    isPopular: false,
   };
 }
 

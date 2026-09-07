@@ -48,7 +48,7 @@ const TRUST_FEATURES = [
 
 export function TrustSection() {
   return (
-    <section className="relative w-full bg-slate-50 dark:bg-[#060A13] py-4 sm:py-12 px-4 sm:px-8 lg:px-16 overflow-hidden">
+    <section className="relative w-full bg-slate-50 dark:bg-[#060A13] py-8 sm:py-12 px-4 sm:px-8 lg:px-16 overflow-hidden">
       {/* Subtle Background Grid Pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
       
@@ -90,7 +90,7 @@ export function TrustSection() {
               nextEl: '.trust-swiper-next',
             }}
             spaceBetween={16}
-            slidesPerView={1}
+            slidesPerView={1.15}
             breakpoints={{
               640: { slidesPerView: 2, spaceBetween: 20 },
               768: { slidesPerView: 3, spaceBetween: 24 },

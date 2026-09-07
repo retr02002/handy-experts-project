@@ -5,18 +5,22 @@ import { getAllServices, getAllCategories } from "@/lib/services-data";
 import { ClientIcon } from "./ClientIcon";
 
 export async function PopularServices() {
-  const services = await getAllServices();
+  const allServices = await getAllServices();
+  const services = allServices.filter(s => s.isPopular);
+  console.log("POPULAR SERVICES FETCHED:", services.length);
+
+  if (services.length === 0) return null;
 
   // Tabs are derived from what the catalog actually holds, so creating an empty
   // category in the admin never adds a dead tab to the homepage.
   const populated = new Map(
     services.flatMap((s) => (s.category ? [[s.category.slug, s.category] as const] : []))
   );
-  const categories = (await getAllCategories()).filter((c) => populated.has(c.slug));
+  const categories = (await getAllCategories()).filter((c) => c.isPopular && populated.has(c.slug));
 
   return (
-    <section className="py-4 sm:py-12 bg-white dark:bg-[#060b14] overflow-hidden border-t border-slate-100 dark:border-slate-800/50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-8 sm:py-12 px-4 sm:px-8 lg:px-16 bg-white dark:bg-[#060b14] overflow-hidden border-t border-slate-100 dark:border-slate-800/50">
+      <div className="max-w-7xl mx-auto">
         
         <SectionHeader
           badgeNumber="01"

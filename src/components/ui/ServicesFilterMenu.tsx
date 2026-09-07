@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
@@ -81,7 +82,7 @@ export function ServicesFilterMenu() {
 
   // Header component used in both mobile and desktop
   const HeaderContent = (
-    <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 lg:border-none lg:pb-0 shrink-0">
+    <div className="flex flex-1 items-center justify-between shrink-0 mr-4">
       <h3 className="font-bold text-lg text-slate-900 dark:text-white">Filter Options</h3>
       <button
         onClick={handleClearAll}
@@ -242,29 +243,30 @@ export function ServicesFilterMenu() {
 
   return (
     <>
-      {/* Mobile Trigger */}
-      <div className="lg:hidden w-full mb-4">
-        <button
-          onClick={() => setIsMobileMenuOpen(true)}
-          className="w-full flex items-center justify-center gap-2 py-3.5 bg-white dark:bg-[#131B2C] border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white font-bold shadow-sm"
-        >
-          <ClientIcon icon="ph:faders-horizontal" className="w-5 h-5 text-[#00B4FF]" />
-          Filter & Sort Options
-        </button>
-      </div>
+      <button
+        onClick={() => setIsMobileMenuOpen(true)}
+        className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-white dark:bg-[#131B2C] border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white font-bold shadow-sm shrink-0 hover:bg-slate-50 dark:hover:bg-[#1A2438] transition-colors"
+      >
+        <ClientIcon icon="ph:faders-horizontal" className="w-5 h-5 text-[#00B4FF]" />
+        <span className="hidden sm:inline">Filters</span>
+      </button>
 
-      {/* Mobile Modal Overlay */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-[100] flex flex-col justify-end lg:hidden bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#0B1221] w-full max-h-[90vh] rounded-t-3xl flex flex-col animate-in slide-in-from-bottom-4 duration-300 shadow-2xl overflow-hidden mt-auto">
-            {/* Drag Handle Indicator */}
-            <div className="w-full flex justify-center pt-3 pb-1 bg-white dark:bg-[#0B1221] shrink-0">
+      {/* Modal Overlay via Portal */}
+      {isMobileMenuOpen && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex flex-col justify-end lg:flex-row lg:justify-end bg-black/60 backdrop-blur-sm">
+          {/* Slide-over Content */}
+          <div className="bg-white dark:bg-[#0B1221] w-full lg:w-96 lg:h-full max-h-[90vh] lg:max-h-full rounded-t-3xl lg:rounded-none lg:rounded-l-3xl flex flex-col animate-in slide-in-from-bottom-4 lg:slide-in-from-right-8 duration-300 shadow-2xl overflow-hidden mt-auto lg:mt-0">
+            {/* Drag Handle Indicator (Mobile) */}
+            <div className="w-full flex justify-center pt-3 pb-1 bg-white dark:bg-[#0B1221] shrink-0 lg:hidden">
               <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
             </div>
             
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800/60 bg-white dark:bg-[#0B1221] z-10 shrink-0">
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800/60 bg-white dark:bg-[#0B1221] z-10 shrink-0 flex justify-between items-center">
               {HeaderContent}
+              <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden p-2 -mr-2 text-slate-400 hover:text-slate-600">
+                <ClientIcon icon="ph:x-bold" className="w-5 h-5" />
+              </button>
             </div>
 
             {/* Scrollable Body */}
@@ -273,33 +275,26 @@ export function ServicesFilterMenu() {
             </div>
 
             {/* Sticky Footer */}
-            <div className="p-5 pb-8 border-t border-slate-100 dark:border-slate-800/60 bg-white dark:bg-[#0B1221] shrink-0 z-10">
-              <div className="grid grid-cols-2 gap-3">
+            <div className="p-5 pb-safe lg:pb-5 border-t border-slate-100 dark:border-slate-800/60 bg-white dark:bg-[#0B1221] shrink-0 z-10">
+              <div className="grid grid-cols-2 gap-3 mb-2">
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="w-full h-14 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-sm font-bold rounded-2xl transition-all flex items-center justify-center"
+                  className="w-full h-12 lg:h-14 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-sm font-bold rounded-2xl transition-all flex items-center justify-center"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="w-full h-14 bg-[#00B4FF] hover:bg-[#009EE0] text-white text-sm font-bold rounded-2xl shadow-lg shadow-[#00B4FF]/25 transition-all flex items-center justify-center"
+                  className="w-full h-12 lg:h-14 bg-[#00B4FF] hover:bg-[#009EE0] text-white text-sm font-bold rounded-2xl shadow-lg shadow-[#00B4FF]/25 transition-all flex items-center justify-center"
                 >
                   Apply Filters
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block w-full">
-        {HeaderContent}
-        <div className="mt-5">
-          {FilterBody}
-        </div>
-      </div>
     </>
   );
 }

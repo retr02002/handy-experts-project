@@ -18,13 +18,13 @@ export function ServiceBenefitsSection({ service }: ServiceBenefitsSectionProps)
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {service.benefits.map((benefit, idx) => (
-            <div key={idx} className="flex gap-3 sm:gap-4 p-4 rounded-2xl bg-slate-50/70 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-tr from-[#00B4FF] to-blue-600 text-white flex items-center justify-center font-bold text-base shadow-md shrink-0">
-                {benefit.icon ? <ClientIcon icon={benefit.icon} className="w-5 h-5 sm:w-6 sm:h-6" /> : `0${idx + 1}`}
+            <div key={idx} className="flex flex-col items-center text-center p-5 sm:p-6 rounded-3xl bg-slate-50/70 dark:bg-slate-900/50 backdrop-blur-md border border-slate-100 dark:border-slate-700/50 hover:shadow-lg dark:hover:shadow-none dark:hover:border-[#00B4FF]/30 transition-all duration-300">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 mb-4 rounded-2xl bg-gradient-to-br from-[#00B4FF]/10 to-[#00B4FF]/5 dark:from-[#00B4FF]/20 dark:to-[#00B4FF]/10 text-[#00B4FF] flex items-center justify-center font-bold text-base shadow-inner shrink-0">
+                {benefit.icon ? <ClientIcon icon={benefit.icon} className="w-7 h-7 sm:w-8 sm:h-8 drop-shadow-sm" /> : `0${idx + 1}`}
               </div>
-              <div className="min-w-0">
-                <h4 className="text-xs sm:text-base font-black text-slate-900 dark:text-white mb-1 break-words">{benefit.title}</h4>
-                <p className="text-slate-500 dark:text-slate-400 text-[11px] sm:text-xs leading-relaxed font-medium">
+              <div className="min-w-0 flex flex-col gap-1.5">
+                <h4 className="text-sm sm:text-base font-black text-slate-900 dark:text-white break-words">{benefit.title}</h4>
+                <p className="text-slate-500 dark:text-slate-400 text-xs leading-relaxed font-medium px-2">
                   {benefit.description}
                 </p>
               </div>

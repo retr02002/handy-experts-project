@@ -4,7 +4,7 @@ import { GlobalSearchBar } from '@/components/ui/GlobalSearchBar';
 import { ServicesFilterMenu } from '@/components/ui/ServicesFilterMenu';
 import { ServicesList } from '@/components/services/ServicesList';
 import { getAllServices, getAllCategories } from '@/lib/services-data';
-import { CategoryTabs } from '@/components/ui/CategoryTabs';
+import { CategorySidebar } from '@/components/ui/CategorySidebar';
 
 export const metadata = {
   title: 'Our Services | Handyzo',
@@ -108,60 +108,49 @@ export default async function ServicesPage(props: {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-white dark:bg-[#020813]">
-      <Banner 
-        title="Our Services" 
-        highlightedWord="Services"
-        badge="What We Do"
-        badgeIcon="ph:wrench-fill"
-        description="Explore our comprehensive range of professional home services designed to make your life easier and your home better."
-        breadcrumbs={[
-          { label: 'Home', href: '/' },
-          { label: 'Services' }
-        ]}
-        bgImage="/banner_services.png"
-      />
+    <div className="flex flex-col min-h-screen bg-white dark:bg-[#020813] pt-20 md:pt-24">
       
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
+      {/* Main Container - Full Width on Mobile, Max Width on Desktop */}
+      <div className="w-full h-[calc(100vh-80px)] md:h-[calc(100vh-96px)] max-w-7xl mx-auto md:px-3 lg:px-6 pb-2 md:pb-4 flex flex-col">
+        <div className="flex-1 flex overflow-hidden bg-white dark:bg-[#020813] md:rounded-3xl md:border border-slate-100 dark:border-slate-800 shadow-sm">
         
-        {/* Main Layout: Sidebar + Content */}
-        <div className="flex flex-col lg:flex-row gap-8 items-start">
+        {/* Left Sidebar (Category Menu) */}
+        <div className="w-20 sm:w-24 md:w-28 shrink-0 h-full border-r border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-[#060C18]">
+          <Suspense fallback={<div className="h-full bg-slate-100 dark:bg-slate-800 animate-pulse"></div>}>
+            <CategorySidebar categories={categories} />
+          </Suspense>
+        </div>
+
+        {/* Right Content Area */}
+        <div className="flex-1 min-w-0 h-full flex flex-col relative overflow-hidden bg-white dark:bg-[#020813]">
           
-          {/* Left Sidebar (Filter Menu) */}
-          <div className="w-full lg:w-72 xl:w-80 shrink-0 lg:sticky lg:top-24 self-start lg:z-20">
-            <Suspense fallback={<div className="h-96 bg-slate-100 dark:bg-slate-800 rounded-2xl animate-pulse"></div>}>
+          {/* Top Header Bar in Right Pane (Sticky) */}
+          <div className="flex items-center gap-3 p-3 sm:p-4 border-b border-slate-100 dark:border-slate-800/60 bg-white dark:bg-[#020813] z-20 shrink-0 shadow-sm">
+            <div className="flex-1 min-w-0">
+              <Suspense fallback={<div className="h-10 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse"></div>}>
+                <GlobalSearchBar placeholder="Search services..." />
+              </Suspense>
+            </div>
+            
+            <Suspense fallback={<div className="w-24 h-10 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse"></div>}>
               <ServicesFilterMenu />
             </Suspense>
           </div>
 
-          {/* Right Content Area */}
-          <div className="flex-1 w-full min-w-0 flex flex-col gap-8">
-            
-            {/* Header Area in Content */}
-            <div className="flex flex-col gap-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
-                  Find trusted services for your home
-                </h2>
-              </div>
-              
-              {/* Global Search Bar (Sticky within the flow or just top) */}
-              <div className="sticky top-24 z-30 bg-white/80 dark:bg-[#020813]/80 backdrop-blur-xl pb-4 border-b border-slate-100 dark:border-slate-800/60">
-                <Suspense fallback={<div className="h-12 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse"></div>}>
-                  <GlobalSearchBar placeholder="Search for cleaning, repairs, painting..." />
-                </Suspense>
-              </div>
-
-              {/* Category Tabs */}
-              <Suspense fallback={<div className="h-24 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse"></div>}>
-                <CategoryTabs categories={categories} />
-              </Suspense>
+          {/* Results Grid - Scrollable independent of sidebar */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 pb-24">
+            <div className="mb-4 sm:mb-6 flex items-center justify-between">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                {selectedCategories.length > 0 && selectedCategories[0] !== "All"
+                  ? categories.find(c => c.slug === selectedCategories[0] || c.name === selectedCategories[0])?.name || "Services"
+                  : "All Services"}
+              </h2>
             </div>
-
-            {/* Results Grid */}
-            <ServicesList services={filteredServices} viewType={viewType} />
             
+            <ServicesList services={filteredServices} viewType={viewType} />
           </div>
+          
+        </div>
         </div>
       </div>
     </div>

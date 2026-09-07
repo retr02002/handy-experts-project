@@ -38,6 +38,7 @@ export const serviceSchema = z.object({
   benefits: z.array(serviceBenefitSchema).default([]),
   howItWorks: z.array(serviceStepSchema).default([]),
   faqs: z.array(serviceFaqSchema).default([]),
+  isPopular: z.boolean().default(false),
 });
 
 export type ServiceInput = z.infer<typeof serviceSchema>;

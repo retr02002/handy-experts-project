@@ -1,8 +1,9 @@
+export const dynamic = "force-dynamic";
 import { ScrollHero } from "@/components/ui/ScrollHero";
 import { CategoryGrid } from "@/components/ui/CategoryGrid";
-import { TrustSection } from "@/components/ui/TrustSection";
 import { FeaturedServices } from "@/components/ui/FeaturedServices";
 import { PopularServices } from "@/components/ui/PopularServices";
+import { CategoryServicesSections } from "@/components/ui/CategoryServicesSections";
 import { TestimonialsSection } from "@/components/ui/TestimonialsSection";
 import { FAQSection } from "@/components/ui/FAQSection";
 
@@ -12,7 +13,7 @@ export default function Home() {
       <ScrollHero />
       <CategoryGrid />
       <PopularServices />
-      <TrustSection />
+      <CategoryServicesSections />
       <FeaturedServices />
       <TestimonialsSection />
       

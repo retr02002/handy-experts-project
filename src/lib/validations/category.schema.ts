@@ -12,6 +12,7 @@ export const categorySchema = z.object({
   icon: z.string().optional(),
   image: z.string().optional(),
   isActive: z.boolean().default(true),
+  isPopular: z.boolean().default(false),
   sortOrder: z.number().int().min(0, "Sort order must be 0 or more").default(0),
 });
 

@@ -10,18 +10,7 @@ export const metadata = {
 export default function ContactPage() {
   return (
     <div className="flex flex-col min-h-screen">
-      <Banner 
-        title="Contact Us" 
-        highlightedWord="Contact"
-        badge="Get In Touch"
-        badgeIcon="ph:envelope-simple-fill"
-        description="We are here to help. Reach out to our support team for any inquiries, feedback, or assistance you need."
-        breadcrumbs={[
-          { label: 'Home', href: '/' },
-          { label: 'Contact Us' }
-        ]}
-        bgImage="/banner_contact.png"
-      />
+
       
       <ContactPageSection />
     </div>

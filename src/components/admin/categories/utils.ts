@@ -13,6 +13,7 @@ export function categoryToFormInput(category: Category): CategoryInput {
     icon: category.icon ?? "",
     image: category.image ?? "",
     isActive: category.isActive,
+    isPopular: category.isPopular,
     sortOrder: category.sortOrder,
   };
 }
@@ -25,6 +26,7 @@ export function emptyCategoryInput(): CategoryInput {
     icon: "",
     image: "",
     isActive: true,
+    isPopular: false,
     sortOrder: 0,
   };
 }

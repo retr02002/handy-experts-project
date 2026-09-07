@@ -171,6 +171,19 @@ export function CategoryFormModal({ isOpen, onClose, onSuccess, initialData, cat
             <span className="text-xs text-slate-400">Inactive categories are hidden from the site but keep their services.</span>
           </span>
         </label>
+
+        <label className="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.isPopular}
+            onChange={(e) => set("isPopular", e.target.checked)}
+            className="w-4 h-4 accent-amber-500 cursor-pointer"
+          />
+          <span className="flex flex-col">
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Is Popular</span>
+            <span className="text-xs text-slate-400">Popular categories appear in the "Popular Services" section on the homepage.</span>
+          </span>
+        </label>
       </div>
     </WizardModal>
   );

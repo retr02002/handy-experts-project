@@ -149,7 +149,7 @@ export function PopularServicesClient({ services, categories }: PopularServicesC
                 key={`swiper-${activeCategory}`}
                 modules={[Navigation]}
                 spaceBetween={20}
-                slidesPerView={1}
+                slidesPerView={1.15}
                 loop={filteredServices.length > 3}
                 navigation={{
                   prevEl: '.popular-swiper-prev',
@@ -157,7 +157,7 @@ export function PopularServicesClient({ services, categories }: PopularServicesC
                 }}
                 breakpoints={{
                   768: { slidesPerView: 2, spaceBetween: 24 },
-                  1024: { slidesPerView: 4, spaceBetween: 24 },
+                  1024: { slidesPerView: 5, spaceBetween: 24 },
                 }}
                 className="w-full !pt-4 !pb-6 -mt-4"
               >

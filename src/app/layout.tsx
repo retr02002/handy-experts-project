@@ -54,6 +54,8 @@ export const metadata: Metadata = {
   manifest: '/favicon/site.webmanifest',
 };
 
+import NextTopLoader from 'nextjs-toploader';
+import { SplashScreen } from "@/components/ui/SplashScreen";
 import { NextAuthProvider } from "@/components/auth/NextAuthProvider";
 import { Toaster } from "sonner";
 
@@ -69,6 +71,19 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col pb-24 lg:pb-0 overflow-x-hidden lg:overflow-x-visible w-full max-w-full">
+        <NextTopLoader
+          color="#00B4FF"
+          initialPosition={0.08}
+          crawlSpeed={200}
+          height={3}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #00B4FF,0 0 5px #00B4FF"
+          zIndex={1600}
+        />
+        <SplashScreen />
         <NextAuthProvider>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
             <CartProvider>

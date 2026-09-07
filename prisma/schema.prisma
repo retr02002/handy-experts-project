@@ -221,6 +221,7 @@ model Category {
   // overlaid — hence both fields rather than one.
   image       String?
   isActive    Boolean   @default(true)
+  isPopular   Boolean   @default(false)
   sortOrder   Int       @default(0)
   services    Service[]
   createdAt   DateTime  @default(now())
@@ -239,6 +240,7 @@ model Service {
   badge       String?
   badgeColor  String?
   rating      String?
+  isPopular   Boolean   @default(false)
   image       String
   videoUrl    String?
   time        String?

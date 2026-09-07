@@ -65,6 +65,7 @@ export function Header() {
                     width={160}
                     height={64}
                     priority
+                    unoptimized
                     className="h-8 sm:h-13 w-auto object-contain transition-all duration-300 hover:scale-105 drop-shadow-sm dark:brightness-0 dark:invert"
                   />
                 </Link>
