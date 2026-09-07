@@ -83,6 +83,8 @@ export function CartContainer() {
         customerName: customerDetails.name,
         customerEmail: customerDetails.email,
         customerPhone: customerDetails.phone,
+        siteContactName: customerDetails.siteContactName.trim() || undefined,
+        siteContactPhone: customerDetails.siteContactPhone.trim() || undefined,
         address: customerDetails.address,
         city: customerDetails.city,
         state: customerDetails.state,

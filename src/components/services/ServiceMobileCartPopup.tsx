@@ -17,7 +17,7 @@ export function ServiceMobileCartPopup() {
   if (!mounted || totalItems === 0) return null;
 
   return (
-    <div className="fixed bottom-16 left-0 right-0 w-full z-[65] lg:hidden px-3 py-2 bg-white/95 dark:bg-[#0B1322]/95 border-t border-slate-200/90 dark:border-slate-800 shadow-[0_-6px_20px_rgba(0,0,0,0.12)] dark:shadow-[0_-6px_20px_rgba(0,0,0,0.45)] animate-in slide-in-from-bottom-5 duration-300 backdrop-blur-xl">
+    <div className="fixed bottom-16 left-0 right-0 w-full z-[55] lg:hidden px-3 py-2 bg-white/95 dark:bg-[#0B1322]/95 border-t border-slate-200/90 dark:border-slate-800 shadow-[0_-6px_20px_rgba(0,0,0,0.12)] dark:shadow-[0_-6px_20px_rgba(0,0,0,0.45)] animate-in slide-in-from-bottom-5 duration-300 backdrop-blur-xl">
       <div className="max-w-[1340px] mx-auto flex items-center justify-between gap-2.5">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-9 h-9 rounded-xl bg-[#00B4FF] text-white flex items-center justify-center font-black shadow-xs shrink-0 relative">

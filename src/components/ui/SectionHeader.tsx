@@ -29,14 +29,7 @@ export function SectionHeader({
   return (
     <div className={`flex flex-col lg:flex-row lg:items-end justify-between mb-4 sm:mb-6 lg:mb-8 gap-4 w-full ${isCenter ? "lg:justify-center" : ""}`}>
       <div className={`max-w-3xl ${isCenter ? "mx-auto text-center" : "text-left"}`}>
-        {(badgeNumber || badgeText) && (
-          <div className={`flex items-center space-x-2 text-[#00B4FF] font-bold text-xs uppercase tracking-widest mb-3 ${isCenter ? "justify-center" : ""}`}>
-            {badgeNumber && <span>{badgeNumber}</span>}
-            {badgeNumber && badgeText && <span className="w-4 h-px bg-[#00B4FF]"></span>}
-            {badgeText && <span>{badgeText}</span>}
-          </div>
-        )}
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight mb-3 sm:mb-4">
+        <h2 className="text-[22px] sm:text-3xl lg:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight mb-2 sm:mb-3">
           {title}
         </h2>
       </div>

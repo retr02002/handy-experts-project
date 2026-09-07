@@ -71,7 +71,7 @@ export const FAQSection = ({ hideBadge }: FAQSectionProps = {}) => {
   };
 
   return (
-    <section className="relative py-6 sm:py-24 bg-slate-50 dark:bg-[#0A0F1C] overflow-hidden">
+    <section className="relative py-4 sm:py-12 bg-slate-50 dark:bg-[#0A0F1C] overflow-hidden">
       {/* Subtle Grid Background */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]"></div>
 
@@ -96,68 +96,88 @@ export const FAQSection = ({ hideBadge }: FAQSectionProps = {}) => {
                 key={category}
                 onClick={() => handleCategoryChange(category)}
                 className={`
-                  flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300
+                  flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300
                   ${isActive
-                    ? "bg-[#0EA5E9] text-white shadow-[0_0_20px_rgba(14,165,233,0.4)] border border-[#0EA5E9]"
+                    ? "bg-[#0EA5E9] text-white shadow-[0_4px_16px_rgba(14,165,233,0.35)] border border-[#0EA5E9] scale-105"
                     : "bg-white dark:bg-[#131B2C] text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-[#1A2333]"
                   }
                 `}
               >
-                {category === "General" && <ClientIcon icon="ph:chat-circle-text" className="w-4 h-4" />}
-                {category === "Services" && <ClientIcon icon="ph:wrench" className="w-4 h-4" />}
-                {category === "Pricing" && <ClientIcon icon="ph:credit-card" className="w-4 h-4" />}
-                {category === "Support" && <ClientIcon icon="ph:lifebuoy" className="w-4 h-4" />}
+                {category === "General" && <ClientIcon icon={isActive ? "ph:chat-circle-text-fill" : "ph:chat-circle-text-bold"} className="w-5 h-5" />}
+                {category === "Services" && <ClientIcon icon={isActive ? "ph:wrench-fill" : "ph:wrench-bold"} className="w-5 h-5" />}
+                {category === "Pricing" && <ClientIcon icon={isActive ? "ph:credit-card-fill" : "ph:credit-card-bold"} className="w-5 h-5" />}
+                {category === "Support" && <ClientIcon icon={isActive ? "ph:lifebuoy-fill" : "ph:lifebuoy-bold"} className="w-5 h-5" />}
                 {category}
               </button>
             );
           })}
         </div>
 
-        {/* Dropdown - Mobile */}
+        {/* Mobile Dropdown (App-Native Bottom Sheet) */}
         <div className="md:hidden relative mb-8">
           <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="w-full flex items-center justify-between px-4 py-3.5 bg-white dark:bg-[#131B2C] border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white font-medium shadow-sm"
+            onClick={() => setIsDropdownOpen(true)}
+            className="w-full flex items-center justify-between px-5 py-4 bg-white dark:bg-[#131B2C] border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-900 dark:text-white font-bold shadow-sm active:scale-[0.98] transition-transform"
           >
-            <div className="flex items-center gap-2">
-              {activeCategory === "General" && <ClientIcon icon="ph:chat-circle-text" className="w-5 h-5 text-[#0EA5E9]" />}
-              {activeCategory === "Services" && <ClientIcon icon="ph:wrench" className="w-5 h-5 text-[#0EA5E9]" />}
-              {activeCategory === "Pricing" && <ClientIcon icon="ph:credit-card" className="w-5 h-5 text-[#0EA5E9]" />}
-              {activeCategory === "Support" && <ClientIcon icon="ph:lifebuoy" className="w-5 h-5 text-[#0EA5E9]" />}
-              {activeCategory}
+            <div className="flex items-center gap-3">
+              {activeCategory === "General" && <ClientIcon icon="ph:chat-circle-text-fill" className="w-6 h-6 text-[#0EA5E9]" />}
+              {activeCategory === "Services" && <ClientIcon icon="ph:wrench-fill" className="w-6 h-6 text-[#0EA5E9]" />}
+              {activeCategory === "Pricing" && <ClientIcon icon="ph:credit-card-fill" className="w-6 h-6 text-[#0EA5E9]" />}
+              {activeCategory === "Support" && <ClientIcon icon="ph:lifebuoy-fill" className="w-6 h-6 text-[#0EA5E9]" />}
+              <span className="text-[15px]">{activeCategory}</span>
             </div>
             <ClientIcon
-              icon="ph:caret-down"
-              className={`w-5 h-5 text-slate-500 transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : ""}`}
+              icon="ph:caret-down-bold"
+              className="w-5 h-5 text-slate-400"
             />
           </button>
 
           <AnimatePresence>
             {isDropdownOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#131B2C] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden z-20"
-              >
-                {FAQ_CATEGORIES.map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => handleCategoryChange(category)}
-                    className={`
-                      w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors
-                      ${activeCategory === category ? "bg-slate-50 dark:bg-[#1A2333] text-[#0EA5E9]" : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-[#1A2333]/50"}
-                    `}
-                  >
-                    {category === "General" && <ClientIcon icon="ph:chat-circle-text" className="w-5 h-5" />}
-                    {category === "Services" && <ClientIcon icon="ph:wrench" className="w-5 h-5" />}
-                    {category === "Pricing" && <ClientIcon icon="ph:credit-card" className="w-5 h-5" />}
-                    {category === "Support" && <ClientIcon icon="ph:lifebuoy" className="w-5 h-5" />}
-                    {category}
-                  </button>
-                ))}
-              </motion.div>
+              <>
+                {/* Backdrop */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="fixed inset-0 bg-slate-900/40 dark:bg-slate-900/60 backdrop-blur-sm z-[100]"
+                />
+                
+                {/* Bottom Sheet */}
+                <motion.div
+                  initial={{ y: "100%" }}
+                  animate={{ y: 0 }}
+                  exit={{ y: "100%" }}
+                  transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                  className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#131B2C] rounded-t-[32px] p-6 pb-10 z-[110] shadow-[0_-10px_40px_rgba(0,0,0,0.1)]"
+                >
+                  <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6"></div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 px-2">Select Category</h3>
+                  
+                  <div className="flex flex-col gap-2">
+                    {FAQ_CATEGORIES.map((category) => (
+                      <button
+                        key={category}
+                        onClick={() => handleCategoryChange(category)}
+                        className={`
+                          w-full flex items-center justify-between px-4 py-4 rounded-xl text-left transition-colors font-bold text-[15px]
+                          ${activeCategory === category ? "bg-slate-50 dark:bg-[#1A2333] text-[#0EA5E9]" : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-[#1A2333]/50"}
+                        `}
+                      >
+                        <div className="flex items-center gap-3">
+                          {category === "General" && <ClientIcon icon={activeCategory === category ? "ph:chat-circle-text-fill" : "ph:chat-circle-text"} className="w-6 h-6" />}
+                          {category === "Services" && <ClientIcon icon={activeCategory === category ? "ph:wrench-fill" : "ph:wrench"} className="w-6 h-6" />}
+                          {category === "Pricing" && <ClientIcon icon={activeCategory === category ? "ph:credit-card-fill" : "ph:credit-card"} className="w-6 h-6" />}
+                          {category === "Support" && <ClientIcon icon={activeCategory === category ? "ph:lifebuoy-fill" : "ph:lifebuoy"} className="w-6 h-6" />}
+                          {category}
+                        </div>
+                        {activeCategory === category && <ClientIcon icon="ph:check-circle-fill" className="w-5 h-5 text-[#0EA5E9]" />}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              </>
             )}
           </AnimatePresence>
         </div>
@@ -167,7 +187,6 @@ export const FAQSection = ({ hideBadge }: FAQSectionProps = {}) => {
           <div className="space-y-4">
             {FAQ_DATA[activeCategory].map((item, idx) => {
               const isActive = activeQuestionIdx === idx;
-              const numStr = (idx + 1).toString().padStart(2, "0");
 
               return (
                 <div
@@ -182,38 +201,26 @@ export const FAQSection = ({ hideBadge }: FAQSectionProps = {}) => {
                 >
                   <button
                     onClick={() => setActiveQuestionIdx(isActive ? -1 : idx)}
-                    className="w-full flex items-center gap-4 p-5 text-left focus:outline-none"
+                    className="w-full flex items-center gap-4 p-5 sm:p-6 text-left focus:outline-none"
                   >
-                    <div
-                      className={`
-                        shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300
-                        ${isActive
-                          ? "bg-[#0EA5E9] text-white shadow-[0_0_15px_rgba(14,165,233,0.4)]"
-                          : "bg-slate-100 dark:bg-[#1A2333] text-slate-500 dark:text-slate-400 group-hover:bg-slate-200 dark:group-hover:bg-[#222E42]"
-                        }
-                      `}
-                    >
-                      {numStr}
-                    </div>
-
                     <span
-                      className={`flex-grow font-semibold text-[15px] sm:text-base transition-colors duration-300 ${isActive
-                        ? "text-slate-900 dark:text-white"
-                        : "text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-200"
+                      className={`flex-grow font-bold text-[15px] sm:text-base transition-colors duration-300 ${isActive
+                        ? "text-[#0EA5E9]"
+                        : "text-slate-900 dark:text-white group-hover:text-[#0EA5E9]"
                         }`}
                     >
                       {item.q}
                     </span>
 
                     <div
-                      className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center border transition-colors duration-300 ${isActive
-                        ? "border-[#0EA5E9]/30 text-[#0EA5E9]"
-                        : "border-slate-200 dark:border-slate-700 text-slate-400 group-hover:border-slate-300 dark:group-hover:border-slate-600"
+                      className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-300 ${isActive
+                        ? "bg-[#0EA5E9]/10 text-[#0EA5E9]"
+                        : "bg-slate-50 dark:bg-[#1A2333] text-slate-400 group-hover:bg-slate-100 dark:group-hover:bg-[#222E42]"
                         }`}
                     >
                       <ClientIcon
-                        icon={isActive ? "ph:minus" : "ph:plus"}
-                        className="w-3.5 h-3.5"
+                        icon={isActive ? "ph:caret-up-bold" : "ph:caret-down-bold"}
+                        className="w-4 h-4"
                       />
                     </div>
                   </button>
@@ -226,7 +233,7 @@ export const FAQSection = ({ hideBadge }: FAQSectionProps = {}) => {
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.3, ease: "easeInOut" }}
                       >
-                        <div className="pl-[68px] pr-6 pb-5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                        <div className="px-5 sm:px-6 pb-5 sm:pb-6 text-[14px] sm:text-[15px] text-slate-600 dark:text-slate-400 leading-relaxed pt-2 border-t border-slate-100 dark:border-slate-800/50 mx-5 sm:mx-6">
                           {item.a}
                         </div>
                       </motion.div>

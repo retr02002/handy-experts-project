@@ -60,8 +60,8 @@ export default async function VendorProfilePage() {
               {vendor ? (
                 <>
                   <DetailRow label="Company Type" value={vendor.companyType} />
-                  <DetailRow label="GST Number" value={vendor.gstNumber} />
-                  <DetailRow label="PAN Number" value={vendor.panNumber} />
+                  <DetailRow label="GST Number" value={vendor.gstNumber ?? "Not provided"} />
+                  <DetailRow label="PAN Number" value={vendor.panNumber ?? "Not provided"} />
                   <DetailRow
                     label="Incorporated"
                     value={new Date(vendor.incorporationDate).toLocaleDateString("en-IN", {
@@ -98,9 +98,9 @@ export default async function VendorProfilePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
                 <DetailRow label="Company Name" value={vendor.companyName} />
                 <DetailRow label="Company Type" value={vendor.companyType} />
-                <DetailRow label="GST Number" value={vendor.gstNumber} />
-                <DetailRow label="PAN Number" value={vendor.panNumber} />
-                <DetailRow label="Aadhaar Number" value={vendor.aadhaarNumber} />
+                <DetailRow label="GST Number" value={vendor.gstNumber ?? "Not provided"} />
+                <DetailRow label="PAN Number" value={vendor.panNumber ?? "Not provided"} />
+                <DetailRow label="Aadhaar Number" value={vendor.aadhaarNumber ?? "Not provided"} />
                 <DetailRow label="Pincode" value={vendor.pincode} />
               </div>
               <div className="mt-1">

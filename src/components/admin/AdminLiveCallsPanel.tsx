@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import { getAllLiveCallsAction, type AdminLiveCall } from "@/actions/livecall.actions";
 import { getAllTechniciansForAdminAction, type AdminTechnician } from "@/actions/technician.actions";
 import { getAllVendorsForAdminAction, type AdminVendor } from "@/actions/admin.actions";
+import { getAllVendorServiceAreasForAdminAction, type AdminVendorServiceArea } from "@/actions/vendorservicearea.actions";
+import { getAllTechnicianServiceAreasForAdminAction, type AdminTechnicianServiceArea } from "@/actions/technicianservicearea.actions";
 import { usePolling } from "@/hooks/usePolling";
 import { LiveMap } from "@/components/shared/LiveMap";
 import { AdminLiveCallCard } from "./AdminLiveCallCard";
@@ -18,6 +20,8 @@ export function AdminLiveCallsPanel() {
   const [calls, setCalls] = useState<AdminLiveCall[]>([]);
   const [technicians, setTechnicians] = useState<AdminTechnician[]>([]);
   const [vendors, setVendors] = useState<AdminVendor[]>([]);
+  const [serviceAreas, setServiceAreas] = useState<AdminVendorServiceArea[]>([]);
+  const [technicianServiceAreas, setTechnicianServiceAreas] = useState<AdminTechnicianServiceArea[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   usePolling(async () => {
@@ -35,6 +39,16 @@ export function AdminLiveCallsPanel() {
     const res = await getAllVendorsForAdminAction();
     if (res.success && res.data) setVendors(res.data);
   }, VENDORS_POLL_INTERVAL_MS);
+
+  usePolling(async () => {
+    const res = await getAllVendorServiceAreasForAdminAction();
+    if (res.success && res.data) setServiceAreas(res.data);
+  }, VENDORS_POLL_INTERVAL_MS);
+
+  usePolling(async () => {
+    const res = await getAllTechnicianServiceAreasForAdminAction();
+    if (res.success && res.data) setTechnicianServiceAreas(res.data);
+  }, TECHNICIANS_POLL_INTERVAL_MS);
 
   const center = calls.length > 0 ? { lat: calls[0].latitude, lng: calls[0].longitude } : DEFAULT_CENTER;
 
@@ -56,8 +70,10 @@ export function AdminLiveCallsPanel() {
               id: t.id,
               latitude: t.latitude,
               longitude: t.longitude,
-              label: `${t.name} — ${t.vendorName} (${t.isOnDuty ? "on duty" : "off duty"})`,
+              label: `${t.name} — ${t.vendorName}`,
               isOnDuty: t.isOnDuty,
+              skillCategory: t.skillCategory,
+              phone: t.phone,
             }))}
           vendorMarkers={vendors
             .filter((v): v is AdminVendor & { latitude: number; longitude: number } => v.latitude !== null && v.longitude !== null)
@@ -65,8 +81,24 @@ export function AdminLiveCallsPanel() {
               id: v.id,
               latitude: v.latitude,
               longitude: v.longitude,
-              label: `${v.companyName} (vendor)`,
+              label: v.companyName,
+              contactName: v.contactName,
+              phone: v.phone,
+              technicianCount: v.technicianCount,
+              isActive: v.isActive,
             }))}
+          serviceAreaCircles={serviceAreas.map((a) => ({
+            id: a.id,
+            latitude: a.latitude,
+            longitude: a.longitude,
+            radiusKm: a.radiusKm,
+          }))}
+          technicianServiceAreaCircles={technicianServiceAreas.map((a) => ({
+            id: a.id,
+            latitude: a.latitude,
+            longitude: a.longitude,
+            radiusKm: a.radiusKm,
+          }))}
         />
       </div>
 

@@ -4,6 +4,11 @@ export interface CustomerDetails {
   name: string;
   email: string;
   phone: string;
+  // Optional alternate contact for the site, in case the technician should
+  // call someone other than the customer on arrival. Empty string means
+  // "same as the customer" — never sent to the server as "".
+  siteContactName: string;
+  siteContactPhone: string;
   address: string;
   city: string;
   state: string;
@@ -20,6 +25,8 @@ export const EMPTY_CUSTOMER_DETAILS: CustomerDetails = {
   name: "",
   email: "",
   phone: "",
+  siteContactName: "",
+  siteContactPhone: "",
   address: "",
   city: "",
   state: "",
@@ -58,6 +65,7 @@ export function isDetailsComplete(details: CustomerDetails): boolean {
     details.name.trim().length > 1 &&
     /^\S+@\S+\.\S+$/.test(details.email.trim()) &&
     /^\d{10}$/.test(details.phone.trim()) &&
+    (details.siteContactPhone.trim() === "" || /^\d{10}$/.test(details.siteContactPhone.trim())) &&
     details.address.trim().length > 5 &&
     details.city.trim().length > 1 &&
     details.state.trim().length > 1 &&

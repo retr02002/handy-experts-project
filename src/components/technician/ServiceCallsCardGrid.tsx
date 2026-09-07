@@ -54,7 +54,7 @@ function Card({ call, onUpdated, onView }: { call: ServiceCallSummary; onUpdated
       <div className="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-400">
         <div className="flex items-center gap-1.5">
           <ClientIcon icon="ph:user" className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-          {call.customerName} &middot; {call.customerPhone}
+          {call.customerName} &middot; {call.siteContactPhone || call.customerPhone}
         </div>
         <div className="flex items-start gap-1.5">
           <ClientIcon icon="ph:map-pin" className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />

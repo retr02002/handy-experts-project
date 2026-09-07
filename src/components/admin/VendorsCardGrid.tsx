@@ -45,7 +45,7 @@ export function VendorsCardGrid({ data, onView }: { data: AdminVendor[]; onView:
           <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-3">
             <div className="flex items-center gap-1.5">
               <ClientIcon icon="ph:identification-card" className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              {vendor.gstNumber}
+              {vendor.gstNumber ?? "—"}
             </div>
             <div className="flex items-center gap-1.5">
               <ClientIcon icon="ph:briefcase" className="w-3.5 h-3.5 text-slate-400 shrink-0" />

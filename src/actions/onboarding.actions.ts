@@ -12,6 +12,7 @@ import {
   type VendorOnboardingInput,
   type TechnicianOnboardingInput,
 } from "@/lib/validations/onboarding.schema";
+import { forwardGeocodePincode } from "@/lib/geocode";
 
 /**
  * Phone is globally unique across every role (OTP login depends on this).
@@ -104,7 +105,12 @@ export async function completeVendorOnboarding(input: VendorOnboardingInput): Pr
     const phoneConflict = await checkPhoneAvailable(phone, userId);
     if (phoneConflict) return phoneConflict;
 
-    await prisma.$transaction([
+    // Checked before the upsert so we know whether this is a first-time
+    // completion (auto-seed one serviceable area below) vs. a repeat
+    // profile edit (never re-seed on every save).
+    const isFirstCompletion = (await prisma.vendorProfile.findUnique({ where: { userId }, select: { id: true } })) === null;
+
+    const [, vendorProfile] = await prisma.$transaction([
       prisma.user.update({
         where: { id: userId },
         data: { role: "VENDOR", name, phone },
@@ -129,9 +135,11 @@ export async function completeVendorOnboarding(input: VendorOnboardingInput): Pr
         update: {
           companyName,
           companyType,
-          gstNumber,
-          panNumber,
-          aadhaarNumber,
+          // undefined means "leave unchanged" to Prisma's update — clearing
+          // a KYC field back to blank must explicitly set null.
+          gstNumber: gstNumber ?? null,
+          panNumber: panNumber ?? null,
+          aadhaarNumber: aadhaarNumber ?? null,
           address,
           city,
           state,
@@ -144,6 +152,21 @@ export async function completeVendorOnboarding(input: VendorOnboardingInput): Pr
         },
       }),
     ]);
+
+    if (isFirstCompletion) {
+      // Best-effort so a brand-new vendor isn't stuck at zero live-call
+      // coverage until they visit /vendor/service-areas themselves. 15km
+      // mirrors the old flat-radius default; a failed geocode is non-fatal.
+      const coords = await forwardGeocodePincode(pincode);
+      if (coords) {
+        await prisma.vendorServiceArea.create({
+          data: { vendorId: vendorProfile.id, pincode, latitude: coords.latitude, longitude: coords.longitude, radiusKm: 15 },
+        });
+      } else {
+        console.error(`Could not auto-seed a service area for new vendor ${vendorProfile.id} (pincode ${pincode})`);
+      }
+    }
+
     return { success: true };
   } catch (err) {
     console.error("Vendor onboarding error:", err);
@@ -166,7 +189,12 @@ export async function completeTechnicianOnboarding(input: TechnicianOnboardingIn
     const phoneConflict = await checkPhoneAvailable(phone, userId);
     if (phoneConflict) return phoneConflict;
 
-    await prisma.$transaction([
+    // Checked before the upsert so we know whether this is a first-time
+    // completion (auto-seed one serviceable area below) vs. a repeat
+    // profile edit (never re-seed on every save).
+    const isFirstCompletion = (await prisma.technicianProfile.findUnique({ where: { userId }, select: { id: true } })) === null;
+
+    const [, technicianProfile] = await prisma.$transaction([
       prisma.user.update({
         where: { id: userId },
         data: { role: "TECHNICIAN", name, phone },
@@ -189,6 +217,28 @@ export async function completeTechnicianOnboarding(input: TechnicianOnboardingIn
         },
       }),
     ]);
+
+    if (isFirstCompletion) {
+      // Best-effort so a brand-new technician isn't stuck with no coverage
+      // circle visible on the vendor/admin map until they visit
+      // /technician/service-areas themselves. 15km mirrors the vendor
+      // round's auto-seed default; a failed geocode is non-fatal.
+      const coords = await forwardGeocodePincode(servicePincode);
+      if (coords) {
+        await prisma.technicianServiceArea.create({
+          data: {
+            technicianId: technicianProfile.id,
+            pincode: servicePincode,
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            radiusKm: 15,
+          },
+        });
+      } else {
+        console.error(`Could not auto-seed a service area for new technician ${technicianProfile.id} (pincode ${servicePincode})`);
+      }
+    }
+
     return { success: true };
   } catch (err) {
     console.error("Technician onboarding error:", err);

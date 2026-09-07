@@ -16,6 +16,9 @@ export function DetailsStep({ details, onChange }: Props) {
   const { data: session } = useSession();
   const [locating, setLocating] = useState(false);
   const autofilledRef = useRef(false);
+  // Seeded from any pre-existing value so navigating back to this step
+  // doesn't silently lose the toggle state (and the fields behind it).
+  const [hasSiteContact, setHasSiteContact] = useState(details.siteContactPhone.trim() !== "");
 
   useEffect(() => {
     if (autofilledRef.current || !session?.user) return;
@@ -111,6 +114,41 @@ export function DetailsStep({ details, onChange }: Props) {
           placeholder="10-digit mobile number"
           inputMode="numeric"
         />
+      </div>
+
+      <div className="flex flex-col gap-4">
+        <label className="flex items-center gap-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={hasSiteContact}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setHasSiteContact(checked);
+              if (!checked) onChange({ ...details, siteContactName: "", siteContactPhone: "" });
+            }}
+            className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/40"
+          />
+          Site contact is different from me
+        </label>
+        {hasSiteContact && (
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Field
+              label="Site Contact Name (optional)"
+              icon="ph:user-focus"
+              value={details.siteContactName}
+              onChange={(v) => setField("siteContactName", v)}
+              placeholder="e.g. Ramesh"
+            />
+            <Field
+              label="Site Contact Number"
+              icon="ph:phone-call"
+              value={details.siteContactPhone}
+              onChange={(v) => setField("siteContactPhone", v.replace(/\D/g, "").slice(0, 10))}
+              placeholder="10-digit number to call at the site"
+              inputMode="numeric"
+            />
+          </div>
+        )}
       </div>
 
       <Field

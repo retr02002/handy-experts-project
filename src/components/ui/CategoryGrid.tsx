@@ -10,7 +10,7 @@ export async function CategoryGrid() {
   if (populated.length === 0) return null;
 
   return (
-    <section className="w-full bg-white dark:bg-[#020813] pt-4 pb-12 sm:pt-6 sm:pb-16 px-4 sm:px-8 lg:px-16 border-t border-slate-100 dark:border-white/5">
+    <section className="w-full bg-white dark:bg-[#020813] pt-3 pb-6 sm:pt-10 sm:pb-10 px-4 sm:px-8 lg:px-16 border-t border-slate-100 dark:border-white/5">
       <div className="max-w-7xl mx-auto">
         <CategoryGridClient categories={populated} />
       </div>

@@ -46,7 +46,7 @@ export function AdminLiveCallCard({ call }: { call: AdminLiveCall }) {
         </div>
       </div>
 
-      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{call.customerName} &middot; {call.customerPhone}</p>
+      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{call.customerName} &middot; {call.siteContactPhone || call.customerPhone}</p>
       <p className="text-xs text-slate-500">{call.city}, {call.pincode}</p>
       {call.acceptedByVendorName && (
         <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Accepted by {call.acceptedByVendorName}</p>

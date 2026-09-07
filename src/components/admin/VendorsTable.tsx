@@ -31,8 +31,8 @@ function buildColumns(onView: (vendor: AdminVendor) => void): ColumnDef<AdminVen
       header: "GST / PAN",
       cell: (item) => (
         <div className="flex flex-col text-xs">
-          <span>{item.gstNumber}</span>
-          <span className="text-slate-500">{item.panNumber}</span>
+          <span>{item.gstNumber ?? "—"}</span>
+          <span className="text-slate-500">{item.panNumber ?? "—"}</span>
         </div>
       ),
     },

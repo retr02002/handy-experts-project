@@ -38,17 +38,31 @@ export const vendorOnboardingSchema = z.object({
   phone: phoneSchema,
   companyName: z.string().trim().min(2, "Company name is required").max(150),
   companyType: z.enum(COMPANY_TYPES),
+  // KYC documents are optional at onboarding — a vendor can start operating
+  // and add these later from their profile. Still validated against the
+  // real format whenever a non-empty value is actually submitted.
   gstNumber: z
     .string()
     .trim()
     .toUpperCase()
-    .regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, "Enter a valid 15-character GST number"),
+    .transform((v) => (v === "" ? undefined : v))
+    .pipe(
+      z
+        .string()
+        .regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, "Enter a valid 15-character GST number")
+        .optional()
+    ),
   panNumber: z
     .string()
     .trim()
     .toUpperCase()
-    .regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, "Enter a valid 10-character PAN number"),
-  aadhaarNumber: aadhaarSchema,
+    .transform((v) => (v === "" ? undefined : v))
+    .pipe(z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, "Enter a valid 10-character PAN number").optional()),
+  aadhaarNumber: z
+    .string()
+    .trim()
+    .transform((v) => (v === "" ? undefined : v))
+    .pipe(z.string().regex(/^\d{12}$/, "Enter a valid 12-digit Aadhaar number").optional()),
   address: z.string().trim().min(5, "Please enter your street address").max(500),
   city: citySchema,
   state: stateSchema,

@@ -19,6 +19,7 @@ type PopularServicesClientProps = {
 
 export function PopularServicesClient({ services, categories }: PopularServicesClientProps) {
   const [activeCategory, setActiveCategory] = useState(ALL);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const isMounted = React.useSyncExternalStore(
     () => () => {},
     () => true,
@@ -31,27 +32,72 @@ export function PopularServicesClient({ services, categories }: PopularServicesC
     (service) => activeCategory === ALL || service.category?.slug === activeCategory
   );
 
+  const activeCategoryName = tabs.find(t => t.slug === activeCategory)?.name || "All Services";
+
   return (
     <>
       {/* Categories Tab (Desktop) & Dropdown (Mobile) */}
       <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        {/* Mobile Dropdown */}
-        <div className="md:hidden relative w-full">
-          <select
-            value={activeCategory}
-            onChange={(e) => setActiveCategory(e.target.value)}
-            className="w-full appearance-none bg-slate-100 dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white py-3 pl-4 pr-10 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-[#00B4FF]/50 transition-shadow"
+        {/* Mobile Dropdown (App-Native Bottom Sheet) */}
+        <div className="md:hidden relative w-full mb-2">
+          <button
+            onClick={() => setIsDropdownOpen(true)}
+            className="w-full flex items-center justify-between px-5 py-4 bg-white dark:bg-[#131B2C] border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-900 dark:text-white font-bold shadow-sm active:scale-[0.98] transition-transform"
           >
-            {tabs.map((tab) => (
-              <option key={tab.id} value={tab.slug}>
-                {tab.name}
-              </option>
-            ))}
-          </select>
-          <ClientIcon 
-            icon="ph:caret-down-bold" 
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" 
-          />
+            <span className="text-[15px]">{activeCategoryName}</span>
+            <ClientIcon
+              icon="ph:caret-down-bold"
+              className="w-5 h-5 text-[#00B4FF]"
+            />
+          </button>
+
+          <AnimatePresence>
+            {isDropdownOpen && (
+              <>
+                {/* Backdrop */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="fixed inset-0 bg-slate-900/40 dark:bg-slate-900/60 backdrop-blur-sm z-[100]"
+                />
+                
+                {/* Bottom Sheet */}
+                <motion.div
+                  initial={{ y: "100%" }}
+                  animate={{ y: 0 }}
+                  exit={{ y: "100%" }}
+                  transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                  className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#131B2C] rounded-t-[32px] p-6 pb-10 z-[110] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] max-h-[85vh] overflow-y-auto flex flex-col"
+                >
+                  <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6 shrink-0"></div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 px-2 shrink-0">Select Category</h3>
+                  
+                  <div className="flex flex-col gap-2 overflow-y-auto pb-4">
+                    {tabs.map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => {
+                          setActiveCategory(tab.slug);
+                          setIsDropdownOpen(false);
+                        }}
+                        className={`
+                          w-full flex items-center justify-between px-4 py-4 rounded-xl text-left transition-colors font-bold text-[15px]
+                          ${activeCategory === tab.slug ? "bg-slate-50 dark:bg-[#1A2333] text-[#00B4FF]" : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-[#1A2333]/50"}
+                        `}
+                      >
+                        <div className="flex items-center gap-3">
+                          {tab.name}
+                        </div>
+                        {activeCategory === tab.slug && <ClientIcon icon="ph:check-circle-fill" className="w-5 h-5 text-[#00B4FF]" />}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Desktop Tabs */}
@@ -111,7 +157,7 @@ export function PopularServicesClient({ services, categories }: PopularServicesC
                 }}
                 breakpoints={{
                   768: { slidesPerView: 2, spaceBetween: 24 },
-                  1024: { slidesPerView: 3, spaceBetween: 24 },
+                  1024: { slidesPerView: 4, spaceBetween: 24 },
                 }}
                 className="w-full !pt-4 !pb-6 -mt-4"
               >

@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { ActionResponse } from "@/actions/auth.actions";
 import { createLiveCallSchema, type CreateLiveCallInput } from "@/lib/validations/livecall.schema";
-import { haversineKm, DEFAULT_RADIUS_KM } from "@/lib/geo";
+import { haversineKm } from "@/lib/geo";
 import { LOCATION_NOT_SET, VENDOR_INACTIVE } from "@/lib/constants";
 import { requireAdmin } from "@/lib/require-admin";
 import { notifyAllAdmins } from "@/actions/notification.actions";
@@ -118,6 +118,8 @@ export async function createLiveCallAction(input: CreateLiveCallInput): Promise<
           customerId: userId,
           customerName: data.customerName,
           customerPhone: data.customerPhone,
+          siteContactName: data.siteContactName ?? null,
+          siteContactPhone: data.siteContactPhone ?? null,
           customerEmail: data.customerEmail,
           address: data.address,
           city: data.city,
@@ -196,6 +198,8 @@ export interface NearbyLiveCall {
   id: string;
   customerName: string;
   customerPhone: string;
+  siteContactName: string | null;
+  siteContactPhone: string | null;
   customerEmail: string;
   address: string;
   city: string;
@@ -233,11 +237,23 @@ export async function getNearbyLiveCallsForVendorAction(): Promise<ActionRespons
       orderBy: { createdAt: "desc" },
     });
 
+    // Eligibility is now gated by the vendor's own serviceable-area circles
+    // rather than a flat radius from their business location — a vendor
+    // with zero areas sees zero calls by design (they haven't set up
+    // coverage yet). distanceKm below is still measured from the business
+    // location purely for sort order, not for eligibility.
+    const areas = await prisma.vendorServiceArea.findMany({
+      where: { vendorId: vendor.id },
+      select: { latitude: true, longitude: true, radiusKm: true },
+    });
+
     const nearby = calls
       .map((call) => ({
         id: call.id,
         customerName: call.customerName,
         customerPhone: call.customerPhone,
+        siteContactName: call.siteContactName,
+        siteContactPhone: call.siteContactPhone,
         customerEmail: call.customerEmail,
         address: call.address,
         city: call.city,
@@ -256,7 +272,7 @@ export async function getNearbyLiveCallsForVendorAction(): Promise<ActionRespons
         distanceKm: haversineKm(vendor.latitude, vendor.longitude, call.latitude, call.longitude),
         items: call.items.map((i) => ({ packageName: i.packageName, quantity: i.quantity, unitPrice: i.unitPrice })),
       }))
-      .filter((call) => call.distanceKm <= DEFAULT_RADIUS_KM)
+      .filter((call) => areas.some((a) => haversineKm(a.latitude, a.longitude, call.latitude, call.longitude) <= a.radiusKm))
       .sort((a, b) => a.distanceKm - b.distanceKm);
 
     return { success: true, data: nearby };
@@ -271,6 +287,8 @@ export interface AdminLiveCall {
   status: string;
   customerName: string;
   customerPhone: string;
+  siteContactName: string | null;
+  siteContactPhone: string | null;
   customerEmail: string;
   address: string;
   city: string;
@@ -314,6 +332,8 @@ export async function getAllLiveCallsAction(): Promise<ActionResponse<AdminLiveC
         status: c.status,
         customerName: c.customerName,
         customerPhone: c.customerPhone,
+        siteContactName: c.siteContactName,
+        siteContactPhone: c.siteContactPhone,
         customerEmail: c.customerEmail,
         address: c.address,
         city: c.city,

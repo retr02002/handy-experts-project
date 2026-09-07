@@ -1,5 +1,11 @@
+"use client";
+
 import { TrustCard } from "@/components/ui/TrustCard";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation } from "swiper/modules";
+import "swiper/css";
+import { ClientIcon } from "@/components/ui/ClientIcon";
 
 const TRUST_FEATURES = [
   {
@@ -42,14 +48,14 @@ const TRUST_FEATURES = [
 
 export function TrustSection() {
   return (
-    <section className="relative w-full bg-slate-50 dark:bg-[#060A13] py-6 sm:py-24 px-4 sm:px-8 lg:px-16 overflow-hidden">
+    <section className="relative w-full bg-slate-50 dark:bg-[#060A13] py-4 sm:py-12 px-4 sm:px-8 lg:px-16 overflow-hidden">
       {/* Subtle Background Grid Pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
       
       {/* Top Gradient for smooth transition */}
       <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-slate-50 dark:from-[#0A0F1C] to-transparent pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto relative z-10">
+      <div className="max-w-[1400px] mx-auto relative z-10">
         <SectionHeader
           badgeNumber="03"
           badgeText="Trust"
@@ -61,8 +67,8 @@ export function TrustSection() {
           description="We don't just connect you with professionals, we guarantee their quality. Every service is backed by our comprehensive trust and safety protocols."
         />
 
-        {/* Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
+        {/* Desktop Grid (6 in a row) */}
+        <div className="hidden xl:grid xl:grid-cols-6 gap-4 lg:gap-5">
           {TRUST_FEATURES.map((feature, index) => (
             <TrustCard 
               key={index}
@@ -73,6 +79,53 @@ export function TrustSection() {
               index={index}
             />
           ))}
+        </div>
+
+        {/* Mobile & Tablet Swiper Slider */}
+        <div className="block xl:hidden -mx-4 sm:mx-0 px-4 sm:px-0">
+          <Swiper
+            modules={[Navigation]}
+            navigation={{
+              prevEl: '.trust-swiper-prev',
+              nextEl: '.trust-swiper-next',
+            }}
+            spaceBetween={16}
+            slidesPerView={1}
+            breakpoints={{
+              640: { slidesPerView: 2, spaceBetween: 20 },
+              768: { slidesPerView: 3, spaceBetween: 24 },
+              1024: { slidesPerView: 4, spaceBetween: 24 },
+            }}
+            className="w-full !pb-4"
+          >
+            {TRUST_FEATURES.map((feature, index) => (
+              <SwiperSlide key={index} className="h-auto flex">
+                <TrustCard 
+                  title={feature.title}
+                  subtitle={feature.subtitle}
+                  desc={feature.desc}
+                  icon={feature.icon}
+                  index={index}
+                />
+              </SwiperSlide>
+            ))}
+          </Swiper>
+
+          {/* Navigation Arrows Below Cards */}
+          <div className="mt-1 flex justify-center gap-3 relative z-10">
+            <button 
+              className="trust-swiper-prev w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-[#131B2F] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2a44] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              aria-label="Previous card"
+            >
+              <ClientIcon icon="ph:arrow-left-bold" className="w-4 h-4" />
+            </button>
+            <button 
+              className="trust-swiper-next w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-[#131B2F] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2a44] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm z-10"
+              aria-label="Next card"
+            >
+              <ClientIcon icon="ph:arrow-right-bold" className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </section>

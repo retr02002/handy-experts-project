@@ -78,10 +78,10 @@ export function TestimonialsCarousel({ testimonials, hideBadge }: TestimonialsCa
           autoplay={{ delay: 5000, disableOnInteraction: false }}
           breakpoints={{
             768: { slidesPerView: 1, spaceBetween: 24 },
-            1024: { slidesPerView: 2, spaceBetween: 24 },
-            1280: { slidesPerView: 3, spaceBetween: 24 },
+            1024: { slidesPerView: 4, spaceBetween: 24 },
+            1280: { slidesPerView: 4, spaceBetween: 24 },
           }}
-          className="w-full !pb-8 !pt-2"
+          className="w-full !pb-2 !pt-2"
         >
           {testimonials.map((t, idx) => (
             <SwiperSlide key={idx} className="h-auto pb-4">
@@ -92,7 +92,7 @@ export function TestimonialsCarousel({ testimonials, hideBadge }: TestimonialsCa
       </div>
 
       {/* Mobile Navigation Buttons (below cards) */}
-      <div className="flex justify-center mt-2 lg:hidden">
+      <div className="flex justify-center mt-2 lg:hidden relative z-10">
         <NavigationButtons swiperInstance={swiperInstance} />
       </div>
     </>

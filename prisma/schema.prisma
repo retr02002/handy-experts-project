@@ -76,9 +76,12 @@ model VendorProfile {
   user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   companyName       String
   companyType       String
-  gstNumber         String
-  panNumber         String
-  aadhaarNumber     String
+  // Optional at onboarding — a vendor can start operating and add these
+  // later. No @unique on any of the three, so relaxing to nullable is a
+  // pure widening with no migration hazard.
+  gstNumber         String?
+  panNumber         String?
+  aadhaarNumber     String?
   address           String
   city              String
   state             String
@@ -96,8 +99,32 @@ model VendorProfile {
   technicians       TechnicianProfile[]
   liveCallsAccepted LiveCall[]
   serviceCalls      ServiceCall[]
+  serviceAreas      VendorServiceArea[]
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
+}
+
+// A vendor's self-managed coverage circles, replacing the old flat
+// DEFAULT_RADIUS_KM broadcast radius. Live-call eligibility checks whether
+// any of a vendor's areas covers the call's location (see
+// getNearbyLiveCallsForVendorAction) — a vendor with zero rows here
+// receives zero calls by design, so every vendor gets one auto-seeded row
+// at creation time (see createVendorAction / completeVendorOnboarding).
+model VendorServiceArea {
+  id        String        @id @default(cuid())
+  vendorId  String
+  vendor    VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  pincode   String
+  latitude  Float
+  longitude Float
+  // Vendor-adjustable per area. 15 mirrors the old flat radius and is used
+  // only for the one-time backfill/auto-seed rows; a vendor's own later
+  // additions default their form input to 5.
+  radiusKm  Float         @default(5)
+  createdAt DateTime      @default(now())
+
+  @@unique([vendorId, pincode])
+  @@index([vendorId])
 }
 
 enum TechnicianType {
@@ -120,8 +147,28 @@ model TechnicianProfile {
   vendor          VendorProfile? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
   serviceCalls    ServiceCall[]
   location        TechnicianLocation?
+  serviceAreas    TechnicianServiceArea[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+}
+
+// Mirrors VendorServiceArea — informational/visual coverage circles a
+// technician self-manages. Unlike the vendor version, these do NOT gate any
+// matching logic today (job assignment to technicians is still manual);
+// they exist so a vendor/admin can see each technician's declared coverage
+// on the live-calls map.
+model TechnicianServiceArea {
+  id           String            @id @default(cuid())
+  technicianId String
+  technician   TechnicianProfile @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  pincode      String
+  latitude     Float
+  longitude    Float
+  radiusKm     Float             @default(5)
+  createdAt    DateTime          @default(now())
+
+  @@unique([technicianId, pincode])
+  @@index([technicianId])
 }
 
 enum OtpChannel {
@@ -284,6 +331,14 @@ model LiveCall {
   customer            User            @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerName        String
   customerPhone       String
+  // Optional alternate contact for when the booking is on behalf of someone
+  // else and the technician should call a different number/person at the
+  // site instead of the customer. Plain free-text order metadata —
+  // deliberately unrelated to and not validated against User.phone (that
+  // column is unique and used for OTP account lookup; this one is not
+  // unique and has no auth role).
+  siteContactName     String?
+  siteContactPhone    String?
   customerEmail       String
   address             String
   city                String

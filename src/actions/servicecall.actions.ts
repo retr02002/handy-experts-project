@@ -106,6 +106,8 @@ export interface ServiceCallSummary {
   status: string;
   customerName: string;
   customerPhone: string;
+  siteContactName: string | null;
+  siteContactPhone: string | null;
   customerEmail: string;
   address: string;
   city: string;
@@ -141,6 +143,8 @@ function mapServiceCallRow(r: ServiceCallRow): ServiceCallSummary {
     status: r.status,
     customerName: r.liveCall.customerName,
     customerPhone: r.liveCall.customerPhone,
+    siteContactName: r.liveCall.siteContactName,
+    siteContactPhone: r.liveCall.siteContactPhone,
     address: r.liveCall.address,
     customerEmail: r.liveCall.customerEmail,
     city: r.liveCall.city,

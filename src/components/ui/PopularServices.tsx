@@ -15,7 +15,7 @@ export async function PopularServices() {
   const categories = (await getAllCategories()).filter((c) => populated.has(c.slug));
 
   return (
-    <section className="py-6 sm:py-28 bg-white dark:bg-[#060b14] overflow-hidden border-t border-slate-100 dark:border-slate-800/50">
+    <section className="py-4 sm:py-12 bg-white dark:bg-[#060b14] overflow-hidden border-t border-slate-100 dark:border-slate-800/50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         
         <SectionHeader
@@ -33,7 +33,7 @@ export async function PopularServices() {
         <PopularServicesClient services={services} categories={categories} />
 
         {/* Mobile Navigation Buttons */}
-        <div className="mt-8 flex md:hidden justify-center gap-3">
+        <div className="mt-2 flex md:hidden justify-center gap-3">
           <button 
             className="popular-swiper-prev w-10 h-10 rounded-full flex items-center justify-center bg-slate-100 dark:bg-[#151f32] text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-[#1e2a44] transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
             aria-label="Previous service"

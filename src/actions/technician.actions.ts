@@ -15,6 +15,7 @@ import {
 } from "@/lib/validations/technician.schema";
 import { requireAdmin } from "@/lib/require-admin";
 import { sendTextMessage } from "@/lib/apitxt";
+import { forwardGeocodePincode } from "@/lib/geocode";
 
 /** Slugified name + random suffix, retried on collision. @unique on User.username is the hard backstop. */
 async function generateUsername(name: string): Promise<string> {
@@ -92,11 +93,11 @@ export async function createTechnicianAction(
     const tempPassword = crypto.randomBytes(9).toString("base64url");
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-    await prisma.$transaction(async (tx) => {
+    const technicianId = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: { email, name, phone, username, password: hashedPassword, role: "TECHNICIAN" },
       });
-      await tx.technicianProfile.create({
+      const technician = await tx.technicianProfile.create({
         data: {
           userId: user.id,
           type: "VENDOR_MANAGED",
@@ -106,7 +107,20 @@ export async function createTechnicianAction(
           servicePincode,
         },
       });
+      return technician.id;
     });
+
+    // Best-effort so a vendor-created technician isn't stuck with no
+    // coverage circle visible on the live-calls map until they log in
+    // themselves. 15km mirrors the vendor round's auto-seed default.
+    const coords = await forwardGeocodePincode(servicePincode);
+    if (coords) {
+      await prisma.technicianServiceArea.create({
+        data: { technicianId, pincode: servicePincode, latitude: coords.latitude, longitude: coords.longitude, radiusKm: 15 },
+      });
+    } else {
+      console.error(`Could not auto-seed a service area for new technician ${technicianId} (pincode ${servicePincode})`);
+    }
 
     const sendResult = await sendTextMessage({
       phone,
@@ -234,6 +248,14 @@ export async function resetTechnicianPasswordAction(
   }
 }
 
+export interface TechnicianServiceAreaCircle {
+  id: string;
+  pincode: string;
+  latitude: number;
+  longitude: number;
+  radiusKm: number;
+}
+
 export interface VendorTechnician {
   id: string;
   name: string;
@@ -246,6 +268,7 @@ export interface VendorTechnician {
   isOnDuty: boolean;
   latitude: number | null;
   longitude: number | null;
+  serviceAreas: TechnicianServiceAreaCircle[];
   createdAt: string;
 }
 
@@ -256,7 +279,7 @@ export async function getMyTechniciansAction(): Promise<ActionResponse<VendorTec
   try {
     const rows = await prisma.technicianProfile.findMany({
       where: { vendorId },
-      include: { user: { select: { name: true, email: true, phone: true } }, location: true },
+      include: { user: { select: { name: true, email: true, phone: true } }, location: true, serviceAreas: true },
       orderBy: { createdAt: "desc" },
     });
 
@@ -274,6 +297,13 @@ export async function getMyTechniciansAction(): Promise<ActionResponse<VendorTec
         isOnDuty: r.location?.isOnDuty ?? false,
         latitude: r.location?.latitude ?? null,
         longitude: r.location?.longitude ?? null,
+        serviceAreas: r.serviceAreas.map((a) => ({
+          id: a.id,
+          pincode: a.pincode,
+          latitude: a.latitude,
+          longitude: a.longitude,
+          radiusKm: a.radiusKm,
+        })),
         createdAt: r.createdAt.toISOString(),
       })),
     };
@@ -286,10 +316,13 @@ export async function getMyTechniciansAction(): Promise<ActionResponse<VendorTec
 export interface AdminTechnician {
   id: string;
   name: string;
+  phone: string;
+  skillCategory: string;
   vendorName: string;
   isOnDuty: boolean;
   latitude: number | null;
   longitude: number | null;
+  serviceAreas: TechnicianServiceAreaCircle[];
 }
 
 /** Admin sees every technician across every vendor, for the platform-wide live map. */
@@ -299,7 +332,12 @@ export async function getAllTechniciansForAdminAction(): Promise<ActionResponse<
 
   try {
     const rows = await prisma.technicianProfile.findMany({
-      include: { user: { select: { name: true } }, vendor: { select: { companyName: true } }, location: true },
+      include: {
+        user: { select: { name: true, phone: true } },
+        vendor: { select: { companyName: true } },
+        location: true,
+        serviceAreas: true,
+      },
       orderBy: { createdAt: "desc" },
       take: 500,
     });
@@ -308,10 +346,19 @@ export async function getAllTechniciansForAdminAction(): Promise<ActionResponse<
       data: rows.map((r) => ({
         id: r.id,
         name: r.user.name ?? "",
+        phone: r.user.phone ?? "",
+        skillCategory: r.skillCategory,
         vendorName: r.vendor?.companyName ?? "Freelance",
         isOnDuty: r.location?.isOnDuty ?? false,
         latitude: r.location?.latitude ?? null,
         longitude: r.location?.longitude ?? null,
+        serviceAreas: r.serviceAreas.map((a) => ({
+          id: a.id,
+          pincode: a.pincode,
+          latitude: a.latitude,
+          longitude: a.longitude,
+          radiusKm: a.radiusKm,
+        })),
       })),
     };
   } catch (err) {

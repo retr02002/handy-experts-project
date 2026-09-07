@@ -7,6 +7,12 @@ export const createLiveCallSchema = z.object({
   customerName: z.string().trim().min(2, "Enter your full name").max(100),
   customerEmail: z.string().trim().email("Enter a valid email"),
   customerPhone: z.string().trim().regex(/^\d{10}$/, "Enter a valid 10-digit mobile number"),
+  siteContactName: z.string().trim().max(100).optional().transform((v) => (v ? v : undefined)),
+  siteContactPhone: z
+    .string()
+    .trim()
+    .transform((v) => (v === "" ? undefined : v))
+    .pipe(z.string().regex(/^\d{10}$/, "Enter a valid 10-digit mobile number").optional()),
   address: z.string().trim().min(5, "Please enter your street address").max(500),
   city: z.string().trim().min(1, "Enter a valid city").max(100),
   state: z.string().trim().min(1, "Enter a valid state").max(100),

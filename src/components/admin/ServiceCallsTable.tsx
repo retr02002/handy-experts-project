@@ -19,7 +19,16 @@ const columns: ColumnDef<AdminServiceCallSummary>[] = [
   },
   {
     header: "Phone",
-    accessorKey: "customerPhone",
+    cell: (item) => {
+      const effective = item.siteContactPhone || item.customerPhone;
+      return item.siteContactPhone ? (
+        <span>
+          {effective} <span className="text-xs text-slate-400">&middot; site contact</span>
+        </span>
+      ) : (
+        effective
+      );
+    },
   },
   {
     header: "Service",

@@ -126,7 +126,9 @@ export function CreateVendorModal({ onClose, onCreated }: CreateVendorModalProps
             <div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">Vendor created</h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                Share these sign-in details with them — this password is shown only once.
+                {credentials.smsDelivered
+                  ? "We've also texted these details to them — this password is shown only once."
+                  : "Couldn't text these details — share them manually. Shown only once."}
               </p>
             </div>
             <div className="bg-slate-50 dark:bg-slate-900/60 rounded-xl p-4 flex flex-col gap-3 border border-slate-200 dark:border-slate-800">
@@ -200,11 +202,11 @@ export function CreateVendorModal({ onClose, onCreated }: CreateVendorModalProps
               <Field label="Incorporation Date" type="date" value={form.incorporationDate} onChange={(v) => set("incorporationDate", v)} error={errors.incorporationDate} />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="GST Number" value={form.gstNumber} onChange={(v) => set("gstNumber", v.toUpperCase())} error={errors.gstNumber} placeholder="22AAAAA0000A1Z5" />
-              <Field label="PAN Number" value={form.panNumber} onChange={(v) => set("panNumber", v.toUpperCase())} error={errors.panNumber} placeholder="ABCDE1234F" />
+              <Field label="GST Number (optional)" value={form.gstNumber} onChange={(v) => set("gstNumber", v.toUpperCase())} error={errors.gstNumber} placeholder="22AAAAA0000A1Z5" />
+              <Field label="PAN Number (optional)" value={form.panNumber} onChange={(v) => set("panNumber", v.toUpperCase())} error={errors.panNumber} placeholder="ABCDE1234F" />
             </div>
             <Field
-              label="Aadhaar Number"
+              label="Aadhaar Number (optional)"
               inputMode="numeric"
               value={form.aadhaarNumber}
               onChange={(v) => set("aadhaarNumber", v.replace(/\D/g, "").slice(0, 12))}

@@ -57,7 +57,7 @@ export interface TestimonialsSectionProps {
 
 export function TestimonialsSection({ hideBadge }: TestimonialsSectionProps) {
   return (
-    <section className="w-full bg-slate-50 dark:bg-[#020813] py-6 sm:py-24 px-4 sm:px-8 lg:px-16 overflow-hidden border-t border-slate-200 dark:border-slate-800/50">
+    <section className="w-full bg-slate-50 dark:bg-[#020813] py-4 sm:py-12 px-4 sm:px-8 lg:px-16 overflow-hidden border-t border-slate-200 dark:border-slate-800/50">
       <div className="max-w-7xl mx-auto relative">
         <TestimonialsCarousel testimonials={TESTIMONIALS} hideBadge={hideBadge} />
       </div>

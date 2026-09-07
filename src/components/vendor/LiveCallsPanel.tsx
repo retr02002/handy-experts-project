@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { getNearbyLiveCallsForVendorAction, type NearbyLiveCall } from "@/actions/livecall.actions";
 import { getMyTechniciansAction, type VendorTechnician } from "@/actions/technician.actions";
+import { getMyServiceAreasAction, type VendorServiceAreaSummary } from "@/actions/vendorservicearea.actions";
 import { LOCATION_NOT_SET, VENDOR_INACTIVE } from "@/lib/constants";
 import { usePolling } from "@/hooks/usePolling";
 import { LiveMap } from "@/components/shared/LiveMap";
@@ -22,6 +23,8 @@ interface LiveCallsPanelProps {
 export function LiveCallsPanel({ vendorLatitude, vendorLongitude }: LiveCallsPanelProps) {
   const [calls, setCalls] = useState<NearbyLiveCall[]>([]);
   const [technicians, setTechnicians] = useState<VendorTechnician[]>([]);
+  const [serviceAreas, setServiceAreas] = useState<VendorServiceAreaSummary[]>([]);
+  const [areasLoaded, setAreasLoaded] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [locationError, setLocationError] = useState(false);
   const [inactiveError, setInactiveError] = useState(false);
@@ -47,6 +50,12 @@ export function LiveCallsPanel({ vendorLatitude, vendorLongitude }: LiveCallsPan
   usePolling(async () => {
     const res = await getMyTechniciansAction();
     if (res.success && res.data) setTechnicians(res.data);
+  }, TECHNICIANS_POLL_INTERVAL_MS);
+
+  usePolling(async () => {
+    const res = await getMyServiceAreasAction();
+    if (res.success && res.data) setServiceAreas(res.data);
+    setAreasLoaded(true);
   }, TECHNICIANS_POLL_INTERVAL_MS);
 
   if (inactiveError) {
@@ -75,52 +84,83 @@ export function LiveCallsPanel({ vendorLatitude, vendorLongitude }: LiveCallsPan
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-        <LiveMap
-          centerLatitude={vendorLatitude}
-          centerLongitude={vendorLongitude}
-          liveCallMarkers={calls.map((c) => ({
-            id: c.id,
-            latitude: c.latitude,
-            longitude: c.longitude,
-            label: `${c.customerName} — ₹${c.total}`,
-          }))}
-          technicianMarkers={technicians
-            .filter((t): t is VendorTechnician & { latitude: number; longitude: number } => t.latitude !== null && t.longitude !== null)
-            .map((t) => ({
-              id: t.id,
-              latitude: t.latitude,
-              longitude: t.longitude,
-              label: `${t.name} (${t.isOnDuty ? "on duty" : "off duty"})`,
-              isOnDuty: t.isOnDuty,
-            }))}
-          onCallMarkerClick={setSelectedId}
-        />
-      </div>
+    <div className="flex flex-col gap-4">
+      {areasLoaded && serviceAreas.length === 0 && (
+        <div className="p-4 flex items-center gap-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-2xl">
+          <ClientIcon icon="ph:map-pin-area-fill" className="w-6 h-6 text-amber-500 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-amber-900 dark:text-amber-200">You haven&apos;t added any serviceable areas yet</p>
+            <p className="text-xs text-amber-700/80 dark:text-amber-400/80">Add one to start receiving live calls.</p>
+          </div>
+          <Link href="/vendor/service-areas" className="text-sm font-bold text-amber-700 dark:text-amber-300 underline shrink-0">
+            Add Area
+          </Link>
+        </div>
+      )}
 
-      <div className="flex flex-col gap-4">
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-          Active Live Calls <span className="text-slate-400 font-medium">({calls.length})</span>
-        </h2>
-        <div className="flex flex-col gap-3 overflow-y-auto max-h-[500px] pr-2">
-          {!loaded ? (
-            <div className="p-6 text-center text-slate-400 text-sm">Loading...</div>
-          ) : calls.length === 0 ? (
-            <div className="p-6 text-center text-slate-500 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800">
-              No live calls near you right now.
-            </div>
-          ) : (
-            calls.map((call) => (
-              <LiveCallCard
-                key={call.id}
-                call={call}
-                isSelected={selectedId === call.id}
-                onSelect={setSelectedId}
-                onAccept={setAcceptingCall}
-              />
-            ))
-          )}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+          <LiveMap
+            centerLatitude={vendorLatitude}
+            centerLongitude={vendorLongitude}
+            liveCallMarkers={calls.map((c) => ({
+              id: c.id,
+              latitude: c.latitude,
+              longitude: c.longitude,
+              label: `${c.customerName} — ₹${c.total}`,
+            }))}
+            technicianMarkers={technicians
+              .filter((t): t is VendorTechnician & { latitude: number; longitude: number } => t.latitude !== null && t.longitude !== null)
+              .map((t) => ({
+                id: t.id,
+                latitude: t.latitude,
+                longitude: t.longitude,
+                label: t.name,
+                isOnDuty: t.isOnDuty,
+                skillCategory: t.skillCategory,
+                phone: t.phone,
+              }))}
+            serviceAreaCircles={serviceAreas.map((a) => ({
+              id: a.id,
+              latitude: a.latitude,
+              longitude: a.longitude,
+              radiusKm: a.radiusKm,
+            }))}
+            technicianServiceAreaCircles={technicians.flatMap((t) =>
+              t.serviceAreas.map((a) => ({
+                id: a.id,
+                latitude: a.latitude,
+                longitude: a.longitude,
+                radiusKm: a.radiusKm,
+              }))
+            )}
+            onCallMarkerClick={setSelectedId}
+          />
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+            Active Live Calls <span className="text-slate-400 font-medium">({calls.length})</span>
+          </h2>
+          <div className="flex flex-col gap-3 overflow-y-auto max-h-[500px] pr-2">
+            {!loaded ? (
+              <div className="p-6 text-center text-slate-400 text-sm">Loading...</div>
+            ) : calls.length === 0 ? (
+              <div className="p-6 text-center text-slate-500 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800">
+                No live calls near you right now.
+              </div>
+            ) : (
+              calls.map((call) => (
+                <LiveCallCard
+                  key={call.id}
+                  call={call}
+                  isSelected={selectedId === call.id}
+                  onSelect={setSelectedId}
+                  onAccept={setAcceptingCall}
+                />
+              ))
+            )}
+          </div>
         </div>
       </div>
 

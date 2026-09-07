@@ -13,10 +13,13 @@ import {
   type UpdateVendorInput,
 } from "@/lib/validations/adminvendor.schema";
 import { getAllServiceCallsAction, type AdminServiceCallSummary } from "@/actions/servicecall.actions";
+import { sendTextMessage } from "@/lib/apitxt";
+import { forwardGeocodePincode } from "@/lib/geocode";
 
 export interface CreatedVendorCredentials {
   email: string;
   tempPassword: string;
+  smsDelivered: boolean;
 }
 
 /** Admin-initiated vendor creation — same one-time-shown temp-password UX as createTechnicianAction. */
@@ -47,19 +50,28 @@ export async function createVendorAction(input: CreateVendorInput): Promise<Acti
   } = validated.data;
 
   try {
-    const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
-    if (existing) {
+    const existingEmail = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+    if (existingEmail) {
       return { success: false, error: "A user with this email already exists", errors: { email: ["Already in use"] } };
+    }
+
+    const existingPhone = await prisma.user.findUnique({ where: { phone }, select: { role: true } });
+    if (existingPhone) {
+      return {
+        success: false,
+        error: `This phone number is already registered as a ${existingPhone.role.toLowerCase()} — log in instead.`,
+        errors: { phone: ["Already in use"] },
+      };
     }
 
     const tempPassword = crypto.randomBytes(9).toString("base64url");
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-    await prisma.$transaction(async (tx) => {
+    const vendorId = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: { email, name, phone, password: hashedPassword, role: "VENDOR" },
       });
-      await tx.vendorProfile.create({
+      const vendor = await tx.vendorProfile.create({
         data: {
           userId: user.id,
           companyName,
@@ -76,10 +88,30 @@ export async function createVendorAction(input: CreateVendorInput): Promise<Acti
           incorporationDate: new Date(incorporationDate),
         },
       });
+      return vendor.id;
+    });
+
+    // Best-effort so a brand-new vendor isn't stuck at zero live-call
+    // coverage until they visit /vendor/service-areas themselves. 15km
+    // mirrors the old flat-radius default; failure to geocode is non-fatal
+    // — the vendor can add an area manually later.
+    const coords = await forwardGeocodePincode(pincode);
+    if (coords) {
+      await prisma.vendorServiceArea.create({
+        data: { vendorId, pincode, latitude: coords.latitude, longitude: coords.longitude, radiusKm: 15 },
+      });
+    } else {
+      console.error(`Could not auto-seed a service area for new vendor ${vendorId} (pincode ${pincode})`);
+    }
+
+    const sendResult = await sendTextMessage({
+      phone,
+      channel: "SMS",
+      message: `Your Handyzo vendor login — Email: ${email}  Temp password: ${tempPassword}. Please log in and change your password.`,
     });
 
     revalidatePath("/admin/vendors");
-    return { success: true, data: { email, tempPassword } };
+    return { success: true, data: { email, tempPassword, smsDelivered: sendResult.ok } };
   } catch (err) {
     console.error("Create vendor error:", err);
     return { success: false, error: "Failed to create vendor" };
@@ -93,9 +125,9 @@ export interface AdminVendor {
   contactName: string;
   email: string;
   phone: string;
-  gstNumber: string;
-  panNumber: string;
-  aadhaarNumber: string;
+  gstNumber: string | null;
+  panNumber: string | null;
+  aadhaarNumber: string | null;
   address: string;
   city: string;
   state: string;
@@ -172,7 +204,20 @@ export async function updateVendorAction(input: UpdateVendorInput): Promise<Acti
       prisma.user.update({ where: { id: vendor.userId }, data: { name, phone } }),
       prisma.vendorProfile.update({
         where: { id },
-        data: { companyName, companyType, gstNumber, panNumber, aadhaarNumber, address, city, state, pincode, incorporationDate: new Date(incorporationDate) },
+        data: {
+          companyName,
+          companyType,
+          // undefined means "leave unchanged" to Prisma's update — an admin
+          // clearing the field back to blank must explicitly set null.
+          gstNumber: gstNumber ?? null,
+          panNumber: panNumber ?? null,
+          aadhaarNumber: aadhaarNumber ?? null,
+          address,
+          city,
+          state,
+          pincode,
+          incorporationDate: new Date(incorporationDate),
+        },
       }),
     ]);
 

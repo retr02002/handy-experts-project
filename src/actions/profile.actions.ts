@@ -159,9 +159,9 @@ export interface ProfileDetails {
   vendorProfile: {
     companyName: string;
     companyType: string;
-    gstNumber: string;
-    panNumber: string;
-    aadhaarNumber: string;
+    gstNumber: string | null;
+    panNumber: string | null;
+    aadhaarNumber: string | null;
     address: string;
     city: string;
     state: string;

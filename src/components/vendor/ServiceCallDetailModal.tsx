@@ -130,6 +130,17 @@ export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCall
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Email</p>
             <p className="text-sm text-slate-700 dark:text-slate-300">{call.customerEmail}</p>
           </div>
+          {call.siteContactPhone && (
+            <div className="bg-amber-50 dark:bg-amber-500/10 rounded-xl p-3">
+              <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">Site Contact</p>
+              <p className="font-semibold text-slate-900 dark:text-white">
+                {call.siteContactName || "—"} &middot; {call.siteContactPhone}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Call this number when you arrive — it may differ from the customer above.
+              </p>
+            </div>
+          )}
           <div>
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Address</p>
             <p className="text-sm text-slate-700 dark:text-slate-300">

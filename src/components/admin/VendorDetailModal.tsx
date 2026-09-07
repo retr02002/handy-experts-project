@@ -53,9 +53,9 @@ export function VendorDetailModal({ vendor, onClose, onChanged }: VendorDetailMo
     phone: vendor.phone,
     companyName: vendor.companyName,
     companyType: vendor.companyType,
-    gstNumber: vendor.gstNumber,
-    panNumber: vendor.panNumber,
-    aadhaarNumber: vendor.aadhaarNumber,
+    gstNumber: vendor.gstNumber ?? "",
+    panNumber: vendor.panNumber ?? "",
+    aadhaarNumber: vendor.aadhaarNumber ?? "",
     address: vendor.address,
     city: vendor.city,
     state: vendor.state,
@@ -168,10 +168,10 @@ export function VendorDetailModal({ vendor, onClose, onChanged }: VendorDetailMo
             <Field label="Incorporation Date" type="date" value={form.incorporationDate} onChange={(v) => set("incorporationDate", v)} editing={editing} />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="GST Number" value={form.gstNumber} onChange={(v) => set("gstNumber", v.toUpperCase())} editing={editing} />
-            <Field label="PAN Number" value={form.panNumber} onChange={(v) => set("panNumber", v.toUpperCase())} editing={editing} />
+            <Field label="GST Number (optional)" value={form.gstNumber} onChange={(v) => set("gstNumber", v.toUpperCase())} editing={editing} />
+            <Field label="PAN Number (optional)" value={form.panNumber} onChange={(v) => set("panNumber", v.toUpperCase())} editing={editing} />
           </div>
-          <Field label="Aadhaar Number" value={form.aadhaarNumber} onChange={(v) => set("aadhaarNumber", v.replace(/\D/g, "").slice(0, 12))} editing={editing} inputMode="numeric" />
+          <Field label="Aadhaar Number (optional)" value={form.aadhaarNumber} onChange={(v) => set("aadhaarNumber", v.replace(/\D/g, "").slice(0, 12))} editing={editing} inputMode="numeric" />
           <Field label="Address" value={form.address} onChange={(v) => set("address", v)} editing={editing} />
           <div className="grid grid-cols-3 gap-3">
             <Field label="City" value={form.city} onChange={(v) => set("city", v)} editing={editing} />

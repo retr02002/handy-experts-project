@@ -196,33 +196,30 @@ export function VendorDetailsStep({ initialName = "", onBack, onSuccess }: Props
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <OnboardingField
-                  label="GST Number"
+                  label="GST Number (optional)"
                   icon="ph:identification-card"
                   value={form.gstNumber}
                   onChange={(e) => set("gstNumber", e.target.value.toUpperCase())}
                   placeholder="22AAAAA0000A1Z5"
                   error={errors.gstNumber}
-                  required
                 />
                 <OnboardingField
-                  label="PAN Card Number"
+                  label="PAN Card Number (optional)"
                   icon="ph:card-holder"
                   value={form.panNumber}
                   onChange={(e) => set("panNumber", e.target.value.toUpperCase())}
                   placeholder="ABCDE1234F"
                   error={errors.panNumber}
-                  required
                 />
               </div>
               <OnboardingField
-                label="Aadhaar Number"
+                label="Aadhaar Number (optional)"
                 icon="ph:identification-badge"
                 inputMode="numeric"
                 value={form.aadhaarNumber}
                 onChange={(e) => set("aadhaarNumber", e.target.value.replace(/\D/g, "").slice(0, 12))}
                 placeholder="12-digit Aadhaar number of the contact person"
                 error={errors.aadhaarNumber}
-                required
               />
             </div>
           </div>

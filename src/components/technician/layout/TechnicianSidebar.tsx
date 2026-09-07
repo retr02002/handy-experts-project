@@ -15,6 +15,7 @@ interface TechnicianSidebarProps {
 const navItems = [
   { label: "Dashboard", href: "/technician", icon: "ph:squares-four" },
   { label: "Service Calls", href: "/technician/service-calls", icon: "ph:wrench" },
+  { label: "Service Areas", href: "/technician/service-areas", icon: "ph:map-pin-area" },
   { label: "Wallet", href: "/technician/wallet", icon: "ph:wallet" },
   { label: "Feedback", href: "/technician/feedback", icon: "ph:star" },
   { label: "Referral Code", href: "/technician/referral", icon: "ph:users-three" },
