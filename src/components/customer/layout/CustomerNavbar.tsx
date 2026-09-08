@@ -25,22 +25,12 @@ export function CustomerNavbar() {
     <header className="h-16 bg-white/80 dark:bg-[#0B1120]/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 md:px-6 sticky top-0 z-40 transition-colors">
       
       {/* Left: Logo & Location Picker */}
-      <div className="flex items-center gap-2 sm:gap-3">
-        <Link href="/" className="hidden md:flex items-center justify-center shrink-0 mr-1">
-          <Image
-            src="/logo-org.svg"
-            alt="Handyzo"
-            width={100}
-            height={32}
-            priority
-            className="h-6 sm:h-8 w-auto object-contain drop-shadow-sm dark:brightness-0 dark:invert transition-transform hover:scale-105"
-          />
-        </Link>
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 mr-2">
         <LocationPicker />
       </div>
 
       {/* Right: Actions */}
-      <div className="flex items-center gap-2 md:gap-3">
+      <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
         {/* Actions Container Pill */}
         <div className="flex items-center gap-0.5 md:gap-1 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-sm p-1 rounded-full border border-slate-200/50 dark:border-slate-700/50">
 

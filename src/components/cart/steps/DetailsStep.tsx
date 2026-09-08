@@ -2,19 +2,22 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
-import { toast } from "sonner";
 import { ClientIcon } from "@/components/ui/ClientIcon";
-import { reverseGeocodeAction } from "@/actions/location.actions";
+import { getCheckoutPrefillAction, type AddressSummary } from "@/actions/address.actions";
+import { AddressPickerModal } from "@/components/shared/AddressPickerModal";
 import type { CustomerDetails } from "../checkoutTypes";
 
 interface Props {
   details: CustomerDetails;
-  onChange: (details: CustomerDetails) => void;
+  // Accepts a plain value or a functional updater (like React's own setState)
+  // so the two mount-time autofill effects below can't race each other by
+  // both computing "next" off the same stale closure.
+  onChange: (details: CustomerDetails | ((prev: CustomerDetails) => CustomerDetails)) => void;
 }
 
 export function DetailsStep({ details, onChange }: Props) {
   const { data: session } = useSession();
-  const [locating, setLocating] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const autofilledRef = useRef(false);
   // Seeded from any pre-existing value so navigating back to this step
   // doesn't silently lose the toggle state (and the fields behind it).
@@ -23,71 +26,63 @@ export function DetailsStep({ details, onChange }: Props) {
   useEffect(() => {
     if (autofilledRef.current || !session?.user) return;
     autofilledRef.current = true;
-    onChange({
-      ...details,
-      name: details.name || session.user.name || "",
-      email: details.email || session.user.email || "",
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session]);
+    onChange((prev) => ({
+      ...prev,
+      name: prev.name || session.user!.name || "",
+      email: prev.email || session.user!.email || "",
+    }));
+  }, [session, onChange]);
 
-  const LOCATION_FIELDS = ["address", "city", "state", "pincode"] as const;
+  // One-time server round trip for the phone number + default saved address
+  // — both only ever fill an empty field, never clobber something the
+  // customer already typed or picked this session.
+  const prefillRef = useRef(false);
+  useEffect(() => {
+    if (prefillRef.current) return;
+    prefillRef.current = true;
+    getCheckoutPrefillAction().then((res) => {
+      if (!res.success || !res.data) return;
+      const { phone, addresses } = res.data;
+      const defaultAddress = addresses[0];
+      onChange((prev) => {
+        const next = { ...prev };
+        let changed = false;
+        if (!next.phone && phone) {
+          next.phone = phone;
+          changed = true;
+        }
+        if (!next.address && defaultAddress) {
+          next.address = defaultAddress.addressLine;
+          next.city = defaultAddress.city;
+          next.state = defaultAddress.state;
+          next.pincode = defaultAddress.pincode;
+          next.latitude = defaultAddress.latitude;
+          next.longitude = defaultAddress.longitude;
+          changed = true;
+        }
+        return changed ? next : prev;
+      });
+    });
+  }, [onChange]);
 
   const setField = <K extends keyof CustomerDetails>(key: K, value: CustomerDetails[K]) => {
-    // Editing the address by hand after an auto-detect means the previously
-    // captured coordinates no longer match what's on screen — clear them so
-    // checkout falls back to geocoding the final typed address instead of
-    // silently sending a stale/wrong pin.
-    const staleCoords = (LOCATION_FIELDS as readonly string[]).includes(key)
-      ? { latitude: null, longitude: null }
-      : {};
-    onChange({ ...details, [key]: value, ...staleCoords });
+    onChange({ ...details, [key]: value });
   };
 
-  const detectLocation = () => {
-    if (!navigator.geolocation) {
-      toast.error("Geolocation isn't supported on this device.");
-      return;
-    }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const { latitude, longitude } = pos.coords;
-          const result = await reverseGeocodeAction(latitude, longitude);
-          if (!result.success || !result.data) {
-            toast.error("Couldn't fetch your location. Please enter address manually.");
-            return;
-          }
-          const { displayName, pincode, rawCity, rawState } = result.data;
-          onChange({
-            ...details,
-            address: displayName || details.address,
-            city: rawCity || details.city,
-            state: rawState || details.state,
-            pincode: pincode.replace(/^,\s*/, "") || details.pincode,
-            latitude,
-            longitude,
-          });
-          if (!pincode) toast.error("Couldn't detect a pincode — please enter it manually.");
-          else toast.success("Location detected");
-        } catch {
-          toast.error("Couldn't fetch your location. Please enter address manually.");
-        } finally {
-          setLocating(false);
-        }
-      },
-      () => {
-        toast.error("Location access denied.");
-        setLocating(false);
-      },
-      // Without enableHighAccuracy, browsers often return a coarse
-      // WiFi/IP-based position that can be off by many kilometers — that's
-      // what causes a customer who's genuinely nearby to show up "far" from
-      // a vendor on the live-calls map.
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-    );
+  const applyAddress = (addr: AddressSummary) => {
+    onChange({
+      ...details,
+      address: addr.addressLine,
+      city: addr.city,
+      state: addr.state,
+      pincode: addr.pincode,
+      latitude: addr.latitude,
+      longitude: addr.longitude,
+    });
+    setPickerOpen(false);
   };
+
+  const hasAddress = details.address.trim() !== "";
 
   return (
     <div className="bg-white dark:bg-[#0B1221] rounded-2xl border border-slate-200 dark:border-slate-800/80 p-4 sm:p-6 flex flex-col gap-5">
@@ -116,8 +111,55 @@ export function DetailsStep({ details, onChange }: Props) {
         />
       </div>
 
-      <div className="flex flex-col gap-4">
-        <label className="flex items-center gap-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+      <Field
+        label="Email"
+        icon="ph:envelope-simple"
+        value={details.email}
+        onChange={(v) => setField("email", v)}
+        placeholder="you@example.com"
+        type="email"
+      />
+
+      {/* Delivery address */}
+      <div>
+        <label className="text-[13px] font-bold text-slate-700 dark:text-slate-300 ml-0.5 mb-1.5 block">
+          Delivery Address
+        </label>
+        {hasAddress ? (
+          <div className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-50/70 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
+            <ClientIcon icon="ph:map-pin-fill" className="w-4.5 h-4.5 text-[#00B4FF] shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-slate-900 dark:text-white break-words line-clamp-2">{details.address}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                {details.city}, {details.state} {details.pincode}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              className="text-xs font-bold text-[#00B4FF] hover:text-blue-600 shrink-0"
+            >
+              Change
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="flex items-center gap-3 w-full p-3.5 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-[#00B4FF] dark:hover:border-[#00B4FF] transition-colors text-left"
+          >
+            <div className="w-9 h-9 rounded-full bg-[#00B4FF]/10 text-[#00B4FF] flex items-center justify-center shrink-0">
+              <ClientIcon icon="ph:map-pin-plus-fill" className="w-4.5 h-4.5" />
+            </div>
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 min-w-0">
+              Select delivery address
+            </span>
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-4 pt-1 border-t border-slate-100 dark:border-slate-800">
+        <label className="flex items-center gap-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer select-none pt-4">
           <input
             type="checkbox"
             checked={hasSiteContact}
@@ -126,21 +168,21 @@ export function DetailsStep({ details, onChange }: Props) {
               setHasSiteContact(checked);
               if (!checked) onChange({ ...details, siteContactName: "", siteContactPhone: "" });
             }}
-            className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/40"
+            className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/40 shrink-0"
           />
-          Site contact is different from me
+          <span className="min-w-0">Booking for someone else? Add a different receiver number</span>
         </label>
         {hasSiteContact && (
           <div className="grid sm:grid-cols-2 gap-4">
             <Field
-              label="Site Contact Name (optional)"
+              label="Receiver Name (optional)"
               icon="ph:user-focus"
               value={details.siteContactName}
               onChange={(v) => setField("siteContactName", v)}
               placeholder="e.g. Ramesh"
             />
             <Field
-              label="Site Contact Number"
+              label="Receiver Number"
               icon="ph:phone-call"
               value={details.siteContactPhone}
               onChange={(v) => setField("siteContactPhone", v.replace(/\D/g, "").slice(0, 10))}
@@ -151,67 +193,7 @@ export function DetailsStep({ details, onChange }: Props) {
         )}
       </div>
 
-      <Field
-        label="Email"
-        icon="ph:envelope-simple"
-        value={details.email}
-        onChange={(v) => setField("email", v)}
-        placeholder="you@example.com"
-        type="email"
-      />
-
-      <div>
-        <label className="text-[13px] font-bold text-slate-700 dark:text-slate-300 ml-0.5 mb-1.5 block">Address</label>
-        <div className="relative">
-          <div className="absolute left-3.5 top-3.5 text-slate-400 pointer-events-none">
-            <ClientIcon icon="ph:map-pin" className="w-4 h-4" />
-          </div>
-          <textarea
-            value={details.address}
-            onChange={(e) => setField("address", e.target.value)}
-            placeholder="House / Flat No, Street, Area"
-            rows={3}
-            className="w-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all resize-none"
-          />
-        </div>
-      </div>
-
-      <div className="grid sm:grid-cols-2 gap-4">
-        <Field
-          label="City"
-          icon="ph:buildings"
-          value={details.city}
-          onChange={(v) => setField("city", v)}
-          placeholder="Your city"
-        />
-        <Field
-          label="State"
-          icon="ph:map-trifold"
-          value={details.state}
-          onChange={(v) => setField("state", v)}
-          placeholder="Your state"
-        />
-      </div>
-
-      <div className="grid sm:grid-cols-2 gap-4 items-end">
-        <Field
-          label="Pincode"
-          icon="ph:hash"
-          value={details.pincode}
-          onChange={(v) => setField("pincode", v.replace(/\D/g, "").slice(0, 6))}
-          placeholder="6-digit pincode"
-          inputMode="numeric"
-        />
-        <button
-          type="button"
-          onClick={detectLocation}
-          disabled={locating}
-          className="h-12 sm:h-[46px] flex items-center justify-center gap-2 rounded-xl border border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-sm font-semibold hover:bg-blue-100 dark:hover:bg-blue-500/20 active:scale-[0.98] transition-all disabled:opacity-60"
-        >
-          <ClientIcon icon={locating ? "svg-spinners:180-ring" : "ph:crosshair-simple-bold"} className="w-4 h-4" />
-          {locating ? "Detecting..." : "Use current location"}
-        </button>
-      </div>
+      {pickerOpen && <AddressPickerModal onSelect={applyAddress} onClose={() => setPickerOpen(false)} />}
     </div>
   );
 }
@@ -234,7 +216,7 @@ function Field({
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
 }) {
   return (
-    <div>
+    <div className="min-w-0">
       <label className="text-[13px] font-bold text-slate-700 dark:text-slate-300 ml-0.5 mb-1.5 block">{label}</label>
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">

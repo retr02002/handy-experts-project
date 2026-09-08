@@ -3,6 +3,7 @@ import { ClientIcon } from "@/components/ui/ClientIcon";
 import Image from "next/image";
 import { getProfileDetails } from "@/actions/profile.actions";
 import { AccountSettingsCard } from "@/components/shared/AccountSettingsCard";
+import { TechnicianPhoneCard } from "@/components/technician/TechnicianPhoneCard";
 import { LogoutMenuItem } from "@/components/shared/LogoutMenuItem";
 
 function DetailCard({ icon, label, value }: { icon: string; label: string; value: string }) {
@@ -59,9 +60,7 @@ export default async function TechnicianProfilePage() {
 
         <div className="pt-20 pb-8 px-8 flex flex-col gap-1">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">{userName}</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            {profile.email} {profile.phone && `· ${profile.phone}`}
-          </p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{profile.email}</p>
           {technician?.type === "VENDOR_MANAGED" && (
             <span className="mt-2 w-fit px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 text-[11px] font-bold">
               Managed by a vendor
@@ -91,6 +90,8 @@ export default async function TechnicianProfilePage() {
           </div>
         </div>
       )}
+
+      <TechnicianPhoneCard initialPhone={profile.phone} />
 
       <AccountSettingsCard
         name={userName}

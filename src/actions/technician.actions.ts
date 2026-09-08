@@ -412,3 +412,16 @@ export async function setTechnicianDutyStatusAction(isOnDuty: boolean): Promise<
     return { success: false, error: "Failed to update duty status" };
   }
 }
+
+export async function getMyDutyStatusAction(): Promise<ActionResponse<{ isOnDuty: boolean }>> {
+  const { technicianId, error } = await requireTechnicianId();
+  if (!technicianId) return { success: false, error: error! };
+
+  try {
+    const location = await prisma.technicianLocation.findUnique({ where: { technicianId }, select: { isOnDuty: true } });
+    return { success: true, data: { isOnDuty: location?.isOnDuty ?? false } };
+  } catch (err) {
+    console.error("Get my duty status error:", err);
+    return { success: false, error: "Failed to load duty status" };
+  }
+}

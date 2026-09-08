@@ -86,7 +86,7 @@ export function ProfileClient({ profile }: ProfileProps) {
               <ClientIcon icon="ph:caret-right" className="w-4 h-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors" />
             </Link>
             
-            <button className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer">
+            <Link href="/customer/addresses" className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer">
               <div className="flex items-center gap-3 sm:gap-4">
                 <div className="p-2 bg-blue-50 dark:bg-blue-500/20 text-blue-500 rounded-xl">
                   <ClientIcon icon="ph:map-pin" className="w-4 h-4" />
@@ -94,7 +94,7 @@ export function ProfileClient({ profile }: ProfileProps) {
                 <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">Saved Addresses</span>
               </div>
               <ClientIcon icon="ph:caret-right" className="w-4 h-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors" />
-            </button>
+            </Link>
 
             <button className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer">
               <div className="flex items-center gap-3 sm:gap-4">

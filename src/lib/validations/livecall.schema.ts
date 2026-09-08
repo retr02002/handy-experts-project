@@ -8,11 +8,10 @@ export const createLiveCallSchema = z.object({
   customerEmail: z.string().trim().email("Enter a valid email"),
   customerPhone: z.string().trim().regex(/^\d{10}$/, "Enter a valid 10-digit mobile number"),
   siteContactName: z.string().trim().max(100).optional().transform((v) => (v ? v : undefined)),
-  siteContactPhone: z
-    .string()
-    .trim()
-    .transform((v) => (v === "" ? undefined : v))
-    .pipe(z.string().regex(/^\d{10}$/, "Enter a valid 10-digit mobile number").optional()),
+  // .optional() must be last — the client sends `undefined` (not "") when
+  // the site-contact toggle is off, and a preceding z.string() would reject
+  // that as a missing required field before ever reaching the regex check.
+  siteContactPhone: z.string().trim().regex(/^\d{10}$/, "Enter a valid 10-digit mobile number").optional(),
   address: z.string().trim().min(5, "Please enter your street address").max(500),
   city: z.string().trim().min(1, "Enter a valid city").max(100),
   state: z.string().trim().min(1, "Enter a valid state").max(100),
@@ -24,6 +23,9 @@ export const createLiveCallSchema = z.object({
   longitude: z.number().min(-180).max(180).nullable(),
   paymentMode: z.enum(PAYMENT_MODES),
   upiRef: z.string().trim().min(3, "Enter a valid UPI reference").max(100),
-  paymentScreenshotUrl: z.string().trim().min(1, "Payment screenshot is required"),
+  paymentScreenshotUrl: z.string().trim().min(1).optional(),
+  // Null means "as soon as possible" — the customer picked the Instant
+  // option at checkout rather than a scheduled slot.
+  scheduledFor: z.string().datetime().nullable(),
 });
 export type CreateLiveCallInput = z.infer<typeof createLiveCallSchema>;

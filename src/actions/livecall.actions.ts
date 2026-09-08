@@ -129,7 +129,8 @@ export async function createLiveCallAction(input: CreateLiveCallInput): Promise<
           longitude: coords.longitude,
           paymentMode: data.paymentMode,
           upiRef: data.upiRef,
-          paymentScreenshotUrl: data.paymentScreenshotUrl,
+          paymentScreenshotUrl: data.paymentScreenshotUrl ?? null,
+          scheduledFor: data.scheduledFor,
           subtotal,
           tax,
           total,
@@ -164,6 +165,139 @@ export async function createLiveCallAction(input: CreateLiveCallInput): Promise<
   } catch (err) {
     console.error("Create live call error:", err);
     return { success: false, error: "Failed to place your order. Please try again." };
+  }
+}
+
+/**
+ * A LiveCall's real state plus its optional ServiceCall collapsed into one
+ * customer-facing status. "FINDING_PROFESSIONAL" covers both BROADCASTING
+ * and vendor-ACCEPTED (a vendor has claimed it but no technician has
+ * accepted their offer yet) — the customer doesn't need that distinction.
+ */
+export type OrderDisplayStatus =
+  | "FINDING_PROFESSIONAL"
+  | "ASSIGNED"
+  | "EN_ROUTE"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "EXPIRED";
+
+function deriveOrderStatus(liveCallStatus: string, serviceCallStatus: string | undefined): OrderDisplayStatus {
+  if (serviceCallStatus) return serviceCallStatus as OrderDisplayStatus;
+  if (liveCallStatus === "EXPIRED") return "EXPIRED";
+  if (liveCallStatus === "CANCELLED") return "CANCELLED";
+  return "FINDING_PROFESSIONAL";
+}
+
+export interface CustomerOrderSummary {
+  id: string;
+  itemSummary: string;
+  itemCount: number;
+  total: number;
+  status: OrderDisplayStatus;
+  scheduledFor: string | null;
+  createdAt: string;
+}
+
+export async function getMyOrdersAction(): Promise<ActionResponse<CustomerOrderSummary[]>> {
+  const { userId, error } = await requireCustomerId();
+  if (!userId) return { success: false, error: error! };
+
+  try {
+    const rows = await prisma.liveCall.findMany({
+      where: { customerId: userId },
+      include: { items: true, serviceCall: { select: { status: true } } },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return {
+      success: true,
+      data: rows.map((r) => ({
+        id: r.id,
+        itemSummary: r.items.map((i) => i.packageName).join(", "),
+        itemCount: r.items.reduce((sum, i) => sum + i.quantity, 0),
+        total: r.total,
+        status: deriveOrderStatus(r.status, r.serviceCall?.status),
+        scheduledFor: r.scheduledFor?.toISOString() ?? null,
+        createdAt: r.createdAt.toISOString(),
+      })),
+    };
+  } catch (err) {
+    console.error("Get my orders error:", err);
+    return { success: false, error: "Failed to load your orders" };
+  }
+}
+
+export interface CustomerOrderDetail {
+  id: string;
+  status: OrderDisplayStatus;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  paymentMode: string;
+  upiRef: string;
+  subtotal: number;
+  tax: number;
+  total: number;
+  items: LiveCallItemDetail[];
+  scheduledFor: string | null;
+  createdAt: string;
+  acceptedAt: string | null;
+  technicianName: string | null;
+  technicianPhone: string | null;
+  assignedAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  cancelledAt: string | null;
+}
+
+export async function getMyOrderDetailAction(liveCallId: string): Promise<ActionResponse<CustomerOrderDetail>> {
+  const { userId, error } = await requireCustomerId();
+  if (!userId) return { success: false, error: error! };
+
+  try {
+    const r = await prisma.liveCall.findFirst({
+      where: { id: liveCallId, customerId: userId },
+      include: {
+        items: true,
+        serviceCall: {
+          include: { technician: { include: { user: { select: { name: true, phone: true } } } } },
+        },
+      },
+    });
+    if (!r) return { success: false, error: "Order not found" };
+
+    return {
+      success: true,
+      data: {
+        id: r.id,
+        status: deriveOrderStatus(r.status, r.serviceCall?.status),
+        address: r.address,
+        city: r.city,
+        state: r.state,
+        pincode: r.pincode,
+        paymentMode: r.paymentMode,
+        upiRef: r.upiRef,
+        subtotal: r.subtotal,
+        tax: r.tax,
+        total: r.total,
+        items: r.items.map((i) => ({ packageName: i.packageName, quantity: i.quantity, unitPrice: i.unitPrice })),
+        scheduledFor: r.scheduledFor?.toISOString() ?? null,
+        createdAt: r.createdAt.toISOString(),
+        acceptedAt: r.acceptedAt?.toISOString() ?? null,
+        technicianName: r.serviceCall?.technician.user.name ?? null,
+        technicianPhone: r.serviceCall?.technician.user.phone ?? null,
+        assignedAt: r.serviceCall?.assignedAt.toISOString() ?? null,
+        startedAt: r.serviceCall?.startedAt?.toISOString() ?? null,
+        completedAt: r.serviceCall?.completedAt?.toISOString() ?? null,
+        cancelledAt: r.serviceCall?.cancelledAt?.toISOString() ?? null,
+      },
+    };
+  } catch (err) {
+    console.error("Get my order detail error:", err);
+    return { success: false, error: "Failed to load order details" };
   }
 }
 
@@ -209,7 +343,7 @@ export interface NearbyLiveCall {
   longitude: number;
   paymentMode: string;
   upiRef: string;
-  paymentScreenshotUrl: string;
+  paymentScreenshotUrl: string | null;
   subtotal: number;
   tax: number;
   total: number;
@@ -298,7 +432,7 @@ export interface AdminLiveCall {
   longitude: number;
   paymentMode: string;
   upiRef: string;
-  paymentScreenshotUrl: string;
+  paymentScreenshotUrl: string | null;
   subtotal: number;
   tax: number;
   total: number;

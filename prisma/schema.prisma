@@ -65,6 +65,32 @@ model User {
   liveCalls         LiveCall[]
   serviceCalls      ServiceCall[]
   notifications     Notification[]
+  addresses         Address[]
+}
+
+// A customer's saved delivery location — Blinkit/Zomato-style address book.
+// Not referenced by a foreign key from LiveCall: checkout snapshots the
+// chosen address's fields into LiveCall directly (same pattern already used
+// for customer contact fields), so editing/deleting a saved address here
+// never changes a past order's record.
+model Address {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    User     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  // Free text, customer-chosen — "Home"/"Work"/"Other" are just quick-pick
+  // suggestions in the UI, not an enum.
+  label       String
+  addressLine String
+  city        String
+  state       String
+  pincode     String
+  latitude    Float
+  longitude   Float
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([customerId])
 }
 
 // Company type is a free-form string (not an enum) so new legal structures
@@ -99,6 +125,7 @@ model VendorProfile {
   technicians       TechnicianProfile[]
   liveCallsAccepted LiveCall[]
   serviceCalls      ServiceCall[]
+  serviceCallOffers ServiceCallOffer[]
   serviceAreas      VendorServiceArea[]
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
@@ -146,6 +173,7 @@ model TechnicianProfile {
   vendorId        String?
   vendor          VendorProfile? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
   serviceCalls    ServiceCall[]
+  serviceCallOffers ServiceCallOffer[]
   location        TechnicianLocation?
   serviceAreas    TechnicianServiceArea[]
   createdAt       DateTime       @default(now())
@@ -319,6 +347,14 @@ enum NotificationType {
   CALL_ACCEPTED
   CALL_ASSIGNED
   CALL_STATUS_UPDATE
+  JOB_OFFER
+}
+
+enum ServiceCallOfferStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
 }
 
 // Created when a customer completes checkout. Broadcast (by proximity) to
@@ -348,9 +384,14 @@ model LiveCall {
   pincode             String
   latitude            Float
   longitude           Float
+  // Null means "as soon as possible" — the customer picked the Instant
+  // option at checkout rather than a scheduled slot.
+  scheduledFor        DateTime?
   paymentMode         String
   upiRef              String
-  paymentScreenshotUrl String
+  // Optional — checkout no longer requires a manual payment-proof upload.
+  // Every consumer of this field must treat it as possibly absent.
+  paymentScreenshotUrl String?
   subtotal            Float
   tax                 Float
   total               Float
@@ -361,6 +402,7 @@ model LiveCall {
   expiresAt           DateTime?
   items               LiveCallItem[]
   serviceCall         ServiceCall?
+  offers              ServiceCallOffer[]
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
 
@@ -407,6 +449,31 @@ model ServiceCall {
   @@index([vendorId])
   @@index([technicianId])
   @@index([customerId])
+}
+
+// A single technician's offer for a LiveCall a vendor has accepted. A vendor
+// "Accept" broadcasts one PENDING row per eligible on-duty technician instead
+// of directly creating a ServiceCall — the ServiceCall itself is only ever
+// created once one technician actually accepts their offer (see
+// acceptJobOfferAction), at which point the sibling offers for the same
+// liveCallId are bulk-flipped to EXPIRED. PENDING rows past a short TTL are
+// lazily swept to EXPIRED whenever queried (same idiom as LiveCall.expiresAt
+// — no cron/background job exists in this stack).
+model ServiceCallOffer {
+  id           String                  @id @default(cuid())
+  liveCallId   String
+  liveCall     LiveCall                @relation(fields: [liveCallId], references: [id], onDelete: Cascade)
+  vendorId     String
+  vendor       VendorProfile           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  technicianId String
+  technician   TechnicianProfile       @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  status       ServiceCallOfferStatus  @default(PENDING)
+  createdAt    DateTime                @default(now())
+  respondedAt  DateTime?
+
+  @@unique([liveCallId, technicianId])
+  @@index([technicianId, status])
+  @@index([liveCallId])
 }
 
 model Notification {

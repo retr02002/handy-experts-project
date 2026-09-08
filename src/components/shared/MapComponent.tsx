@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import React, { useEffect } from "react";
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -31,6 +31,22 @@ function LocationMarker({ position, onPositionChange }: MapComponentProps) {
   );
 }
 
+// react-leaflet's <MapContainer center=.../> only reads `center` once, at
+// creation — without this, a position update from a search result or "use
+// current location" moves the marker's coordinates but the viewport never
+// follows it there, so the pin silently ends up off-screen. Runs on every
+// position change (including a plain map click, which is a harmless no-op
+// pan since that point is already in view).
+function RecenterOnChange({ position }: { position: [number, number] }) {
+  const map = useMap();
+  useEffect(() => {
+    const targetZoom = Math.max(map.getZoom(), 15);
+    map.flyTo(position, targetZoom, { animate: true, duration: 0.6 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [position[0], position[1]]);
+  return null;
+}
+
 export default function MapComponent({ position, onPositionChange }: MapComponentProps) {
   const [mapKey, setMapKey] = React.useState(0);
 
@@ -42,11 +58,11 @@ export default function MapComponent({ position, onPositionChange }: MapComponen
   }, []);
 
   return (
-    <MapContainer 
+    <MapContainer
       key={mapKey}
-      center={position} 
-      zoom={13} 
-      scrollWheelZoom={true} 
+      center={position}
+      zoom={13}
+      scrollWheelZoom={true}
       style={{ height: "100%", width: "100%", borderRadius: "0.75rem", zIndex: 0 }}
     >
       <TileLayer
@@ -54,6 +70,7 @@ export default function MapComponent({ position, onPositionChange }: MapComponen
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <LocationMarker position={position} onPositionChange={onPositionChange} />
+      <RecenterOnChange position={position} />
     </MapContainer>
   );
 }

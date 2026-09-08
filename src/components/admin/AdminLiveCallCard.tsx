@@ -95,18 +95,20 @@ export function AdminLiveCallCard({ call }: { call: AdminLiveCall }) {
               <ClientIcon icon="ph:device-mobile-camera" className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               {PAYMENT_MODE_LABELS[call.paymentMode] ?? call.paymentMode} &middot; {call.upiRef}
             </div>
-            <button
-              type="button"
-              onClick={() => setZoomOpen(true)}
-              className="text-[#00B4FF] font-bold underline underline-offset-2 cursor-pointer"
-            >
-              View screenshot
-            </button>
+            {call.paymentScreenshotUrl && (
+              <button
+                type="button"
+                onClick={() => setZoomOpen(true)}
+                className="text-[#00B4FF] font-bold underline underline-offset-2 cursor-pointer"
+              >
+                View screenshot
+              </button>
+            )}
           </div>
         </div>
       )}
 
-      {zoomOpen && (
+      {zoomOpen && call.paymentScreenshotUrl && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md"
           onClick={() => setZoomOpen(false)}

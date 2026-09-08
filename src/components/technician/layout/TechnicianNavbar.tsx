@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { ClientIcon } from "@/components/ui/ClientIcon";
-import { LocationPicker } from "@/components/shared/LocationPicker";
 import { UserDropdown } from "@/components/shared/UserDropdown";
 import { OnDutyToggle } from "@/components/technician/OnDutyToggle";
 import { getUnreadNotificationCountAction } from "@/actions/notification.actions";
@@ -12,12 +11,7 @@ import { usePolling } from "@/hooks/usePolling";
 
 const NOTIFICATIONS_POLL_INTERVAL_MS = 30000;
 
-interface TechnicianNavbarProps {
-  isMobileMenuOpen: boolean;
-  setMobileMenuOpen: (val: boolean) => void;
-}
-
-export function TechnicianNavbar({ isMobileMenuOpen, setMobileMenuOpen }: TechnicianNavbarProps) {
+export function TechnicianNavbar() {
   const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -36,17 +30,6 @@ export function TechnicianNavbar({ isMobileMenuOpen, setMobileMenuOpen }: Techni
     <header className="h-16 bg-white dark:bg-[#0B1120] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 md:px-6 sticky top-0 z-40 transition-colors">
       
       <div className="flex items-center gap-2 md:gap-0 flex-1">
-        {/* Mobile Hamburger Menu */}
-        <button 
-          onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}
-          className="md:hidden p-2 -ml-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-lg shrink-0"
-        >
-          <ClientIcon icon="ph:list" className="w-6 h-6" />
-        </button>
-
-        <LocationPicker />
-        <div className="w-2 md:w-4 shrink-0" />
-
         {/* Left: Search Bar */}
         <div className="flex-1 max-w-md hidden sm:block">
           <div className="relative group">

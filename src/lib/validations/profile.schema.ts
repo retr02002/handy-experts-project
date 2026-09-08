@@ -10,6 +10,11 @@ export const updateEmailSchema = z.object({
 });
 export type UpdateEmailInput = z.infer<typeof updateEmailSchema>;
 
+export const updatePhoneSchema = z.object({
+  phone: z.string().trim().regex(/^\d{10}$/, "Enter a valid 10-digit mobile number"),
+});
+export type UpdatePhoneInput = z.infer<typeof updatePhoneSchema>;
+
 export const changePasswordSchema = z.object({
   currentPassword: z.string().optional(),
   newPassword: z.string().min(6, "Password must be at least 6 characters").max(100),

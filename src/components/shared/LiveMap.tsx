@@ -128,13 +128,16 @@ export function LiveMap({
             anchor="bottom"
             onClick={() => onCallMarkerClick?.(call.id)}
           >
-            <button
-              type="button"
-              title={call.label}
-              className="w-7 h-7 rounded-full bg-[#00B4FF] text-white border-2 border-white shadow-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
-            >
-              <ClientIcon icon="ph:phone-call-fill" className="w-3.5 h-3.5" />
-            </button>
+            <div className="relative w-7 h-7 flex items-center justify-center">
+              <span className="absolute inset-0 rounded-full bg-[#00B4FF]/60 animate-ping" />
+              <button
+                type="button"
+                title={call.label}
+                className="relative w-7 h-7 rounded-full bg-[#00B4FF] text-white border-2 border-white shadow-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
+              >
+                <ClientIcon icon="ph:phone-call-fill" className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </Marker>
         ))}
 

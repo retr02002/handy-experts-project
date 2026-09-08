@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { toast } from "sonner";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { PAYMENT_MODE_OPTIONS, type PaymentDetails, type PaymentMode } from "../checkoutTypes";
 
@@ -18,39 +17,10 @@ const QR_SRC = "/images/handyzoqrcode.png";
 export function PaymentStep({ payment, onChange, amountDue }: Props) {
   const [mounted, setMounted] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    return () => {
-      if (payment.screenshotPreview) URL.revokeObjectURL(payment.screenshotPreview);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please upload an image file.");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Screenshot must be under 5MB.");
-      return;
-    }
-    if (payment.screenshotPreview) URL.revokeObjectURL(payment.screenshotPreview);
-    onChange({ ...payment, screenshotFile: file, screenshotPreview: URL.createObjectURL(file) });
-  };
-
-  const removeScreenshot = () => {
-    if (payment.screenshotPreview) URL.revokeObjectURL(payment.screenshotPreview);
-    onChange({ ...payment, screenshotFile: null, screenshotPreview: null });
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
 
   return (
     <div className="bg-white dark:bg-[#0B1221] rounded-2xl border border-slate-200 dark:border-slate-800/80 p-5 sm:p-6 flex flex-col gap-6">
@@ -129,36 +99,6 @@ export function PaymentStep({ payment, onChange, amountDue }: Props) {
             className="w-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all"
           />
         </div>
-      </div>
-
-      {/* Screenshot upload */}
-      <div>
-        <label className="text-[13px] font-bold text-slate-700 dark:text-slate-300 ml-0.5 mb-1.5 block">
-          Payment Screenshot
-        </label>
-        {!payment.screenshotPreview ? (
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-3 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-4 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500/60 transition-colors"
-          >
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
-            <ClientIcon icon="ph:upload-simple-bold" className="w-5 h-5 text-slate-400 shrink-0" />
-            <span className="text-sm text-slate-500 dark:text-slate-400">
-              Click to upload a screenshot of your payment (max 5MB)
-            </span>
-          </div>
-        ) : (
-          <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
-            <Image src={payment.screenshotPreview} alt="Payment screenshot" fill className="object-cover" unoptimized />
-            <button
-              type="button"
-              onClick={removeScreenshot}
-              className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-slate-900/70 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
-            >
-              <ClientIcon icon="ph:x-bold" className="w-3 h-3" />
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Zoom modal */}

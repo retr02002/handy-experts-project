@@ -1,4 +1,4 @@
-export type CheckoutStep = "cart" | "details" | "payment" | "success";
+export type CheckoutStep = "cart" | "details" | "slot" | "payment" | "success";
 
 export interface CustomerDetails {
   name: string;
@@ -40,16 +40,27 @@ export type PaymentMode = "gpay" | "phonepe" | "paytm" | "amazonpay" | "bhim" | 
 export interface PaymentDetails {
   mode: PaymentMode | "";
   upiRef: string;
-  screenshotFile: File | null;
-  screenshotPreview: string | null;
 }
 
 export const EMPTY_PAYMENT_DETAILS: PaymentDetails = {
   mode: "",
   upiRef: "",
-  screenshotFile: null,
-  screenshotPreview: null,
 };
+
+export interface SlotDetails {
+  isInstant: boolean;
+  // ISO string, ignored when isInstant is true.
+  scheduledFor: string | null;
+}
+
+export const EMPTY_SLOT_DETAILS: SlotDetails = {
+  isInstant: true,
+  scheduledFor: null,
+};
+
+export function isSlotComplete(slot: SlotDetails): boolean {
+  return slot.isInstant || slot.scheduledFor !== null;
+}
 
 export const PAYMENT_MODE_OPTIONS: { value: PaymentMode; label: string; color: string }[] = [
   { value: "gpay", label: "Google Pay", color: "bg-blue-500" },
@@ -74,9 +85,5 @@ export function isDetailsComplete(details: CustomerDetails): boolean {
 }
 
 export function isPaymentComplete(payment: PaymentDetails): boolean {
-  return (
-    payment.mode !== "" &&
-    payment.upiRef.trim().length > 3 &&
-    payment.screenshotFile !== null
-  );
+  return payment.mode !== "" && payment.upiRef.trim().length > 3;
 }

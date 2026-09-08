@@ -9,9 +9,11 @@ import type { ActionResponse } from "@/actions/auth.actions";
 import {
   updateNameSchema,
   updateEmailSchema,
+  updatePhoneSchema,
   changePasswordSchema,
   type UpdateNameInput,
   type UpdateEmailInput,
+  type UpdatePhoneInput,
   type ChangePasswordInput,
 } from "@/lib/validations/profile.schema";
 
@@ -70,6 +72,43 @@ export async function updateProfileEmail(input: UpdateEmailInput): Promise<Actio
   } catch (error) {
     console.error("Update email error:", error);
     return { success: false, error: "Failed to update email" };
+  }
+}
+
+/**
+ * Lets a technician (or any signed-in account) add/change their own phone
+ * number — needed so username+OTP login (src/lib/auth.ts's "otp-technician"
+ * provider, which reads User.phone) has something to send an OTP to for
+ * accounts created without one (e.g. a vendor-created technician whose phone
+ * wasn't set at creation time).
+ */
+export async function updateProfilePhone(input: UpdatePhoneInput): Promise<ActionResponse> {
+  const userId = await requireUserId();
+  if (!userId) return { success: false, error: "Not signed in" };
+
+  const validated = updatePhoneSchema.safeParse(input);
+  if (!validated.success) {
+    return { success: false, error: "Invalid input", errors: validated.error.flatten().fieldErrors };
+  }
+
+  try {
+    // Globally unique across every role — same constraint OTP login relies on.
+    const taken = await prisma.user.findFirst({
+      where: { phone: validated.data.phone, NOT: { id: userId } },
+      select: { id: true },
+    });
+    if (taken) {
+      return { success: false, error: "That phone number is already in use", errors: { phone: ["Already in use"] } };
+    }
+
+    await prisma.user.update({ where: { id: userId }, data: { phone: validated.data.phone } });
+    revalidatePath("/technician/profile");
+    revalidatePath("/customer/profile");
+    revalidatePath("/vendor/profile");
+    return { success: true };
+  } catch (error) {
+    console.error("Update phone error:", error);
+    return { success: false, error: "Failed to update phone number" };
   }
 }
 

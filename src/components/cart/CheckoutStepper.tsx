@@ -7,6 +7,7 @@ import type { CheckoutStep } from "./checkoutTypes";
 const STEPS: { key: Exclude<CheckoutStep, "success">; label: string; icon: string }[] = [
   { key: "cart", label: "Cart & Discount", icon: "ph:shopping-cart-bold" },
   { key: "details", label: "Your Details", icon: "ph:user-bold" },
+  { key: "slot", label: "Slot", icon: "ph:calendar-blank-bold" },
   { key: "payment", label: "Payment", icon: "ph:qr-code-bold" },
 ];
 

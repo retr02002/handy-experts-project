@@ -127,13 +127,15 @@ export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCall
               <ClientIcon icon="ph:device-mobile-camera" className="w-4 h-4 text-slate-400 shrink-0" />
               {PAYMENT_MODE_LABELS[call.paymentMode] ?? call.paymentMode} &middot; {call.upiRef}
             </div>
-            <button
-              type="button"
-              onClick={() => setZoomOpen(true)}
-              className="text-[#00B4FF] font-bold underline underline-offset-2 cursor-pointer text-xs"
-            >
-              View screenshot
-            </button>
+            {call.paymentScreenshotUrl && (
+              <button
+                type="button"
+                onClick={() => setZoomOpen(true)}
+                className="text-[#00B4FF] font-bold underline underline-offset-2 cursor-pointer text-xs"
+              >
+                View screenshot
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-3 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-3">
@@ -154,7 +156,7 @@ export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCall
         )}
       </div>
 
-      {zoomOpen && (
+      {zoomOpen && call.paymentScreenshotUrl && (
         <div
           className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md"
           onClick={() => setZoomOpen(false)}

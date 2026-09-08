@@ -11,6 +11,7 @@ import { EmptyCart } from "./EmptyCart";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { CheckoutStepper } from "./CheckoutStepper";
 import { DetailsStep } from "./steps/DetailsStep";
+import { SlotStep } from "./steps/SlotStep";
 import { PaymentStep } from "./steps/PaymentStep";
 import { OrderSuccess } from "./steps/OrderSuccess";
 import {
@@ -18,10 +19,13 @@ import {
   type CustomerDetails,
   type PaymentDetails,
   type PaymentMode,
+  type SlotDetails,
   EMPTY_CUSTOMER_DETAILS,
   EMPTY_PAYMENT_DETAILS,
+  EMPTY_SLOT_DETAILS,
   isDetailsComplete,
   isPaymentComplete,
+  isSlotComplete,
 } from "./checkoutTypes";
 
 type Tab = "active" | "saved";
@@ -33,6 +37,7 @@ export function CartContainer() {
 
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>("cart");
   const [customerDetails, setCustomerDetails] = useState<CustomerDetails>(EMPTY_CUSTOMER_DETAILS);
+  const [slotDetails, setSlotDetails] = useState<SlotDetails>(EMPTY_SLOT_DETAILS);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails>(EMPTY_PAYMENT_DETAILS);
   const [orderId, setOrderId] = useState("");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
@@ -50,9 +55,17 @@ export function CartContainer() {
 
   const goToDetails = () => setCheckoutStep("details");
 
-  const goToPayment = () => {
+  const goToSlot = () => {
     if (!isDetailsComplete(customerDetails)) {
       toast.error("Please fill in your name, a valid email, 10-digit phone, address and 6-digit pincode.");
+      return;
+    }
+    setCheckoutStep("slot");
+  };
+
+  const goToPayment = () => {
+    if (!isSlotComplete(slotDetails)) {
+      toast.error("Please pick a day and time, or choose Instant.");
       return;
     }
     setCheckoutStep("payment");
@@ -63,22 +76,13 @@ export function CartContainer() {
       toast.error("Please go back and complete your details first.");
       return;
     }
-    if (!isPaymentComplete(paymentDetails) || !paymentDetails.screenshotFile) {
-      toast.error("Please select a payment app, enter your UPI/reference ID and upload a screenshot.");
+    if (!isPaymentComplete(paymentDetails)) {
+      toast.error("Please select a payment app and enter your UPI/reference ID.");
       return;
     }
 
     setIsPlacingOrder(true);
     try {
-      const uploadForm = new FormData();
-      uploadForm.append("file", paymentDetails.screenshotFile);
-      const uploadRes = await fetch("/api/upload/payment-screenshot", { method: "POST", body: uploadForm });
-      const uploadData = await uploadRes.json();
-      if (!uploadRes.ok || !uploadData.url) {
-        toast.error(uploadData.error || "Failed to upload payment screenshot. Please try again.");
-        return;
-      }
-
       const res = await createLiveCallAction({
         customerName: customerDetails.name,
         customerEmail: customerDetails.email,
@@ -93,7 +97,7 @@ export function CartContainer() {
         longitude: customerDetails.longitude,
         paymentMode: paymentDetails.mode as PaymentMode,
         upiRef: paymentDetails.upiRef,
-        paymentScreenshotUrl: uploadData.url,
+        scheduledFor: slotDetails.isInstant ? null : slotDetails.scheduledFor,
       });
 
       if (!res.success) {
@@ -196,10 +200,29 @@ export function CartContainer() {
             <DetailsStep details={customerDetails} onChange={setCustomerDetails} />
           </div>
           <OrderSummaryPanel
-            primaryLabel="Continue to Payment"
-            onPrimary={goToPayment}
+            primaryLabel="Continue to Slot"
+            onPrimary={goToSlot}
             onBack={() => setCheckoutStep("cart")}
             backLabel="Back to Cart"
+          />
+        </div>
+      )}
+
+      {checkoutStep === "slot" && (
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          <div className="flex-1 w-full">
+            <SlotStep
+              details={customerDetails}
+              slot={slotDetails}
+              onChange={setSlotDetails}
+              onChangeAddress={() => setCheckoutStep("details")}
+            />
+          </div>
+          <OrderSummaryPanel
+            primaryLabel="Continue to Payment"
+            onPrimary={goToPayment}
+            onBack={() => setCheckoutStep("details")}
+            backLabel="Back to Details"
           />
         </div>
       )}
@@ -214,8 +237,8 @@ export function CartContainer() {
             primaryIcon={isPlacingOrder ? "svg-spinners:180-ring" : "ph:check-circle-bold"}
             onPrimary={placeOrder}
             primaryDisabled={isPlacingOrder}
-            onBack={() => setCheckoutStep("details")}
-            backLabel="Back to Details"
+            onBack={() => setCheckoutStep("slot")}
+            backLabel="Back to Slot"
           />
         </div>
       )}

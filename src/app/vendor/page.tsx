@@ -4,6 +4,9 @@ import { ClientIcon } from "@/components/ui/ClientIcon";
 import { getProfileDetails } from "@/actions/profile.actions";
 import { getMyServiceCallsForVendorAction } from "@/actions/servicecall.actions";
 import { getMyTechniciansAction } from "@/actions/technician.actions";
+import { RevenueTrendChart } from "@/components/shared/charts/RevenueTrendChart";
+import { StatusBreakdownChart } from "@/components/shared/charts/StatusBreakdownChart";
+import { buildDailyTrend } from "@/lib/chartAggregation";
 
 const STATUS_COLORS: Record<string, string> = {
   ASSIGNED: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
@@ -42,7 +45,20 @@ export default async function VendorDashboardPage() {
 
   const activeCalls = calls.filter((c) => ["ASSIGNED", "EN_ROUTE", "IN_PROGRESS"].includes(c.status));
   const completedCalls = calls.filter((c) => c.status === "COMPLETED");
+  const cancelledCalls = calls.filter((c) => c.status === "CANCELLED");
   const onDutyTechs = technicians.filter((t) => t.isOnDuty);
+
+  const revenueTrend = buildDailyTrend(
+    completedCalls,
+    14,
+    (c) => c.assignedAt,
+    (c) => c.total
+  );
+  const statusBreakdown = [
+    { label: "Active", count: activeCalls.length, color: "#00B4FF" },
+    { label: "Completed", count: completedCalls.length, color: "#10B981" },
+    { label: "Cancelled", count: cancelledCalls.length, color: "#94A3B8" },
+  ];
 
   return (
     <div className="flex flex-col gap-6">
@@ -60,6 +76,17 @@ export default async function VendorDashboardPage() {
         <StatTile icon="ph:users" iconBg="bg-amber-500/10" iconColor="text-amber-500" label="Active Techs" value={onDutyTechs.length} sub={`of ${technicians.length} total`} />
         <StatTile icon="ph:check-circle" iconBg="bg-emerald-500/10" iconColor="text-emerald-500" label="Completed" value={completedCalls.length} sub="All time" />
         <StatTile icon="ph:wrench" iconBg="bg-purple-500/10" iconColor="text-purple-500" label="In Progress" value={activeCalls.length} sub="Right now" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-2">
+        <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Revenue — Last 14 Days</h2>
+          <RevenueTrendChart data={revenueTrend} />
+        </div>
+        <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Service Calls Breakdown</h2>
+          <StatusBreakdownChart data={statusBreakdown} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-2">
