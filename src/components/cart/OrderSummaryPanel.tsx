@@ -94,7 +94,7 @@ export function OrderSummaryPanel({
       </div>
 
       {/* Mobile: fixed bottom action bar, app-style — replaces the site's generic tab bar during checkout */}
-      <div className="lg:hidden fixed inset-x-0 bottom-16 z-[70] bg-white/95 dark:bg-[#0B1221]/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800/80 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-4 py-3 flex items-center gap-3">
+      <div className="lg:hidden fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-[70] bg-white/95 dark:bg-[#0B1221]/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800/80 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-4 py-3 flex items-center gap-3">
         {onBack && (
           <button
             onClick={onBack}

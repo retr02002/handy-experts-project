@@ -77,7 +77,7 @@ export function ChatBot() {
         onClick={toggleChat}
         className={`${
           isCustomerDashboard ? (isOpen ? "hidden lg:flex" : "flex") : "hidden lg:flex"
-        } fixed bottom-[84px] lg:bottom-6 right-4 lg:right-6 z-[100] items-center justify-center w-14 h-14 rounded-full shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 border border-white/20 dark:border-slate-700/50 ${
+        } fixed bottom-[96px] lg:bottom-6 right-4 lg:right-6 z-[100] items-center justify-center w-14 h-14 rounded-full shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 border border-white/20 dark:border-slate-700/50 ${
           isOpen 
             ? "bg-slate-800 text-white dark:bg-white dark:text-slate-900" 
             : "bg-gradient-to-tr from-[#00B4FF] to-[#0096d6] text-white"

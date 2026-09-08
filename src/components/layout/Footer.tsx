@@ -22,23 +22,23 @@ type FooterProps = {
 
 export function Footer({ categories = [] }: FooterProps) {
   return (
-    <footer className="w-full bg-slate-50 dark:bg-[#020813] border-t border-slate-200 dark:border-slate-800/50 pt-16 pb-8 px-4 sm:px-6 lg:px-8 mt-auto">
+    <footer className="w-full bg-slate-50 dark:bg-[#020813] border-t border-slate-200 dark:border-slate-800/50 pt-12 pb-6 px-4 sm:px-6 lg:px-8 mt-auto">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-10 lg:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 sm:gap-8">
 
           {/* Logo & Stats Column */}
-          <div className="col-span-1 md:col-span-3 lg:col-span-2 flex flex-col pr-0 lg:pr-8">
-            <Link href="/" className="mb-6 inline-block">
+          <div className="col-span-1 sm:col-span-2 lg:col-span-2 flex flex-col pr-0 lg:pr-8">
+            <Link href="/" className="mb-4 inline-block">
               <Image
                 src="/logo-org.svg"
                 alt="Handyzo"
-                width={260}
-                height={90}
-                className="h-18 w-auto object-contain dark:brightness-0 dark:invert transition-transform hover:scale-105 origin-left"
+                width={200}
+                height={70}
+                className="h-14 w-auto object-contain dark:brightness-0 dark:invert transition-transform hover:scale-105 origin-left"
               />
             </Link>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-8 leading-relaxed max-w-sm">
-              Your trusted partner for home maintenance, professional cleaning, high-quality repairs, and everyday essential services.
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-6 leading-relaxed max-w-[280px] sm:max-w-sm">
+              We make home maintenance effortless. Whether it&apos;s a quick fix or a deep clean, our verified experts are just a tap away. Fast, reliable, and transparent.
             </p>
           </div>
 
@@ -49,42 +49,26 @@ export function Footer({ categories = [] }: FooterProps) {
               Our Services
             </h4>
             <ul className="flex flex-col gap-3.5 text-sm text-slate-600 dark:text-slate-400 font-medium">
-              {categories.length === 0 ? (
-                <li><FooterLink href="/services">All Services</FooterLink></li>
-              ) : (
-                categories.slice(0, 5).map((cat) => (
-                  <li key={cat.id}>
-                    <FooterLink href={`/services?category=${cat.slug}`}>{cat.name}</FooterLink>
-                  </li>
-                ))
-              )}
+              <li><FooterLink href="/services/ac-repair">AC Repair & Service</FooterLink></li>
+              <li><FooterLink href="/services/plumbing">Plumbing Services</FooterLink></li>
+              <li><FooterLink href="/services/electrical">Electrical Works</FooterLink></li>
+              <li><FooterLink href="/services/cleaning">Home Cleaning</FooterLink></li>
+              <li><FooterLink href="/services/painting">Painting Services</FooterLink></li>
+              <li><FooterLink href="/services">View All Services</FooterLink></li>
             </ul>
           </div>
 
-          {/* Our Company */}
+          {/* Legal & Policies */}
           <div className="col-span-1">
             <h4 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-6">
-              <ClientIcon icon="ph:buildings" className="w-5 h-5 text-slate-400 dark:text-[#00B4FF]/70" />
-              Our Company
+              <ClientIcon icon="ph:shield-check" className="w-5 h-5 text-slate-400 dark:text-[#00B4FF]/70" />
+              Legal & Policies
             </h4>
             <ul className="flex flex-col gap-3.5 text-sm text-slate-600 dark:text-slate-400 font-medium">
-              <li><FooterLink href="#">About Us</FooterLink></li>
-              <li><FooterLink href="#">Customers</FooterLink></li>
-              <li><FooterLink href="#">Blog & News</FooterLink></li>
-              <li><FooterLink href="#">Careers</FooterLink></li>
-            </ul>
-          </div>
-
-          {/* Support & Help */}
-          <div className="col-span-1">
-            <h4 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-6">
-              <ClientIcon icon="ph:lifebuoy" className="w-5 h-5 text-slate-400 dark:text-[#00B4FF]/70" />
-              Support & Help
-            </h4>
-            <ul className="flex flex-col gap-3.5 text-sm text-slate-600 dark:text-slate-400 font-medium">
-              <li><FooterLink href="#">Documentation</FooterLink></li>
-              <li><FooterLink href="#">Service Warranty</FooterLink></li>
-              <li><FooterLink href="#">Contact Support</FooterLink></li>
+              <li><FooterLink href="/privacy">Privacy Policy</FooterLink></li>
+              <li><FooterLink href="/terms">Terms of Service</FooterLink></li>
+              <li><FooterLink href="/refund">Refund Policy</FooterLink></li>
+              <li><FooterLink href="/cancellation">Cancellation Policy</FooterLink></li>
             </ul>
           </div>
 
@@ -121,19 +105,8 @@ export function Footer({ categories = [] }: FooterProps) {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-16 pt-8 border-t border-slate-200 dark:border-slate-800/60 flex flex-col lg:flex-row items-center justify-between gap-6">
-          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 sm:gap-3 text-[13px] font-medium text-slate-500 dark:text-slate-400">
-            <Link href="/privacy" className="hover:text-[#00B4FF] transition-colors">Privacy Policy</Link>
-            <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
-            <Link href="/terms" className="hover:text-[#00B4FF] transition-colors">Terms of Service</Link>
-            <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
-            <Link href="/refund" className="hover:text-[#00B4FF] transition-colors">Refund Policy</Link>
-            <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
-            <Link href="/cancellation" className="hover:text-[#00B4FF] transition-colors">Cancellation Policy</Link>
-            <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
-            <Link href="/cookies" className="hover:text-[#00B4FF] transition-colors">Cookie Settings</Link>
-          </div>
-          <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium shrink-0 text-center lg:text-right">
+        <div className="mt-12 pt-6 border-t border-slate-200 dark:border-slate-800/60 flex items-center justify-center">
+          <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium text-center">
             ©2025-{new Date().getFullYear()} All Rights Reserved by Handyzo.
           </p>
         </div>

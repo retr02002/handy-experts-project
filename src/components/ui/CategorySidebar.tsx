@@ -33,7 +33,7 @@ export function CategorySidebar({ categories }: Props) {
     <div className="w-full h-full flex flex-col bg-slate-50/50 dark:bg-[#060C18] border-r border-slate-200 dark:border-slate-800 overflow-y-auto custom-scrollbar overflow-x-hidden">
       <button
         onClick={() => handleCategoryClick("All")}
-        className={`relative w-full flex flex-col items-center justify-center p-3 sm:p-4 border-b border-slate-100 dark:border-slate-800 transition-colors ${
+        className={`relative w-full flex flex-col items-center justify-center p-1.5 sm:p-2 border-b border-slate-100 dark:border-slate-800 transition-colors ${
           isAllSelected
             ? "bg-white dark:bg-[#0B1221]"
             : "hover:bg-slate-100/50 dark:hover:bg-slate-800/30"
@@ -42,7 +42,7 @@ export function CategorySidebar({ categories }: Props) {
         {isAllSelected && (
           <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#00B4FF] rounded-r-full shadow-[0_0_8px_rgba(0,180,255,0.5)]"></div>
         )}
-        <div className={`w-12 h-12 sm:w-16 sm:h-16 mb-2 rounded-xl flex items-center justify-center overflow-hidden transition-all ${
+        <div className={`w-8 h-8 sm:w-10 sm:h-10 mb-1 rounded-[10px] flex items-center justify-center overflow-hidden transition-all ${
           isAllSelected 
             ? "bg-blue-50 dark:bg-blue-900/20 border-2 border-[#00B4FF]/30" 
             : "bg-slate-100 dark:bg-slate-800"
@@ -62,7 +62,7 @@ export function CategorySidebar({ categories }: Props) {
           <button
             key={cat.id}
             onClick={() => handleCategoryClick(cat.slug)}
-            className={`relative w-full flex flex-col items-center justify-center p-3 sm:p-4 border-b border-slate-100 dark:border-slate-800 transition-colors ${
+            className={`relative w-full flex flex-col items-center justify-center p-1.5 sm:p-2 border-b border-slate-100 dark:border-slate-800 transition-colors ${
               selected
                 ? "bg-white dark:bg-[#0B1221]"
                 : "hover:bg-slate-100/50 dark:hover:bg-slate-800/30"
@@ -71,16 +71,16 @@ export function CategorySidebar({ categories }: Props) {
             {selected && (
               <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#00B4FF] rounded-r-full shadow-[0_0_8px_rgba(0,180,255,0.5)]"></div>
             )}
-            <div className={`relative w-12 h-12 sm:w-16 sm:h-16 mb-2 rounded-xl overflow-hidden transition-all ${
+            <div className={`relative w-8 h-8 sm:w-10 sm:h-10 mb-1 rounded-[10px] overflow-hidden transition-all ${
               selected 
-                ? "border-2 border-[#00B4FF]/30 shadow-[0_4px_12px_rgba(0,180,255,0.15)] scale-105" 
+                ? "border border-[#00B4FF]/50 shadow-[0_2px_8px_rgba(0,180,255,0.15)] scale-105" 
                 : "border border-slate-200/50 dark:border-slate-700/50 shadow-sm"
             }`}>
               <Image
                 src={cat.image || "/placeholder.jpg"}
                 alt={cat.name}
                 fill
-                sizes="(max-width: 768px) 48px, 64px"
+                sizes="40px"
                 className="object-cover"
               />
             </div>

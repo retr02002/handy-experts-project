@@ -7,10 +7,12 @@ import { useTheme } from "next-themes";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { LocationPicker } from "@/components/shared/LocationPicker";
 import { UserDropdown } from "@/components/shared/UserDropdown";
+import { useCart } from "@/context/CartContext";
 
 export function CustomerNavbar() {
   const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const { totalItems } = useCart();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -24,7 +26,7 @@ export function CustomerNavbar() {
       
       {/* Left: Logo & Location Picker */}
       <div className="flex items-center gap-2 sm:gap-3">
-        <Link href="/" className="flex items-center justify-center shrink-0 mr-1">
+        <Link href="/" className="hidden md:flex items-center justify-center shrink-0 mr-1">
           <Image
             src="/logo-org.svg"
             alt="Handyzo"
@@ -53,6 +55,16 @@ export function CustomerNavbar() {
               <ClientIcon icon="ph:sun-dim" className="w-4 h-4 md:w-5 md:h-5" />
             )}
           </button>
+
+          {/* Cart */}
+          <Link href="/cart" className="relative p-1.5 md:p-2 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white rounded-full transition-all hover:shadow-sm">
+            <ClientIcon icon="ph:shopping-cart" className="w-4 h-4 md:w-5 md:h-5" />
+            {mounted && totalItems > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 md:top-0 md:right-0 bg-[#00B4FF] text-white text-[9px] font-bold w-3.5 h-3.5 md:w-4 md:h-4 flex items-center justify-center rounded-full shadow-sm ring-2 ring-slate-100/80 dark:ring-slate-800/80 animate-in zoom-in">
+                {totalItems}
+              </span>
+            )}
+          </Link>
 
           {/* Notifications */}
           <Link href="/customer/notifications" className="relative p-1.5 md:p-2 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white rounded-full transition-all hover:shadow-sm">

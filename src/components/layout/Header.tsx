@@ -102,7 +102,7 @@ export function Header() {
       </div>
 
       {/* Bottom Fixed Navigation for Mobile (Full Width App-like) — hidden during checkout, which has its own dedicated action bar */}
-      <div className={`fixed bottom-0 left-0 right-0 w-full z-[60] lg:hidden`}>
+      <div className={`fixed bottom-0 left-0 right-0 w-full z-[80] lg:hidden`}>
         <div className="bg-white/90 dark:bg-[#0B1120]/90 backdrop-blur-xl border-t border-slate-200/50 dark:border-slate-800/50 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] px-1 pb-safe h-16 flex items-center justify-between">
           <Link href="/" className={`group flex flex-col items-center justify-center w-full h-full relative transition-colors ${pathname === '/' ? 'text-[#00B4FF]' : 'text-slate-500 hover:text-[#00B4FF] dark:text-slate-400 dark:hover:text-[#00B4FF]'}`}>
             <div className="relative flex flex-col items-center justify-center h-full space-y-1 w-full">
@@ -155,7 +155,7 @@ export function Header() {
       {/* WhatsApp Floating Button */}
       <div className={`fixed right-4 lg:right-6 z-[50] transition-all duration-300 ${pathname.startsWith('/cart') && totalItems > 0 ? 'hidden' : pathname.startsWith('/services/') && totalItems > 0 ? 'bottom-[196px] lg:bottom-[104px]' : 'bottom-[144px] lg:bottom-[104px]'}`}>
         <a
-          href="https://wa.me/918309680484"
+          href="https://wa.me/919866716036"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center justify-center w-12 h-12 lg:w-14 lg:h-14 bg-[#25D366] hover:bg-[#1EBE5D] text-white rounded-full shadow-lg shadow-[#25D366]/30 transition-all duration-300 hover:scale-110 active:scale-95"

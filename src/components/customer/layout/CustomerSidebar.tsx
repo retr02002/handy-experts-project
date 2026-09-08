@@ -7,6 +7,7 @@ import { ClientIcon } from "@/components/ui/ClientIcon";
 
 const SIDEBAR_LINKS = [
   { href: "/customer", label: "Dashboard", icon: "ph:squares-four" },
+  { href: "/customer/services", label: "Services", icon: "ph:wrench" },
   { href: "/customer/orders", label: "Orders", icon: "ph:shopping-cart" },
   { href: "/customer/bills", label: "Bills", icon: "ph:receipt" },
   { href: "/customer/rewards", label: "Rewards", icon: "ph:gift" },

@@ -3,8 +3,8 @@ import { ClientIcon } from "@/components/ui/ClientIcon";
 
 export function ContactInfo() {
   const actions = [
-    { id: 'call', icon: 'ph:phone-fill', title: 'Call Us', desc: '+91 9403892784', link: 'tel:+919403892784', color: 'bg-emerald-500', shadow: 'shadow-emerald-500/20' },
-    { id: 'whatsapp', icon: 'ph:whatsapp-logo-fill', title: 'WhatsApp', desc: 'Message us', link: 'https://wa.me/919403892784', color: 'bg-[#25D366]', shadow: 'shadow-[#25D366]/20' },
+    { id: 'call', icon: 'ph:phone-fill', title: 'Call Us', desc: '+91 9866716036', link: 'tel:+919866716036', color: 'bg-emerald-500', shadow: 'shadow-emerald-500/20' },
+    { id: 'whatsapp', icon: 'ph:whatsapp-logo-fill', title: 'WhatsApp', desc: 'Message us', link: 'https://wa.me/919866716036', color: 'bg-[#25D366]', shadow: 'shadow-[#25D366]/20' },
     { id: 'email', icon: 'ph:envelope-simple-fill', title: 'Email', desc: 'contact@handyzo.com', link: 'mailto:contact@handyzo.com', color: 'bg-[#00B4FF]', shadow: 'shadow-[#00B4FF]/20' },
     { id: 'visit', icon: 'ph:map-pin-fill', title: 'Visit', desc: 'Hyderabad HQ', link: 'https://maps.google.com/?q=Mf-2+p.s+nagar+masab+tank+Mehdipatnam+Hyderabad+500028', color: 'bg-purple-500', shadow: 'shadow-purple-500/20' },
   ];

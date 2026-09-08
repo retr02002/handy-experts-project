@@ -45,7 +45,7 @@ export function TestimonialsCarousel({ testimonials, hideBadge }: TestimonialsCa
           badgeText={hideBadge ? undefined : "Testimonials"}
           title={
             <>
-              Loved by <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00B4FF] to-[#0070FF]">Delhi households.</span>
+              Loved by <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00B4FF] to-[#0070FF]">Pan India Households.</span>
             </>
           }
           description="312,000+ jobs completed. 4.8★ average across every category. Here's a slice."
@@ -60,7 +60,7 @@ export function TestimonialsCarousel({ testimonials, hideBadge }: TestimonialsCa
           badgeText={hideBadge ? undefined : "Testimonials"}
           title={
             <>
-              Loved by <span className="text-[#00B4FF]">Delhi households.</span>
+              Loved by <span className="text-[#00B4FF]">pan India house holds.</span>
             </>
           }
           description="312,000+ jobs completed. 4.8★ average across every category. Here's a slice."

@@ -5,7 +5,6 @@ import { FeaturedServices } from "@/components/ui/FeaturedServices";
 import { PopularServices } from "@/components/ui/PopularServices";
 import { CategoryServicesSections } from "@/components/ui/CategoryServicesSections";
 import { TestimonialsSection } from "@/components/ui/TestimonialsSection";
-import { FAQSection } from "@/components/ui/FAQSection";
 
 export default function Home() {
   return (
@@ -16,8 +15,6 @@ export default function Home() {
       <CategoryServicesSections />
       <FeaturedServices />
       <TestimonialsSection />
-      
-      <FAQSection />
     </main>
   );
 }
