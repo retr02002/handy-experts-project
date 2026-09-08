@@ -208,7 +208,7 @@ export function ServiceFormWizard({ isOpen, onClose, onSuccess, categories, init
             />
             <span className="flex flex-col">
               <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Is Popular</span>
-              <span className="text-xs text-slate-400">Popular services appear in the "Popular Services" section on the homepage.</span>
+              <span className="text-xs text-slate-400">Popular services appear in the &quot;Popular Services&quot; section on the homepage.</span>
             </span>
           </label>
           <div className="grid grid-cols-2 gap-4">

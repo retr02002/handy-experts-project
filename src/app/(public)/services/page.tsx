@@ -117,7 +117,7 @@ export default async function ServicesPage(props: {
         {/* Left Sidebar (Category Menu) */}
         <div className="w-20 sm:w-24 md:w-28 shrink-0 h-full border-r border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-[#060C18]">
           <Suspense fallback={<div className="h-full bg-slate-100 dark:bg-slate-800 animate-pulse"></div>}>
-            <CategorySidebar categories={categories} />
+            <CategorySidebar categories={categories} variant="large" />
           </Suspense>
         </div>
 
