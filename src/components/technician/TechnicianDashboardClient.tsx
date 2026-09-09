@@ -3,22 +3,16 @@
 import React, { useCallback, useState } from "react";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { usePolling } from "@/hooks/usePolling";
-import {
-  getMyServiceCallsForTechnicianAction,
-  getMyPendingOfferAction,
-  type ServiceCallSummary,
-  type TechnicianJobOffer,
-} from "@/actions/servicecall.actions";
+import { getMyServiceCallsForTechnicianAction, type ServiceCallSummary } from "@/actions/servicecall.actions";
 import { getMyDutyStatusAction } from "@/actions/technician.actions";
 import { ServiceCallsCardGrid } from "./ServiceCallsCardGrid";
-import { ServiceCallDetailModal } from "./ServiceCallDetailModal";
-import { IncomingOfferModal } from "./IncomingOfferModal";
+import { jobStatusLabel } from "@/lib/jobStatus";
+import { TechnicianJobHost } from "./TechnicianJobHost";
 import { RevenueTrendChart } from "@/components/shared/charts/RevenueTrendChart";
 import { StatusBreakdownChart } from "@/components/shared/charts/StatusBreakdownChart";
 import { buildDailyTrend } from "@/lib/chartAggregation";
 
 const CALLS_POLL_INTERVAL_MS = 10000;
-const OFFER_POLL_INTERVAL_MS = 5000;
 const DUTY_POLL_INTERVAL_MS = 15000;
 
 const ACTIVE_STATUSES = ["ASSIGNED", "EN_ROUTE", "IN_PROGRESS"];
@@ -34,7 +28,6 @@ export function TechnicianDashboardClient({
 }) {
   const [calls, setCalls] = useState(initialCalls);
   const [isOnDuty, setIsOnDuty] = useState(initialIsOnDuty);
-  const [pendingOffer, setPendingOffer] = useState<TechnicianJobOffer | null>(null);
   const [detailCall, setDetailCall] = useState<ServiceCallSummary | null>(null);
 
   const refetchCalls = useCallback(async () => {
@@ -44,21 +37,16 @@ export function TechnicianDashboardClient({
 
   usePolling(refetchCalls, CALLS_POLL_INTERVAL_MS);
 
+  // Keeps the "Available for Jobs" badge honest when duty is toggled from
+  // the navbar (which owns its own copy of this state).
   usePolling(async () => {
     const res = await getMyDutyStatusAction();
     if (res.success && res.data) setIsOnDuty(res.data.isOnDuty);
   }, DUTY_POLL_INTERVAL_MS);
 
-  usePolling(async () => {
-    // No point showing a new offer prompt on top of one already open.
-    if (pendingOffer) return;
-    const res = await getMyPendingOfferAction();
-    if (res.success && res.data) setPendingOffer(res.data);
-  }, OFFER_POLL_INTERVAL_MS);
-
   const activeCalls = calls
     .filter((c) => ACTIVE_STATUSES.includes(c.status))
-    .sort((a, b) => new Date(a.assignedAt).getTime() - new Date(b.assignedAt).getTime());
+    .sort((a, b) => new Date(a.assignedAt ?? a.createdAt).getTime() - new Date(b.assignedAt ?? b.createdAt).getTime());
   const completedCalls = calls.filter((c) => c.status === "COMPLETED");
   const cancelledCalls = calls.filter((c) => c.status === "CANCELLED");
   const earnings = completedCalls.reduce((sum, c) => sum + c.total, 0);
@@ -67,7 +55,7 @@ export function TechnicianDashboardClient({
   const earningsTrend = buildDailyTrend(
     completedCalls,
     14,
-    (c) => c.assignedAt,
+    (c) => c.completedAt ?? c.createdAt,
     (c) => c.total
   );
   const statusBreakdown = [
@@ -111,7 +99,7 @@ export function TechnicianDashboardClient({
                   Up Next
                 </span>
                 <span className="text-sm font-medium text-slate-200 dark:text-amber-100 flex items-center gap-1.5 capitalize">
-                  <ClientIcon icon="ph:clock" className="w-4 h-4" /> {upNext.status.replace("_", " ").toLowerCase()}
+                  <ClientIcon icon="ph:clock" className="w-4 h-4" /> {jobStatusLabel(upNext.status)}
                 </span>
               </div>
 
@@ -211,25 +199,13 @@ export function TechnicianDashboardClient({
       </div>
 
       {detailCall && (
-        <ServiceCallDetailModal
+        <TechnicianJobHost
           call={detailCall}
           onClose={() => setDetailCall(null)}
-          onChanged={() => {
-            refetchCalls();
-            setDetailCall(null);
-          }}
+          onChanged={refetchCalls}
         />
       )}
 
-      {pendingOffer && (
-        <IncomingOfferModal
-          offer={pendingOffer}
-          onResolved={() => {
-            setPendingOffer(null);
-            refetchCalls();
-          }}
-        />
-      )}
     </div>
   );
 }

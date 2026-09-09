@@ -21,7 +21,11 @@ export type CategoryServiceSummary = {
   slug: string;
   title: string;
   image: string;
+  /** Admin-entered display string. Fallback while there are no reviews. */
   rating: string;
+  /** Live aggregate from customer reviews. */
+  ratingAvg: number | null;
+  ratingCount: number;
   badge: string;
   time: string;
   packageCount: number;

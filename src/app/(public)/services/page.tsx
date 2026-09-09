@@ -5,6 +5,7 @@ import { ServicesFilterMenu } from '@/components/ui/ServicesFilterMenu';
 import { ServicesList } from '@/components/services/ServicesList';
 import { getAllServices, getAllCategories } from '@/lib/services-data';
 import { CategorySidebar } from '@/components/ui/CategorySidebar';
+import { resolveServiceRating } from "@/lib/serviceRating";
 
 export const metadata = {
   title: 'Our Services | Handyzo',
@@ -59,8 +60,8 @@ export default async function ServicesPage(props: {
     }
     // 3. Ratings
     if (ratingParam > 0) {
-      const serviceRating = parseFloat(service.rating.split(' ')[0]);
-      if (serviceRating < ratingParam) {
+      const serviceRating = resolveServiceRating(service).value;
+      if (serviceRating === null || serviceRating < ratingParam) {
         return false;
       }
     }

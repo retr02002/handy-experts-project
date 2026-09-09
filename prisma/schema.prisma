@@ -57,6 +57,13 @@ model User {
   // when a vendor creates the account). Null for every other role.
   username          String?            @unique
   role              Role               @default(PENDING)
+  // Customer-only: two fixed 4-digit PINs the customer reads out — one to
+  // let a technician start a job, a different one to let them close it, so
+  // knowing the start PIN never lets anyone mark work complete. Generated
+  // lazily on their first order. Never sent to a technician's device — they
+  // submit a candidate and the server compares.
+  startPin          String?
+  completionPin     String?
   accounts          Account[]
   sessions          Session[]
   cartItems         CartItem[]
@@ -66,6 +73,8 @@ model User {
   serviceCalls      ServiceCall[]
   notifications     Notification[]
   addresses         Address[]
+  chatMessages      ChatMessage[]
+  reviews           Review[]
 }
 
 // A customer's saved delivery location — Blinkit/Zomato-style address book.
@@ -176,6 +185,12 @@ model TechnicianProfile {
   serviceCallOffers ServiceCallOffer[]
   location        TechnicianLocation?
   serviceAreas    TechnicianServiceArea[]
+  reviews         Review[]
+  // Denormalised from Review on every write. The storefront and the
+  // customer's tracking screen both show these on load, so they can't be a
+  // live AVG() join per render.
+  ratingAvg       Float?
+  ratingCount     Int            @default(0)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 }
@@ -258,6 +273,11 @@ model Category {
 
 model Service {
   id          String    @id @default(cuid())
+  // Live aggregate from Review. The admin-entered `rating` display string
+  // below stays as the fallback while ratingCount is 0, so nothing goes
+  // blank before the first review lands.
+  ratingAvg   Float?
+  ratingCount Int       @default(0)
   slug        String    @unique
   title       String
   // Nullable so deleting a category degrades gracefully (SetNull) rather than
@@ -335,11 +355,25 @@ enum LiveCallStatus {
 }
 
 enum ServiceCallStatus {
+  // A vendor has accepted the order but no technician has taken it yet —
+  // the job exists and is visible to everyone, it just has no owner. Every
+  // job now starts here, including when technicians were on duty at accept
+  // time (they just move it to ASSIGNED within seconds).
+  UNASSIGNED
   ASSIGNED
   EN_ROUTE
   IN_PROGRESS
   COMPLETED
   CANCELLED
+}
+
+// Outcome the technician records on the completion report — a job can be
+// finished, paused pending something (see ServiceReport.holdReason), or
+// need a second visit.
+enum ServiceCompletionStatus {
+  COMPLETED
+  ON_HOLD
+  REVISIT_REQUIRED
 }
 
 enum NotificationType {
@@ -348,6 +382,8 @@ enum NotificationType {
   CALL_ASSIGNED
   CALL_STATUS_UPDATE
   JOB_OFFER
+  JOB_UNASSIGNED
+  NEW_MESSAGE
 }
 
 enum ServiceCallOfferStatus {
@@ -429,26 +465,98 @@ model LiveCallItem {
 // The execution record once a vendor accepts a LiveCall and assigns a
 // technician — one-to-one with the LiveCall it was converted from.
 model ServiceCall {
-  id            String            @id @default(cuid())
-  liveCallId    String            @unique
-  liveCall      LiveCall          @relation(fields: [liveCallId], references: [id], onDelete: Cascade)
+  id            String             @id @default(cuid())
+  liveCallId    String             @unique
+  liveCall      LiveCall           @relation(fields: [liveCallId], references: [id], onDelete: Cascade)
   vendorId      String
-  vendor        VendorProfile     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  technicianId  String
-  technician    TechnicianProfile @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  vendor        VendorProfile      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  // Null while UNASSIGNED. SetNull rather than Cascade so deleting a
+  // technician orphans the job back to the vendor instead of destroying
+  // the customer's order history along with it.
+  technicianId  String?
+  technician    TechnicianProfile? @relation(fields: [technicianId], references: [id], onDelete: SetNull)
   customerId    String
-  customer      User              @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  status        ServiceCallStatus @default(ASSIGNED)
-  assignedAt    DateTime          @default(now())
+  customer      User               @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  status        ServiceCallStatus  @default(UNASSIGNED)
+  // Set the moment a technician claims the job; cleared again if they
+  // decline it back into the pool.
+  assignedAt    DateTime?
   startedAt     DateTime?
   completedAt   DateTime?
   cancelledAt   DateTime?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  // Failed customer-PIN entries at the start/complete gates. Locks the
+  // gate at PIN_MAX_ATTEMPTS until the owning vendor resets it — a fixed
+  // 4-digit PIN is only 10k combinations, so this is what stops it being
+  // brute-forced.
+  pinAttempts   Int                @default(0)
+  report        ServiceReport?
+  review        Review?
+  messages      ChatMessage[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
 
   @@index([vendorId])
   @@index([technicianId])
   @@index([customerId])
+  @@index([status])
+}
+
+// The technician's closing paperwork, submitted alongside the completion
+// PIN. One per job.
+model ServiceReport {
+  id               String                  @id @default(cuid())
+  serviceCallId    String                  @unique
+  serviceCall      ServiceCall             @relation(fields: [serviceCallId], references: [id], onDelete: Cascade)
+  completionStatus ServiceCompletionStatus
+  // Free text backed by a fixed picklist in the UI — kept as a string so
+  // adding a reason never needs a migration.
+  holdReason       String?
+  newVisitAt       DateTime?
+  remarks          String
+  submittedAt      DateTime                @default(now())
+}
+
+// What the customer thought, once. Two scores per job: the technician who
+// did the work, and the job itself — kept separate so a good technician
+// isn't dragged down by a service they didn't design.
+model Review {
+  id                String      @id @default(cuid())
+  serviceCallId     String      @unique
+  serviceCall       ServiceCall @relation(fields: [serviceCallId], references: [id], onDelete: Cascade)
+  customerId        String
+  customer          User        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  // Null if the technician was later removed — the review still counts
+  // toward the service.
+  technicianId      String?
+  technician        TechnicianProfile? @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+  vendorId          String
+  technicianRating  Int
+  technicianComment String?
+  serviceRating     Int
+  serviceComment    String?
+  // Every Service this job covered, so per-service aggregates can be
+  // recomputed without walking items -> package -> service each time.
+  serviceIds        String[]
+  createdAt         DateTime    @default(now())
+
+  @@index([technicianId])
+  @@index([vendorId])
+  @@index([customerId])
+}
+
+// One thread per job, between the customer and whichever technician holds
+// it. The owning vendor can read it too, for support.
+model ChatMessage {
+  id            String      @id @default(cuid())
+  serviceCallId String
+  serviceCall   ServiceCall @relation(fields: [serviceCallId], references: [id], onDelete: Cascade)
+  senderId      String
+  sender        User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  body          String
+  readAt        DateTime?
+  createdAt     DateTime    @default(now())
+
+  @@index([serviceCallId, createdAt])
 }
 
 // A single technician's offer for a LiveCall a vendor has accepted. A vendor
@@ -468,6 +576,9 @@ model ServiceCallOffer {
   technicianId String
   technician   TechnicianProfile       @relation(fields: [technicianId], references: [id], onDelete: Cascade)
   status       ServiceCallOfferStatus  @default(PENDING)
+  // Why the technician turned it down — surfaced to the vendor so they can
+  // see whether it's a coverage problem or a job problem.
+  declineReason String?
   createdAt    DateTime                @default(now())
   respondedAt  DateTime?
 

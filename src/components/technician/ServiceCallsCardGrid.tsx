@@ -2,30 +2,26 @@
 
 import React, { useState } from "react";
 import { toast } from "sonner";
-import { updateServiceCallStatusAction, type ServiceCallSummary, type ServiceCallStatusValue } from "@/actions/servicecall.actions";
+import { updateServiceCallStatusAction, type ServiceCallSummary } from "@/actions/servicecall.actions";
+import { NEXT_STEP, JOB_STATUS_COLORS, jobStatusLabel } from "@/lib/jobStatus";
+import { canStartTravel } from "@/lib/jobSchedule";
 import { ClientIcon } from "@/components/ui/ClientIcon";
-
-const statusColors: Record<string, string> = {
-  ASSIGNED: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-  EN_ROUTE: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
-  IN_PROGRESS: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
-  COMPLETED: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  CANCELLED: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-};
-
-const NEXT_STATUS: Partial<Record<string, { label: string; next: ServiceCallStatusValue }>> = {
-  ASSIGNED: { label: "Start", next: "EN_ROUTE" },
-  EN_ROUTE: { label: "Begin Job", next: "IN_PROGRESS" },
-  IN_PROGRESS: { label: "Complete", next: "COMPLETED" },
-};
 
 function Card({ call, onUpdated, onView }: { call: ServiceCallSummary; onUpdated: () => void; onView: (c: ServiceCallSummary) => void }) {
   const [isUpdating, setIsUpdating] = useState(false);
-  const step = NEXT_STATUS[call.status];
+  const step = NEXT_STEP[call.status];
+  // Same rule the server enforces: a scheduled job can't be set off days early.
+  const travelLocked = call.status === "ASSIGNED" && !canStartTravel(call.scheduledFor);
 
   const handleAdvance = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!step) return;
+    // Start/complete need the customer's PIN — hand off to the job panel
+    // rather than trying to advance straight from a list row.
+    if (step.gated) {
+      onView(call);
+      return;
+    }
     setIsUpdating(true);
     try {
       const res = await updateServiceCallStatusAction(call.id, step.next);
@@ -33,7 +29,7 @@ function Card({ call, onUpdated, onView }: { call: ServiceCallSummary; onUpdated
         toast.error(res.error || "Failed to update status");
         return;
       }
-      toast.success(`Marked as ${step.next.replace("_", " ").toLowerCase()}`);
+      toast.success(`Marked as ${jobStatusLabel(step.next)}`);
       onUpdated();
     } finally {
       setIsUpdating(false);
@@ -41,14 +37,25 @@ function Card({ call, onUpdated, onView }: { call: ServiceCallSummary; onUpdated
   };
 
   return (
-    <button
+    // A div rather than a button: this card contains its own action button,
+    // and a button inside a button is invalid HTML (React throws a hydration
+    // error). role/tabIndex/onKeyDown keep it keyboard-operable.
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onView(call)}
-      className="text-left flex flex-col gap-2 p-4 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md transition-all cursor-pointer"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onView(call);
+        }
+      }}
+      className="text-left flex flex-col gap-2 p-4 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00B4FF] transition-all cursor-pointer"
     >
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">{call.itemSummary}</h3>
-        <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${statusColors[call.status] ?? ""}`}>
-          {call.status.replace("_", " ").toLowerCase()}
+        <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${JOB_STATUS_COLORS[call.status] ?? ""}`}>
+          {jobStatusLabel(call.status)}
         </span>
       </div>
       <div className="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-400">
@@ -65,15 +72,16 @@ function Card({ call, onUpdated, onView }: { call: ServiceCallSummary; onUpdated
         <span className="text-sm font-bold text-slate-900 dark:text-white">₹{call.total.toFixed(0)}</span>
         {step && (
           <button
+            type="button"
             onClick={handleAdvance}
-            disabled={isUpdating}
-            className="h-8 px-3 rounded-lg bg-[#00B4FF] hover:bg-[#0096fa] disabled:opacity-60 text-white text-xs font-bold cursor-pointer"
+            disabled={isUpdating || travelLocked}
+            className="h-8 px-3 rounded-lg bg-[#00B4FF] hover:bg-[#0096fa] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold cursor-pointer"
           >
-            {isUpdating ? "..." : step.label}
+            {isUpdating ? "..." : travelLocked ? "Not yet" : step.label}
           </button>
         )}
       </div>
-    </button>
+    </div>
   );
 }
 

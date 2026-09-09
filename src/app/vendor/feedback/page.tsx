@@ -1,14 +1,24 @@
-import React from "react";
+import { getReviewsForVendorAction } from "@/actions/review.actions";
+import { ReviewList } from "@/components/shared/ReviewList";
 
-export default function VendorFeedbackPage() {
+export default async function VendorFeedbackPage() {
+  const res = await getReviewsForVendorAction();
+  const reviews = res.success && res.data ? res.data : [];
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">Customer Feedback</h1>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Customer Feedback</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Every rating left on a job your team completed.
+        </p>
       </div>
-      <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-2xl p-8 shadow-sm flex items-center justify-center min-h-[400px]">
-        <p className="text-slate-500 dark:text-slate-400 font-medium">Feedback management will be implemented here.</p>
-      </div>
+
+      <ReviewList
+        reviews={reviews}
+        perspective="vendor"
+        emptyMessage="No feedback yet. It appears here as soon as a customer rates a completed job."
+      />
     </div>
   );
 }

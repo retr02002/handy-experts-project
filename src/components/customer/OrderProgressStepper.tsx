@@ -12,7 +12,19 @@ const HAPPY_PATH: { key: OrderDisplayStatus; label: string; icon: string }[] = [
   { key: "COMPLETED", label: "Completed", icon: "ph:confetti-bold" },
 ];
 
-export function OrderProgressStepper({ status }: { status: OrderDisplayStatus }) {
+function stampLabel(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  return new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+}
+
+export function OrderProgressStepper({
+  status,
+  timestamps,
+}: {
+  status: OrderDisplayStatus;
+  /** When each step actually happened, keyed by step. Missing keys just render nothing. */
+  timestamps?: Partial<Record<OrderDisplayStatus, string | null>>;
+}) {
   if (status === "CANCELLED" || status === "EXPIRED") {
     return (
       <div className="flex items-center gap-3 p-4 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
@@ -60,8 +72,12 @@ export function OrderProgressStepper({ status }: { status: OrderDisplayStatus })
               <p className={`text-sm font-bold ${isActive || isDone ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-slate-600"}`}>
                 {step.label}
               </p>
-              {isActive && (
+              {isActive ? (
                 <p className="text-xs text-[#00B4FF] font-medium mt-0.5">In progress&hellip;</p>
+              ) : (
+                isDone && stampLabel(timestamps?.[step.key]) && (
+                  <p className="text-xs text-slate-400 mt-0.5">{stampLabel(timestamps?.[step.key])}</p>
+                )
               )}
             </div>
           </div>

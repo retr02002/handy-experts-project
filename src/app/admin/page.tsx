@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { getProfileDetails } from "@/actions/profile.actions";
 import { getAdminDashboardStatsAction } from "@/actions/admin.actions";
+import { jobStatusLabel } from "@/lib/jobStatus";
 
 const STATUS_COLORS: Record<string, string> = {
   ASSIGNED: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
@@ -72,7 +73,7 @@ export default async function AdminDashboardPage() {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${STATUS_COLORS[call.status] ?? ""}`}>
-                            {call.status.replace("_", " ").toLowerCase()}
+                            {jobStatusLabel(call.status)}
                           </span>
                         </div>
                         <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">{call.itemSummary}</h3>

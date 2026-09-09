@@ -3,6 +3,7 @@
 import React from "react";
 import type { AdminServiceCallSummary } from "@/actions/servicecall.actions";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { jobStatusLabel } from "@/lib/jobStatus";
 
 const statusColors: Record<string, string> = {
   ASSIGNED: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
@@ -31,7 +32,7 @@ export function ServiceCallsCardGrid({ data }: { data: AdminServiceCallSummary[]
           <div className="flex items-start justify-between gap-2">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">{call.itemSummary}</h3>
             <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${statusColors[call.status] ?? ""}`}>
-              {call.status.replace("_", " ").toLowerCase()}
+              {jobStatusLabel(call.status)}
             </span>
           </div>
 
@@ -56,7 +57,7 @@ export function ServiceCallsCardGrid({ data }: { data: AdminServiceCallSummary[]
 
           <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
             <span className="text-[11px] text-slate-400">
-              {new Date(call.assignedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+              {new Date(call.assignedAt ?? call.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
             </span>
             <span className="text-sm font-bold text-slate-900 dark:text-white">₹{call.total.toFixed(2)}</span>
           </div>

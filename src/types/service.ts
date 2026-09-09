@@ -44,7 +44,11 @@ export type Service = {
   category: ServiceCategoryRef | null;
   badge: string;
   badgeColor: string;
+  /** Admin-entered display string, e.g. "4.9 (12,480 reviews)". Fallback only. */
   rating: string;
+  /** Live aggregate from customer reviews — takes over once ratingCount > 0. */
+  ratingAvg: number | null;
+  ratingCount: number;
   image: string;
   videoUrl?: string;
   time: string;

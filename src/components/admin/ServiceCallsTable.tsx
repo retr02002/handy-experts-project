@@ -2,6 +2,7 @@
 
 import { DataTable, ColumnDef } from "@/components/ui/DataTable";
 import type { AdminServiceCallSummary } from "@/actions/servicecall.actions";
+import { jobStatusLabel } from "@/lib/jobStatus";
 
 const statusColors: Record<string, string> = {
   ASSIGNED: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
@@ -48,7 +49,7 @@ const columns: ColumnDef<AdminServiceCallSummary>[] = [
     sortable: true,
     cell: (item) => (
       <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${statusColors[item.status] ?? ""}`}>
-        {item.status.replace("_", " ").toLowerCase()}
+        {jobStatusLabel(item.status)}
       </span>
     ),
   },
@@ -67,7 +68,7 @@ const columns: ColumnDef<AdminServiceCallSummary>[] = [
     sortable: true,
     cell: (item) => (
       <span className="text-sm text-slate-500">
-        {new Date(item.assignedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+        {new Date(item.assignedAt ?? item.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
       </span>
     ),
   },
@@ -85,7 +86,7 @@ const filters = [
     label: "Status",
     options: [
       { label: "Assigned", value: "ASSIGNED" },
-      { label: "En Route", value: "EN_ROUTE" },
+      { label: "On the Way", value: "EN_ROUTE" },
       { label: "In Progress", value: "IN_PROGRESS" },
       { label: "Completed", value: "COMPLETED" },
       { label: "Cancelled", value: "CANCELLED" },

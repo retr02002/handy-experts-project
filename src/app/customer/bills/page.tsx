@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { getMyOrdersAction, type OrderDisplayStatus } from "@/actions/livecall.actions";
+import { jobStatusLabel } from "@/lib/jobStatus";
 
 const STATUS_STYLES: Record<OrderDisplayStatus, string> = {
   FINDING_PROFESSIONAL: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
@@ -65,7 +66,7 @@ export default async function CustomerBillsPage() {
                     <td className="p-4 text-sm font-bold text-slate-900 dark:text-white whitespace-nowrap">₹{order.total.toFixed(2)}</td>
                     <td className="p-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${STATUS_STYLES[order.status]}`}>
-                        {order.status.replace(/_/g, " ").toLowerCase()}
+                        {jobStatusLabel(order.status)}
                       </span>
                     </td>
                     <td className="p-4 text-right">

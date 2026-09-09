@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { ActionResponse } from "@/actions/auth.actions";
+import type { NotificationType } from "@prisma/client";
 
 export interface NotificationItem {
   id: string;
@@ -96,7 +97,7 @@ export async function markAllNotificationsReadAction(): Promise<ActionResponse> 
  * this in a way that surfaces its errors to the end user.
  */
 export async function notifyAllAdmins(
-  type: "NEW_LIVE_CALL" | "CALL_ACCEPTED" | "CALL_ASSIGNED" | "CALL_STATUS_UPDATE",
+  type: NotificationType,
   title: string,
   message: string,
   liveCallId?: string,

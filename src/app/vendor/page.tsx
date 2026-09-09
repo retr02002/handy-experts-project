@@ -7,6 +7,7 @@ import { getMyTechniciansAction } from "@/actions/technician.actions";
 import { RevenueTrendChart } from "@/components/shared/charts/RevenueTrendChart";
 import { StatusBreakdownChart } from "@/components/shared/charts/StatusBreakdownChart";
 import { buildDailyTrend } from "@/lib/chartAggregation";
+import { jobStatusLabel } from "@/lib/jobStatus";
 
 const STATUS_COLORS: Record<string, string> = {
   ASSIGNED: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
@@ -51,7 +52,7 @@ export default async function VendorDashboardPage() {
   const revenueTrend = buildDailyTrend(
     completedCalls,
     14,
-    (c) => c.assignedAt,
+    (c) => c.completedAt ?? c.createdAt,
     (c) => c.total
   );
   const statusBreakdown = [
@@ -103,7 +104,7 @@ export default async function VendorDashboardPage() {
                 <div key={call.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 gap-3">
                   <div className="min-w-0">
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold capitalize mb-1 inline-block ${STATUS_COLORS[call.status] ?? ""}`}>
-                      {call.status.replace("_", " ").toLowerCase()}
+                      {jobStatusLabel(call.status)}
                     </span>
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">{call.itemSummary}</h3>
                     <p className="text-xs text-slate-500 truncate">{call.customerName} &middot; {call.technicianName}</p>

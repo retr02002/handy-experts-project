@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createPortal } from "react-dom";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import type { CategoryWithServices } from "@/types/category";
+import { resolveServiceRating } from "@/lib/serviceRating";
 
 type Props = {
   isOpen: boolean;
@@ -92,10 +93,10 @@ export function CategoryServicesModal({ isOpen, onClose, category }: Props) {
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 font-medium mb-1.5">
-                      {service.rating && (
+                      {resolveServiceRating(service).score && (
                         <span className="flex items-center gap-0.5">
                           <ClientIcon icon="ph:star-fill" className="w-2.5 h-2.5 text-amber-400" />
-                          {service.rating.split(" ")[0]}
+                          {resolveServiceRating(service).score}
                         </span>
                       )}
                       {service.time && (

@@ -7,8 +7,16 @@ import { getAllVendorsForAdminAction, type AdminVendor } from "@/actions/admin.a
 import { getAllVendorServiceAreasForAdminAction, type AdminVendorServiceArea } from "@/actions/vendorservicearea.actions";
 import { getAllTechnicianServiceAreasForAdminAction, type AdminTechnicianServiceArea } from "@/actions/technicianservicearea.actions";
 import { usePolling } from "@/hooks/usePolling";
-import { LiveMap } from "@/components/shared/LiveMap";
+import dynamic from "next/dynamic";
+
 import { AdminLiveCallCard } from "./AdminLiveCallCard";
+
+// maplibre-gl is ~800KB — kept out of the first-load bundle and
+// fetched when the panel actually renders a map.
+const LiveMap = dynamic(() => import("@/components/shared/LiveMap").then((m) => m.LiveMap), {
+  ssr: false,
+  loading: () => <div className="w-full h-[500px] bg-slate-100 dark:bg-slate-800 animate-pulse" />,
+});
 
 const CALLS_POLL_INTERVAL_MS = 15000;
 const TECHNICIANS_POLL_INTERVAL_MS = 15000;

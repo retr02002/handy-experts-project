@@ -3,28 +3,31 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { DataTable, ColumnDef } from "@/components/ui/DataTable";
-import { updateServiceCallStatusAction, type ServiceCallSummary, type ServiceCallStatusValue } from "@/actions/servicecall.actions";
+import { updateServiceCallStatusAction, type ServiceCallSummary } from "@/actions/servicecall.actions";
+import { NEXT_STEP, JOB_STATUS_COLORS, jobStatusLabel } from "@/lib/jobStatus";
+import { canStartTravel } from "@/lib/jobSchedule";
 
-const statusColors: Record<string, string> = {
-  ASSIGNED: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-  EN_ROUTE: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
-  IN_PROGRESS: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
-  COMPLETED: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  CANCELLED: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-};
-
-const NEXT_STATUS: Partial<Record<string, { label: string; next: ServiceCallStatusValue }>> = {
-  ASSIGNED: { label: "Start", next: "EN_ROUTE" },
-  EN_ROUTE: { label: "Begin Job", next: "IN_PROGRESS" },
-  IN_PROGRESS: { label: "Complete", next: "COMPLETED" },
-};
-
-function ActionCell({ item, onUpdated }: { item: ServiceCallSummary; onUpdated: () => void }) {
+function ActionCell({
+  item,
+  onUpdated,
+  onView,
+}: {
+  item: ServiceCallSummary;
+  onUpdated: () => void;
+  onView: (item: ServiceCallSummary) => void;
+}) {
   const [isUpdating, setIsUpdating] = useState(false);
-  const step = NEXT_STATUS[item.status];
+  const step = NEXT_STEP[item.status];
   if (!step) return <span className="text-xs text-slate-400">—</span>;
+  // Same rule the server enforces: a scheduled job can't be set off days early.
+  const travelLocked = item.status === "ASSIGNED" && !canStartTravel(item.scheduledFor);
 
   const handleClick = async () => {
+    // Start/complete need the customer's PIN — hand off to the job panel.
+    if (step.gated) {
+      onView(item);
+      return;
+    }
     setIsUpdating(true);
     try {
       const res = await updateServiceCallStatusAction(item.id, step.next);
@@ -32,7 +35,7 @@ function ActionCell({ item, onUpdated }: { item: ServiceCallSummary; onUpdated: 
         toast.error(res.error || "Failed to update status");
         return;
       }
-      toast.success(`Marked as ${step.next.replace("_", " ").toLowerCase()}`);
+      toast.success(`Marked as ${jobStatusLabel(step.next)}`);
       onUpdated();
     } finally {
       setIsUpdating(false);
@@ -42,10 +45,10 @@ function ActionCell({ item, onUpdated }: { item: ServiceCallSummary; onUpdated: 
   return (
     <button
       onClick={handleClick}
-      disabled={isUpdating}
-      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-sm disabled:opacity-50 cursor-pointer"
+      disabled={isUpdating || travelLocked}
+      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
     >
-      {isUpdating ? "Updating..." : step.label}
+      {isUpdating ? "Updating..." : travelLocked ? "Not yet" : step.label}
     </button>
   );
 }
@@ -74,8 +77,8 @@ function buildColumns(onUpdated: () => void, onView: (item: ServiceCallSummary) 
       accessorKey: "status",
       sortable: true,
       cell: (item) => (
-        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${statusColors[item.status] ?? ""}`}>
-          {item.status.replace("_", " ").toLowerCase()}
+        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${JOB_STATUS_COLORS[item.status] ?? ""}`}>
+          {jobStatusLabel(item.status)}
         </span>
       ),
     },
@@ -95,7 +98,7 @@ function buildColumns(onUpdated: () => void, onView: (item: ServiceCallSummary) 
           >
             View
           </button>
-          <ActionCell item={item} onUpdated={onUpdated} />
+          <ActionCell item={item} onUpdated={onUpdated} onView={onView} />
         </div>
       ),
     },
@@ -108,7 +111,7 @@ const filters = [
     label: "Status",
     options: [
       { label: "Assigned", value: "ASSIGNED" },
-      { label: "En Route", value: "EN_ROUTE" },
+      { label: "On the Way", value: "EN_ROUTE" },
       { label: "In Progress", value: "IN_PROGRESS" },
       { label: "Completed", value: "COMPLETED" },
     ],

@@ -5,12 +5,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { ClientIcon } from "./ClientIcon";
 import { Service, ServicePackage } from "@/types/service";
+import { resolveServiceRating } from "@/lib/serviceRating";
 import { useCart } from "@/context/CartContext";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 export function ServiceCard({ service }: { service: Service }) {
+  const rating = resolveServiceRating(service);
+
   return (
     <div className="relative flex flex-col w-full bg-white dark:bg-[#0B1221] rounded-[24px] overflow-hidden border border-slate-100 dark:border-slate-800/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,180,255,0.08)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.2)] transition-all duration-300 h-full group text-left">
       
@@ -33,12 +36,15 @@ export function ServiceCard({ service }: { service: Service }) {
         </div>
 
         {/* Rating Badge */}
-        <div className="absolute bottom-3 right-3 z-10">
-          <span className="px-2 py-0.5 rounded-full bg-slate-950/70 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold flex items-center gap-1 shadow-md">
-            <ClientIcon icon="ph:star-fill" className="w-3 h-3 text-amber-400" />
-            {service.rating}
-          </span>
-        </div>
+        {rating.score && (
+          <div className="absolute bottom-3 right-3 z-10">
+            <span className="px-2 py-0.5 rounded-full bg-slate-950/70 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold flex items-center gap-1 shadow-md">
+              <ClientIcon icon="ph:star-fill" className="w-3 h-3 text-amber-400" />
+              {rating.score}
+              {rating.countLabel && <span className="font-medium text-white/70">{rating.countLabel}</span>}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Content Section */}

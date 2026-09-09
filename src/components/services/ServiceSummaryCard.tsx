@@ -1,6 +1,7 @@
 import React from "react";
 import { Service } from "@/types/service";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { resolveServiceRating } from "@/lib/serviceRating";
 
 interface ServiceSummaryCardProps {
   service: Service;
@@ -8,6 +9,7 @@ interface ServiceSummaryCardProps {
 
 export function ServiceSummaryCard({ service }: ServiceSummaryCardProps) {
   const label = service.badge || service.category?.name;
+  const rating = resolveServiceRating(service);
 
   return (
     <div className="bg-white dark:bg-[#0E172B] rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs w-full min-w-0 relative overflow-hidden group">
@@ -24,15 +26,17 @@ export function ServiceSummaryCard({ service }: ServiceSummaryCardProps) {
         {service.title}
       </h1>
 
-      <div className="flex items-center gap-2 mb-2.5 flex-wrap">
-        <div className="flex items-center text-amber-500 font-black gap-1 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-md text-xs border border-amber-200/60 dark:border-amber-500/20 shadow-2xs shrink-0">
-          <ClientIcon icon="ph:star-fill" className="w-3.5 h-3.5 text-amber-500" />
-          <span>{service.rating.split(' ')[0]}</span>
+      {rating.score && (
+        <div className="flex items-center gap-2 mb-2.5 flex-wrap">
+          <div className="flex items-center text-amber-500 font-black gap-1 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-md text-xs border border-amber-200/60 dark:border-amber-500/20 shadow-2xs shrink-0">
+            <ClientIcon icon="ph:star-fill" className="w-3.5 h-3.5 text-amber-500" />
+            <span>{rating.score}</span>
+          </div>
+          {rating.countLabel && (
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate">{rating.countLabel}</span>
+          )}
         </div>
-        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate">
-          {service.rating.includes('(') ? service.rating.slice(service.rating.indexOf('(')) : '(12,480 bookings)'}
-        </span>
-      </div>
+      )}
 
       <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed mb-3.5 font-medium break-words">
         {service.description}

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { TechnicianSidebar } from "./TechnicianSidebar";
 import { TechnicianNavbar } from "./TechnicianNavbar";
 import { TechnicianBottomNav } from "./TechnicianBottomNav";
+import { TechnicianOfferWatcher } from "../TechnicianOfferWatcher";
 
 export function TechnicianLayoutWrapper({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -38,6 +39,9 @@ export function TechnicianLayoutWrapper({ children }: { children: React.ReactNod
 
       {/* Mobile Bottom Navigation */}
       <TechnicianBottomNav />
+
+      {/* Job pings, on every technician page */}
+      <TechnicianOfferWatcher />
     </div>
   );
 }

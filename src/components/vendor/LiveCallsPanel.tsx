@@ -9,14 +9,22 @@ import { getMyServiceAreasAction, type VendorServiceAreaSummary } from "@/action
 import {
   getMyAwaitingCallsForVendorAction,
   rebroadcastLiveCallOffersAction,
-  type AwaitingLiveCallSummary,
+  type AwaitingJobSummary,
 } from "@/actions/servicecall.actions";
 import { LOCATION_NOT_SET, VENDOR_INACTIVE } from "@/lib/constants";
 import { usePolling } from "@/hooks/usePolling";
-import { LiveMap } from "@/components/shared/LiveMap";
+import dynamic from "next/dynamic";
+
 import { LiveCallCard } from "./LiveCallCard";
 import { AcceptCallModal } from "./AcceptCallModal";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+
+// maplibre-gl is ~800KB — kept out of the first-load bundle and
+// fetched when the panel actually renders a map.
+const LiveMap = dynamic(() => import("@/components/shared/LiveMap").then((m) => m.LiveMap), {
+  ssr: false,
+  loading: () => <div className="w-full h-[500px] bg-slate-100 dark:bg-slate-800 animate-pulse" />,
+});
 
 const CALLS_POLL_INTERVAL_MS = 10000;
 const TECHNICIANS_POLL_INTERVAL_MS = 15000;
@@ -37,7 +45,7 @@ export function LiveCallsPanel({ vendorLatitude, vendorLongitude }: LiveCallsPan
   const [inactiveError, setInactiveError] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [acceptingCall, setAcceptingCall] = useState<NearbyLiveCall | null>(null);
-  const [awaitingCalls, setAwaitingCalls] = useState<AwaitingLiveCallSummary[]>([]);
+  const [awaitingCalls, setAwaitingCalls] = useState<AwaitingJobSummary[]>([]);
   const [rebroadcastingId, setRebroadcastingId] = useState<string | null>(null);
 
   const refetchCalls = async () => {
@@ -205,7 +213,7 @@ export function LiveCallsPanel({ vendorLatitude, vendorLongitude }: LiveCallsPan
               const allNonResponsive = call.pendingCount === 0;
               return (
                 <div
-                  key={call.id}
+                  key={call.serviceCallId}
                   className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-amber-200 dark:border-amber-500/30 flex flex-col gap-2"
                 >
                   <div className="flex items-center justify-between gap-2">
@@ -230,11 +238,11 @@ export function LiveCallsPanel({ vendorLatitude, vendorLongitude }: LiveCallsPan
                   {allNonResponsive && (
                     <button
                       type="button"
-                      onClick={() => handleRebroadcast(call.id)}
-                      disabled={rebroadcastingId === call.id}
+                      onClick={() => handleRebroadcast(call.liveCallId)}
+                      disabled={rebroadcastingId === call.liveCallId}
                       className="mt-1 w-full h-9 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer"
                     >
-                      {rebroadcastingId === call.id ? "Notifying..." : "Notify Again"}
+                      {rebroadcastingId === call.liveCallId ? "Notifying..." : "Notify Again"}
                     </button>
                   )}
                 </div>

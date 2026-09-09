@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Service, ServicePackage } from "@/types/service";
 import { useCart } from "@/context/CartContext";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { resolveServiceRating } from "@/lib/serviceRating";
 import { PackageDetailsModal } from "./PackageDetailsModal";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -31,6 +32,12 @@ export function ServicePackageCard({ service, pkg, idx, catIdx }: ServicePackage
 
   const qty = items.find((i) => i.id === pkg.id)?.quantity || 0;
   const displayImage = pkg.image || service.image;
+  // Reviews are collected per job, not per package, so a package inherits its
+  // parent service's live score and only falls back to its own admin string.
+  const rating = resolveServiceRating(service);
+  const ratingLabel = rating.isLive
+    ? `${rating.score} ${rating.countLabel}`
+    : pkg.rating || (rating.score ? `${rating.score}${rating.countLabel ? ` ${rating.countLabel}` : ""}` : null);
   const badgeTag = pkg.tag || (idx === 0 && catIdx === 0 ? "Bestseller" : undefined);
 
   const handleAddToCart = () => {
@@ -62,10 +69,12 @@ export function ServicePackageCard({ service, pkg, idx, catIdx }: ServicePackage
                   {badgeTag}
                 </span>
               )}
-              <div className="flex items-center gap-1 text-[11px] sm:text-xs font-black text-amber-500 bg-amber-50 dark:bg-amber-500/15 px-2 py-0.5 rounded-md border border-amber-200/60 dark:border-amber-500/25 shadow-2xs">
-                <ClientIcon icon="ph:star-fill" className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>{pkg.rating || "4.8 (1,240)"}</span>
-              </div>
+              {ratingLabel && (
+                <div className="flex items-center gap-1 text-[11px] sm:text-xs font-black text-amber-500 bg-amber-50 dark:bg-amber-500/15 px-2 py-0.5 rounded-md border border-amber-200/60 dark:border-amber-500/25 shadow-2xs">
+                  <ClientIcon icon="ph:star-fill" className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span>{ratingLabel}</span>
+                </div>
+              )}
             </div>
 
             {/* Title */}

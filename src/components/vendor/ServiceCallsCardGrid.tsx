@@ -3,6 +3,7 @@
 import React from "react";
 import type { ServiceCallSummary } from "@/actions/servicecall.actions";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { jobStatusLabel } from "@/lib/jobStatus";
 
 const statusColors: Record<string, string> = {
   ASSIGNED: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
@@ -30,15 +31,25 @@ export function ServiceCallsCardGrid({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
       {data.map((call) => (
-        <button
+        // Kept as a div (not a button) so action buttons can be added inside
+        // later without producing invalid nested-button markup.
+        <div
           key={call.id}
+          role="button"
+          tabIndex={0}
           onClick={() => onManage(call)}
-          className="text-left flex flex-col gap-3 p-5 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md transition-all cursor-pointer"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onManage(call);
+            }
+          }}
+          className="text-left flex flex-col gap-3 p-5 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00B4FF] transition-all cursor-pointer"
         >
           <div className="flex items-start justify-between gap-2">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">{call.itemSummary}</h3>
             <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${statusColors[call.status] ?? ""}`}>
-              {call.status.replace("_", " ").toLowerCase()}
+              {jobStatusLabel(call.status)}
             </span>
           </div>
 
@@ -59,11 +70,11 @@ export function ServiceCallsCardGrid({
 
           <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
             <span className="text-[11px] text-slate-400">
-              {new Date(call.assignedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+              {new Date(call.assignedAt ?? call.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
             </span>
             <span className="text-sm font-bold text-slate-900 dark:text-white">₹{call.total.toFixed(2)}</span>
           </div>
-        </button>
+        </div>
       ))}
     </div>
   );

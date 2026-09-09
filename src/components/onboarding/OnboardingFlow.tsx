@@ -33,6 +33,11 @@ export function OnboardingFlow({ status }: { status: OnboardingStatus | null }) 
   const { data: session, status: sessionStatus, update } = useSession();
   const [step, setStep] = useState<Step>(() => initialStepFor(status, searchParams.get("role")));
   const [cameFromRoleSelect, setCameFromRoleSelect] = useState(false);
+  // Swaps the whole step out for a spinner during the post-auth/post-signup
+  // redirect gap — without this, whatever form was on screen when the user
+  // submitted stays fully visible (just disabled) for the ~1-2s it takes to
+  // refresh the session and decide where to send them.
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const handleRoleSelect = (role: OnboardingRole) => {
     setCameFromRoleSelect(true);
@@ -49,6 +54,7 @@ export function OnboardingFlow({ status }: { status: OnboardingStatus | null }) 
   const backHandler = cameFromRoleSelect ? backToRoleSelect : undefined;
 
   const handleSuccess = async (role: OnboardingRole) => {
+    setIsRedirecting(true);
     // Refresh the JWT so the proxy sees the new role immediately, instead of
     // bouncing the user back here on their very next navigation.
     await update();
@@ -65,21 +71,38 @@ export function OnboardingFlow({ status }: { status: OnboardingStatus | null }) 
   // notice below, rather than silently whisking them off to an unrelated
   // dashboard.
   const handleRoleAuthenticated = async (targetRole: OnboardingRole) => {
-    await update();
-    const fresh = await getOnboardingStatus();
+    setIsRedirecting(true);
+    // update() refreshes the client-side session/JWT; getOnboardingStatus()
+    // does its own independent getServerSession + fresh DB read, so it
+    // doesn't need update() to have finished first — running them together
+    // cuts a full sequential round trip off this path.
+    const [, fresh] = await Promise.all([update(), getOnboardingStatus()]);
     if (fresh && fresh.role === targetRole && isOnboardingComplete(fresh)) {
       // A hard navigation here (rather than router.push) avoids a race with
       // Next's client router cache: the target dashboard layout re-reads the
       // session server-side, and a soft push landed here before the just-
       // updated session cookie was guaranteed to be in effect for that read.
       window.location.assign(dashboardPathForRole(fresh.role));
+      return;
     }
     // Otherwise fall through — the re-render below picks up the now-
     // authenticated session and shows the details step to finish up.
+    setIsRedirecting(false);
   };
 
   const isWide = step === "VENDOR" || step === "TECHNICIAN";
   const liveRole = session?.user?.role;
+
+  if (isRedirecting) {
+    return (
+      <OnboardingShell wide={isWide}>
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 py-16">
+          <ClientIcon icon="svg-spinners:180-ring" className="w-8 h-8 text-[#00B4FF]" />
+          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Taking you to your dashboard...</p>
+        </div>
+      </OnboardingShell>
+    );
+  }
 
   return (
     <OnboardingShell wide={isWide}>

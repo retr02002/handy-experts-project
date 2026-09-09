@@ -413,6 +413,44 @@ export async function setTechnicianDutyStatusAction(isOnDuty: boolean): Promise<
   }
 }
 
+export interface TechnicianLastKnownLocation {
+  latitude: number;
+  longitude: number;
+  isOnDuty: boolean;
+  updatedAt: string;
+}
+
+/**
+ * The technician's own last durable position. The job screen prefers a live
+ * GPS fix, but that can be denied, time out, or simply be unavailable
+ * indoors — falling back to this is what stops the panel from claiming
+ * "distance unavailable" when we genuinely do know roughly where they are.
+ */
+export async function getMyLastKnownLocationAction(): Promise<ActionResponse<TechnicianLastKnownLocation | null>> {
+  const { technicianId, error } = await requireTechnicianId();
+  if (!technicianId) return { success: false, error: error! };
+
+  try {
+    const location = await prisma.technicianLocation.findUnique({
+      where: { technicianId },
+      select: { latitude: true, longitude: true, isOnDuty: true, updatedAt: true },
+    });
+    if (!location) return { success: true, data: null };
+    return {
+      success: true,
+      data: {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        isOnDuty: location.isOnDuty,
+        updatedAt: location.updatedAt.toISOString(),
+      },
+    };
+  } catch (err) {
+    console.error("Get my last known location error:", err);
+    return { success: false, error: "Failed to load your location" };
+  }
+}
+
 export async function getMyDutyStatusAction(): Promise<ActionResponse<{ isOnDuty: boolean }>> {
   const { technicianId, error } = await requireTechnicianId();
   if (!technicianId) return { success: false, error: error! };

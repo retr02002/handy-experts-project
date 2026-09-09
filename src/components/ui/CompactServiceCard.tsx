@@ -5,8 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { ClientIcon } from "./ClientIcon";
 import type { CategoryServiceSummary } from "@/types/category";
+import { resolveServiceRating } from "@/lib/serviceRating";
 
 export function CompactServiceCard({ service }: { service: CategoryServiceSummary }) {
+  const rating = resolveServiceRating(service);
+
   return (
     <Link 
       href={`/services/${service.slug}`}
@@ -22,10 +25,10 @@ export function CompactServiceCard({ service }: { service: CategoryServiceSummar
         <div className="absolute inset-0 bg-black/10 transition-colors duration-300 group-hover:bg-black/5" />
 
         {/* Optional small rating badge */}
-        {service.rating && (
+        {rating.score && (
           <div className="absolute bottom-2 right-2 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-lg px-2 py-1 shadow-sm flex items-center gap-1 border border-white/20">
             <ClientIcon icon="ph:star-fill" className="text-amber-400 w-3 h-3" />
-            <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 leading-none">{service.rating.split(' ')[0]}</span>
+            <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 leading-none">{rating.score}</span>
           </div>
         )}
       </div>

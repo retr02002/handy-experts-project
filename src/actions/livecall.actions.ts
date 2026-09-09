@@ -1,5 +1,6 @@
 "use server";
 
+import { randomInt } from "crypto";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -77,6 +78,24 @@ async function resolveCoordinates(data: CreateLiveCallInput): Promise<{ latitude
 const TAX_RATE = 0.18;
 const EXPIRY_MINUTES = 15;
 
+/**
+ * Gives a customer their two permanent 4-digit PINs if they don't have them
+ * yet — one to start a job, a different one to complete it.
+ */
+async function ensureServicePins(userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { startPin: true, completionPin: true },
+  });
+  if (user?.startPin && user.completionPin) return;
+
+  const startPin = user?.startPin ?? String(randomInt(1000, 10000));
+  let completionPin = user?.completionPin ?? String(randomInt(1000, 10000));
+  while (completionPin === startPin) completionPin = String(randomInt(1000, 10000));
+
+  await prisma.user.update({ where: { id: userId }, data: { startPin, completionPin } });
+}
+
 export async function createLiveCallAction(input: CreateLiveCallInput): Promise<ActionResponse<{ liveCallId: string }>> {
   const { userId, error } = await requireCustomerId();
   if (!userId) return { success: false, error: error! };
@@ -111,6 +130,10 @@ export async function createLiveCallAction(input: CreateLiveCallInput): Promise<
     const tax = Math.round(subtotal * TAX_RATE);
     const total = subtotal + tax;
     const expiresAt = new Date(Date.now() + EXPIRY_MINUTES * 60 * 1000);
+
+    // Both PINs are fixed for life and generated on the first order — the
+    // customer reads one out to start a job and the other to close it.
+    await ensureServicePins(userId);
 
     const liveCall = await prisma.$transaction(async (tx) => {
       const created = await tx.liveCall.create({
@@ -184,6 +207,10 @@ export type OrderDisplayStatus =
   | "EXPIRED";
 
 function deriveOrderStatus(liveCallStatus: string, serviceCallStatus: string | undefined): OrderDisplayStatus {
+  // A vendor has taken the job but nobody's claimed it yet — from the
+  // customer's side that's still "we're finding you a professional"; the
+  // vendor/technician split isn't their concern.
+  if (serviceCallStatus === "UNASSIGNED") return "FINDING_PROFESSIONAL";
   if (serviceCallStatus) return serviceCallStatus as OrderDisplayStatus;
   if (liveCallStatus === "EXPIRED") return "EXPIRED";
   if (liveCallStatus === "CANCELLED") return "CANCELLED";
@@ -209,6 +236,7 @@ export async function getMyOrdersAction(): Promise<ActionResponse<CustomerOrderS
       where: { customerId: userId },
       include: { items: true, serviceCall: { select: { status: true } } },
       orderBy: { createdAt: "desc" },
+      take: 100,
     });
 
     return {
@@ -231,13 +259,21 @@ export async function getMyOrdersAction(): Promise<ActionResponse<CustomerOrderS
 
 export interface CustomerOrderDetail {
   id: string;
+  /** Null until a vendor accepts and the job record exists. */
+  serviceCallId: string | null;
   status: OrderDisplayStatus;
   address: string;
   city: string;
   state: string;
   pincode: string;
+  latitude: number;
+  longitude: number;
   paymentMode: string;
   upiRef: string;
+  /** Whoever accepted the job — the customer's escalation path. */
+  vendorName: string | null;
+  vendorPhone: string | null;
+  vendorEmail: string | null;
   subtotal: number;
   tax: number;
   total: number;
@@ -245,8 +281,19 @@ export interface CustomerOrderDetail {
   scheduledFor: string | null;
   createdAt: string;
   acceptedAt: string | null;
+  technicianId: string | null;
   technicianName: string | null;
   technicianPhone: string | null;
+  /** Credentials for the Rapido-style "who's coming" card. */
+  technicianSkill: string | null;
+  technicianExperienceYears: number | null;
+  technicianRatingAvg: number | null;
+  technicianRatingCount: number;
+  /** True once this customer has rated the job — the rate card hides after that. */
+  hasReview: boolean;
+  /** The customer's own fixed PINs — only ever returned to the customer. */
+  startPin: string | null;
+  completionPin: string | null;
   assignedAt: string | null;
   startedAt: string | null;
   completedAt: string | null;
@@ -262,8 +309,13 @@ export async function getMyOrderDetailAction(liveCallId: string): Promise<Action
       where: { id: liveCallId, customerId: userId },
       include: {
         items: true,
+        customer: { select: { startPin: true, completionPin: true } },
         serviceCall: {
-          include: { technician: { include: { user: { select: { name: true, phone: true } } } } },
+          include: {
+            technician: { include: { user: { select: { name: true, phone: true } } } },
+            vendor: { select: { companyName: true, user: { select: { phone: true, email: true } } } },
+            review: { select: { id: true } },
+          },
         },
       },
     });
@@ -273,13 +325,19 @@ export async function getMyOrderDetailAction(liveCallId: string): Promise<Action
       success: true,
       data: {
         id: r.id,
+        serviceCallId: r.serviceCall?.id ?? null,
         status: deriveOrderStatus(r.status, r.serviceCall?.status),
         address: r.address,
         city: r.city,
         state: r.state,
         pincode: r.pincode,
+        latitude: r.latitude,
+        longitude: r.longitude,
         paymentMode: r.paymentMode,
         upiRef: r.upiRef,
+        vendorName: r.serviceCall?.vendor.companyName ?? null,
+        vendorPhone: r.serviceCall?.vendor.user.phone ?? null,
+        vendorEmail: r.serviceCall?.vendor.user.email ?? null,
         subtotal: r.subtotal,
         tax: r.tax,
         total: r.total,
@@ -287,9 +345,17 @@ export async function getMyOrderDetailAction(liveCallId: string): Promise<Action
         scheduledFor: r.scheduledFor?.toISOString() ?? null,
         createdAt: r.createdAt.toISOString(),
         acceptedAt: r.acceptedAt?.toISOString() ?? null,
-        technicianName: r.serviceCall?.technician.user.name ?? null,
-        technicianPhone: r.serviceCall?.technician.user.phone ?? null,
-        assignedAt: r.serviceCall?.assignedAt.toISOString() ?? null,
+        technicianId: r.serviceCall?.technician?.id ?? null,
+        technicianName: r.serviceCall?.technician?.user.name ?? null,
+        technicianPhone: r.serviceCall?.technician?.user.phone ?? null,
+        technicianSkill: r.serviceCall?.technician?.skillCategory ?? null,
+        technicianExperienceYears: r.serviceCall?.technician?.experienceYears ?? null,
+        technicianRatingAvg: r.serviceCall?.technician?.ratingAvg ?? null,
+        technicianRatingCount: r.serviceCall?.technician?.ratingCount ?? 0,
+        hasReview: !!r.serviceCall?.review,
+        startPin: r.customer.startPin,
+        completionPin: r.customer.completionPin,
+        assignedAt: r.serviceCall?.assignedAt?.toISOString() ?? null,
         startedAt: r.serviceCall?.startedAt?.toISOString() ?? null,
         completedAt: r.serviceCall?.completedAt?.toISOString() ?? null,
         cancelledAt: r.serviceCall?.cancelledAt?.toISOString() ?? null,
@@ -365,21 +431,26 @@ export async function getNearbyLiveCallsForVendorAction(): Promise<ActionRespons
       data: { status: "EXPIRED" },
     });
 
-    const calls = await prisma.liveCall.findMany({
-      where: { status: "BROADCASTING" },
-      include: { items: true },
-      orderBy: { createdAt: "desc" },
-    });
-
-    // Eligibility is now gated by the vendor's own serviceable-area circles
+    // Independent queries — this endpoint is polled every 10s, so running
+    // them in parallel (and capping the call list) matters.
+    //
+    // Eligibility is gated by the vendor's own serviceable-area circles
     // rather than a flat radius from their business location — a vendor
     // with zero areas sees zero calls by design (they haven't set up
     // coverage yet). distanceKm below is still measured from the business
     // location purely for sort order, not for eligibility.
-    const areas = await prisma.vendorServiceArea.findMany({
-      where: { vendorId: vendor.id },
-      select: { latitude: true, longitude: true, radiusKm: true },
-    });
+    const [calls, areas] = await Promise.all([
+      prisma.liveCall.findMany({
+        where: { status: "BROADCASTING" },
+        include: { items: true },
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      }),
+      prisma.vendorServiceArea.findMany({
+        where: { vendorId: vendor.id },
+        select: { latitude: true, longitude: true, radiusKm: true },
+      }),
+    ]);
 
     const nearby = calls
       .map((call) => ({
