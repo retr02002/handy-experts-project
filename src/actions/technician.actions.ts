@@ -15,7 +15,9 @@ import {
 } from "@/lib/validations/technician.schema";
 import { requireAdmin } from "@/lib/require-admin";
 import { sendTextMessage } from "@/lib/apitxt";
-import { forwardGeocodePincode } from "@/lib/geocode";
+import { STALE_POSITION_AFTER_SECONDS } from "@/lib/constants";
+import { haversineKm } from "@/lib/geo";
+import { applySkillAssignments, deriveLegacySkillLabel } from "@/lib/technicianSkills";
 
 /** Slugified name + random suffix, retried on collision. @unique on User.username is the hard backstop. */
 async function generateUsername(name: string): Promise<string> {
@@ -72,7 +74,8 @@ export async function createTechnicianAction(
   if (!validated.success) {
     return { success: false, error: "Invalid input data", errors: validated.error.flatten().fieldErrors };
   }
-  const { name, email, phone, skillCategory, experienceYears, servicePincode } = validated.data;
+  const { name, email, phone, skillAssignments, experienceYears, servicePincode } = validated.data;
+  const requestedUsername = validated.data.username?.trim().toLowerCase() || null;
 
   try {
     const existingEmail = await prisma.user.findUnique({ where: { email }, select: { id: true } });
@@ -89,11 +92,18 @@ export async function createTechnicianAction(
       };
     }
 
-    const username = await generateUsername(name);
+    if (requestedUsername) {
+      const taken = await prisma.user.findUnique({ where: { username: requestedUsername }, select: { id: true } });
+      if (taken) {
+        return { success: false, error: "That username is already taken", errors: { username: ["Already taken"] } };
+      }
+    }
+    const username = requestedUsername ?? (await generateUsername(name));
     const tempPassword = crypto.randomBytes(9).toString("base64url");
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
+    const skillCategory = await deriveLegacySkillLabel(prisma, skillAssignments);
 
-    const technicianId = await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: { email, name, phone, username, password: hashedPassword, role: "TECHNICIAN" },
       });
@@ -104,23 +114,11 @@ export async function createTechnicianAction(
           vendorId,
           skillCategory,
           experienceYears,
-          servicePincode,
+          servicePincode: servicePincode || null,
         },
       });
-      return technician.id;
+      await applySkillAssignments(tx, technician.id, skillAssignments);
     });
-
-    // Best-effort so a vendor-created technician isn't stuck with no
-    // coverage circle visible on the live-calls map until they log in
-    // themselves. 15km mirrors the vendor round's auto-seed default.
-    const coords = await forwardGeocodePincode(servicePincode);
-    if (coords) {
-      await prisma.technicianServiceArea.create({
-        data: { technicianId, pincode: servicePincode, latitude: coords.latitude, longitude: coords.longitude, radiusKm: 15 },
-      });
-    } else {
-      console.error(`Could not auto-seed a service area for new technician ${technicianId} (pincode ${servicePincode})`);
-    }
 
     const sendResult = await sendTextMessage({
       phone,
@@ -144,7 +142,7 @@ export async function updateTechnicianAction(input: UpdateTechnicianInput): Prom
   if (!validated.success) {
     return { success: false, error: "Invalid input data", errors: validated.error.flatten().fieldErrors };
   }
-  const { id, name, email, phone, skillCategory, experienceYears, servicePincode } = validated.data;
+  const { id, name, email, phone, skillAssignments, experienceYears, servicePincode } = validated.data;
 
   try {
     const technician = await prisma.technicianProfile.findFirst({ where: { id, vendorId }, select: { userId: true } });
@@ -170,10 +168,16 @@ export async function updateTechnicianAction(input: UpdateTechnicianInput): Prom
       };
     }
 
-    await prisma.$transaction([
-      prisma.user.update({ where: { id: technician.userId }, data: { name, email, phone } }),
-      prisma.technicianProfile.update({ where: { id }, data: { skillCategory, experienceYears, servicePincode } }),
-    ]);
+    const skillCategory = await deriveLegacySkillLabel(prisma, skillAssignments);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: technician.userId }, data: { name, email, phone } });
+      await tx.technicianProfile.update({
+        where: { id },
+        data: { skillCategory, experienceYears, servicePincode: servicePincode || null },
+      });
+      await applySkillAssignments(tx, id, skillAssignments);
+    });
 
     revalidatePath("/vendor/technicians");
     return { success: true };
@@ -248,27 +252,39 @@ export async function resetTechnicianPasswordAction(
   }
 }
 
-export interface TechnicianServiceAreaCircle {
-  id: string;
-  pincode: string;
-  latitude: number;
-  longitude: number;
-  radiusKm: number;
-}
-
 export interface VendorTechnician {
   id: string;
   name: string;
   email: string;
   phone: string;
+  /**
+   * Shown permanently in the vendor's list, not just once at creation.
+   * Without it a vendor who closed the credentials dialog had no way to tell
+   * their technician how to log in.
+   */
+  username: string | null;
+  /** Live aggregates so a vendor can see who is actually performing. */
+  ratingAvg: number | null;
+  ratingCount: number;
+  jobsCompleted: number;
+  jobsActive: number;
   skillCategory: string;
   experienceYears: number;
-  servicePincode: string;
+  /** Courtesy display only — no longer collected or used for matching. */
+  servicePincode: string | null;
   type: string;
   isOnDuty: boolean;
+  isWithinServiceArea: boolean;
   latitude: number | null;
   longitude: number | null;
-  serviceAreas: TechnicianServiceAreaCircle[];
+  /** On-duty but hasn't reported a position in over STALE_POSITION_AFTER_SECONDS — feeds the tracking map's red-dot "disconnected" indicator. Computed here (server-side) rather than from a raw timestamp so no client component needs to call Date.now() during render. */
+  isStale: boolean;
+  /** Raw last-position timestamp, for an absolute "last seen" display (toLocaleString on a fixed prop, never a live-ticking Date.now() computation). */
+  locationUpdatedAt: string | null;
+  /** Null in every vendor-facing action (the vendor already knows it's their own team) — set only by the admin-by-id action, which spans every vendor. */
+  vendorName: string | null;
+  /** What this technician is actually assigned to do — feeds the edit modal's builder. */
+  skillAssignments: { categoryId: string; categoryName: string; serviceIds: string[] }[];
   createdAt: string;
 }
 
@@ -277,11 +293,73 @@ export async function getMyTechniciansAction(): Promise<ActionResponse<VendorTec
   if (!vendorId) return { success: false, error: error! };
 
   try {
-    const rows = await prisma.technicianProfile.findMany({
-      where: { vendorId },
-      include: { user: { select: { name: true, email: true, phone: true } }, location: true, serviceAreas: true },
-      orderBy: { createdAt: "desc" },
-    });
+    // One grouped count for the whole team rather than a query per
+    // technician — this list is polled, so an N+1 here would scale with
+    // headcount on every refresh. Vendor's own coverage circles fetched
+    // once too, to compute each technician's isWithinServiceArea in-memory
+    // rather than per-row.
+    const [rows, counts, areas] = await Promise.all([
+      prisma.technicianProfile.findMany({
+        where: { vendorId },
+        include: {
+          user: { select: { name: true, email: true, phone: true, username: true } },
+          location: true,
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.serviceCall.groupBy({
+        by: ["technicianId", "status"],
+        where: { vendorId, technicianId: { not: null } },
+        _count: { _all: true },
+      }),
+      prisma.vendorServiceArea.findMany({ where: { vendorId }, select: { latitude: true, longitude: true, radiusKm: true } }),
+    ]);
+
+    const technicianIds = rows.map((r) => r.id);
+    const [wholeCategoryRows, narrowServiceRows] = await Promise.all([
+      prisma.technicianCategory.findMany({
+        where: { technicianId: { in: technicianIds } },
+        select: { technicianId: true, categoryId: true, category: { select: { name: true } } },
+      }),
+      prisma.technicianService.findMany({
+        where: { technicianId: { in: technicianIds } },
+        select: { technicianId: true, serviceId: true, service: { select: { category: { select: { id: true, name: true } } } } },
+      }),
+    ]);
+
+    // Merge into one display list per technician: a whole-category entry
+    // (serviceIds: []) wins over narrower entries for the same category —
+    // it already covers everything those services would.
+    const assignmentsByTechnician = new Map<string, Map<string, { categoryName: string; serviceIds: string[] }>>();
+    for (const id of technicianIds) assignmentsByTechnician.set(id, new Map());
+
+    for (const row of wholeCategoryRows) {
+      assignmentsByTechnician.get(row.technicianId)?.set(row.categoryId, { categoryName: row.category.name, serviceIds: [] });
+    }
+    for (const row of narrowServiceRows) {
+      const categoryId = row.service.category?.id;
+      const categoryName = row.service.category?.name;
+      if (!categoryId || !categoryName) continue;
+      const map = assignmentsByTechnician.get(row.technicianId);
+      if (!map) continue;
+      const existing = map.get(categoryId);
+      if (existing && existing.serviceIds.length === 0) continue; // whole-category already covers this
+      if (existing) existing.serviceIds.push(row.serviceId);
+      else map.set(categoryId, { categoryName, serviceIds: [row.serviceId] });
+    }
+
+    const ACTIVE: string[] = ["ASSIGNED", "EN_ROUTE", "IN_PROGRESS"];
+    const completedBy = new Map<string, number>();
+    const activeBy = new Map<string, number>();
+    for (const c of counts) {
+      if (!c.technicianId) continue;
+      const n = c._count._all;
+      if (c.status === "COMPLETED") {
+        completedBy.set(c.technicianId, (completedBy.get(c.technicianId) ?? 0) + n);
+      } else if (ACTIVE.includes(c.status)) {
+        activeBy.set(c.technicianId, (activeBy.get(c.technicianId) ?? 0) + n);
+      }
+    }
 
     return {
       success: true,
@@ -290,19 +368,28 @@ export async function getMyTechniciansAction(): Promise<ActionResponse<VendorTec
         name: r.user.name ?? "",
         email: r.user.email ?? "",
         phone: r.user.phone ?? "",
+        username: r.user.username,
+        ratingAvg: r.ratingAvg,
+        ratingCount: r.ratingCount,
+        jobsCompleted: completedBy.get(r.id) ?? 0,
+        jobsActive: activeBy.get(r.id) ?? 0,
         skillCategory: r.skillCategory,
         experienceYears: r.experienceYears,
         servicePincode: r.servicePincode,
         type: r.type,
         isOnDuty: r.location?.isOnDuty ?? false,
+        isWithinServiceArea: r.location
+          ? areas.some((a) => haversineKm(a.latitude, a.longitude, r.location!.latitude, r.location!.longitude) <= a.radiusKm)
+          : false,
         latitude: r.location?.latitude ?? null,
         longitude: r.location?.longitude ?? null,
-        serviceAreas: r.serviceAreas.map((a) => ({
-          id: a.id,
-          pincode: a.pincode,
-          latitude: a.latitude,
-          longitude: a.longitude,
-          radiusKm: a.radiusKm,
+        isStale: !!r.location?.isOnDuty && (Date.now() - r.location.updatedAt.getTime()) / 1000 > STALE_POSITION_AFTER_SECONDS,
+        locationUpdatedAt: r.location?.updatedAt.toISOString() ?? null,
+        vendorName: null,
+        skillAssignments: [...(assignmentsByTechnician.get(r.id) ?? new Map())].map(([categoryId, v]) => ({
+          categoryId,
+          categoryName: v.categoryName,
+          serviceIds: v.serviceIds,
         })),
         createdAt: r.createdAt.toISOString(),
       })),
@@ -310,6 +397,163 @@ export async function getMyTechniciansAction(): Promise<ActionResponse<VendorTec
   } catch (err) {
     console.error("Get my technicians error:", err);
     return { success: false, error: "Failed to load technicians" };
+  }
+}
+
+/**
+ * Single-technician variant of getMyTechniciansAction, for the vendor's
+ * technician detail page — same shape, scoped to one id (and ownership-
+ * checked against the calling vendor) instead of fetching the whole roster
+ * to find one row.
+ */
+export async function getVendorTechnicianByIdAction(technicianId: string): Promise<ActionResponse<VendorTechnician>> {
+  const { vendorId, error } = await requireVendorId();
+  if (!vendorId) return { success: false, error: error! };
+
+  try {
+    const [r, completedCount, activeCount, areas, wholeCategoryRows, narrowServiceRows] = await Promise.all([
+      prisma.technicianProfile.findFirst({
+        where: { id: technicianId, vendorId },
+        include: { user: { select: { name: true, email: true, phone: true, username: true } }, location: true },
+      }),
+      prisma.serviceCall.count({ where: { technicianId, vendorId, status: "COMPLETED" } }),
+      prisma.serviceCall.count({ where: { technicianId, vendorId, status: { in: ["ASSIGNED", "EN_ROUTE", "IN_PROGRESS"] } } }),
+      prisma.vendorServiceArea.findMany({ where: { vendorId }, select: { latitude: true, longitude: true, radiusKm: true } }),
+      prisma.technicianCategory.findMany({
+        where: { technicianId },
+        select: { categoryId: true, category: { select: { name: true } } },
+      }),
+      prisma.technicianService.findMany({
+        where: { technicianId },
+        select: { serviceId: true, service: { select: { category: { select: { id: true, name: true } } } } },
+      }),
+    ]);
+    if (!r) return { success: false, error: "Technician not found" };
+
+    const assignments = new Map<string, { categoryName: string; serviceIds: string[] }>();
+    for (const row of wholeCategoryRows) assignments.set(row.categoryId, { categoryName: row.category.name, serviceIds: [] });
+    for (const row of narrowServiceRows) {
+      const categoryId = row.service.category?.id;
+      const categoryName = row.service.category?.name;
+      if (!categoryId || !categoryName) continue;
+      const existing = assignments.get(categoryId);
+      if (existing && existing.serviceIds.length === 0) continue; // whole-category already covers this
+      if (existing) existing.serviceIds.push(row.serviceId);
+      else assignments.set(categoryId, { categoryName, serviceIds: [row.serviceId] });
+    }
+
+    return {
+      success: true,
+      data: {
+        id: r.id,
+        name: r.user.name ?? "",
+        email: r.user.email ?? "",
+        phone: r.user.phone ?? "",
+        username: r.user.username,
+        ratingAvg: r.ratingAvg,
+        ratingCount: r.ratingCount,
+        jobsCompleted: completedCount,
+        jobsActive: activeCount,
+        skillCategory: r.skillCategory,
+        experienceYears: r.experienceYears,
+        servicePincode: r.servicePincode,
+        type: r.type,
+        isOnDuty: r.location?.isOnDuty ?? false,
+        isWithinServiceArea: r.location
+          ? areas.some((a) => haversineKm(a.latitude, a.longitude, r.location!.latitude, r.location!.longitude) <= a.radiusKm)
+          : false,
+        latitude: r.location?.latitude ?? null,
+        longitude: r.location?.longitude ?? null,
+        isStale: !!r.location?.isOnDuty && (Date.now() - r.location.updatedAt.getTime()) / 1000 > STALE_POSITION_AFTER_SECONDS,
+        locationUpdatedAt: r.location?.updatedAt.toISOString() ?? null,
+        vendorName: null,
+        skillAssignments: [...assignments].map(([categoryId, v]) => ({ categoryId, categoryName: v.categoryName, serviceIds: v.serviceIds })),
+        createdAt: r.createdAt.toISOString(),
+      },
+    };
+  } catch (err) {
+    console.error("Get vendor technician by id error:", err);
+    return { success: false, error: "Failed to load technician" };
+  }
+}
+
+/**
+ * Admin-by-id counterpart to getVendorTechnicianByIdAction — same shape,
+ * but spans every vendor (no ownership scoping) since an admin can view
+ * any technician on the platform, including freelancers.
+ */
+export async function getAdminTechnicianByIdAction(technicianId: string): Promise<ActionResponse<VendorTechnician>> {
+  const isAdmin = await requireAdmin();
+  if (!isAdmin) return { success: false, error: "Not authorized" };
+
+  try {
+    const r = await prisma.technicianProfile.findUnique({
+      where: { id: technicianId },
+      include: {
+        user: { select: { name: true, email: true, phone: true, username: true } },
+        vendor: { select: { companyName: true } },
+        location: true,
+      },
+    });
+    if (!r) return { success: false, error: "Technician not found" };
+
+    const [completedCount, activeCount, areas, wholeCategoryRows, narrowServiceRows] = await Promise.all([
+      prisma.serviceCall.count({ where: { technicianId, status: "COMPLETED" } }),
+      prisma.serviceCall.count({ where: { technicianId, status: { in: ["ASSIGNED", "EN_ROUTE", "IN_PROGRESS"] } } }),
+      r.vendorId
+        ? prisma.vendorServiceArea.findMany({ where: { vendorId: r.vendorId }, select: { latitude: true, longitude: true, radiusKm: true } })
+        : Promise.resolve([]),
+      prisma.technicianCategory.findMany({ where: { technicianId }, select: { categoryId: true, category: { select: { name: true } } } }),
+      prisma.technicianService.findMany({
+        where: { technicianId },
+        select: { serviceId: true, service: { select: { category: { select: { id: true, name: true } } } } },
+      }),
+    ]);
+
+    const assignments = new Map<string, { categoryName: string; serviceIds: string[] }>();
+    for (const row of wholeCategoryRows) assignments.set(row.categoryId, { categoryName: row.category.name, serviceIds: [] });
+    for (const row of narrowServiceRows) {
+      const categoryId = row.service.category?.id;
+      const categoryName = row.service.category?.name;
+      if (!categoryId || !categoryName) continue;
+      const existing = assignments.get(categoryId);
+      if (existing && existing.serviceIds.length === 0) continue;
+      if (existing) existing.serviceIds.push(row.serviceId);
+      else assignments.set(categoryId, { categoryName, serviceIds: [row.serviceId] });
+    }
+
+    return {
+      success: true,
+      data: {
+        id: r.id,
+        name: r.user.name ?? "",
+        email: r.user.email ?? "",
+        phone: r.user.phone ?? "",
+        username: r.user.username,
+        ratingAvg: r.ratingAvg,
+        ratingCount: r.ratingCount,
+        jobsCompleted: completedCount,
+        jobsActive: activeCount,
+        skillCategory: r.skillCategory,
+        experienceYears: r.experienceYears,
+        servicePincode: r.servicePincode,
+        type: r.type,
+        isOnDuty: r.location?.isOnDuty ?? false,
+        isWithinServiceArea: r.location
+          ? areas.some((a) => haversineKm(a.latitude, a.longitude, r.location!.latitude, r.location!.longitude) <= a.radiusKm)
+          : false,
+        latitude: r.location?.latitude ?? null,
+        longitude: r.location?.longitude ?? null,
+        isStale: !!r.location?.isOnDuty && (Date.now() - r.location.updatedAt.getTime()) / 1000 > STALE_POSITION_AFTER_SECONDS,
+        locationUpdatedAt: r.location?.updatedAt.toISOString() ?? null,
+        vendorName: r.vendor?.companyName ?? null,
+        skillAssignments: [...assignments].map(([categoryId, v]) => ({ categoryId, categoryName: v.categoryName, serviceIds: v.serviceIds })),
+        createdAt: r.createdAt.toISOString(),
+      },
+    };
+  } catch (err) {
+    console.error("Get admin technician by id error:", err);
+    return { success: false, error: "Failed to load technician" };
   }
 }
 
@@ -322,7 +566,8 @@ export interface AdminTechnician {
   isOnDuty: boolean;
   latitude: number | null;
   longitude: number | null;
-  serviceAreas: TechnicianServiceAreaCircle[];
+  /** On-duty but hasn't reported a position in over STALE_POSITION_AFTER_SECONDS — feeds the tracking map's red-dot "disconnected" indicator. Computed here (server-side) rather than from a raw timestamp so no client component needs to call Date.now() during render. */
+  isStale: boolean;
 }
 
 /** Admin sees every technician across every vendor, for the platform-wide live map. */
@@ -336,7 +581,6 @@ export async function getAllTechniciansForAdminAction(): Promise<ActionResponse<
         user: { select: { name: true, phone: true } },
         vendor: { select: { companyName: true } },
         location: true,
-        serviceAreas: true,
       },
       orderBy: { createdAt: "desc" },
       take: 500,
@@ -352,13 +596,7 @@ export async function getAllTechniciansForAdminAction(): Promise<ActionResponse<
         isOnDuty: r.location?.isOnDuty ?? false,
         latitude: r.location?.latitude ?? null,
         longitude: r.location?.longitude ?? null,
-        serviceAreas: r.serviceAreas.map((a) => ({
-          id: a.id,
-          pincode: a.pincode,
-          latitude: a.latitude,
-          longitude: a.longitude,
-          radiusKm: a.radiusKm,
-        })),
+        isStale: !!r.location?.isOnDuty && (Date.now() - r.location.updatedAt.getTime()) / 1000 > STALE_POSITION_AFTER_SECONDS,
       })),
     };
   } catch (err) {
@@ -386,11 +624,43 @@ export async function updateTechnicianLocationAction(latitude: number, longitude
   }
 
   try {
+    const existing = await prisma.technicianLocation.findUnique({
+      where: { technicianId },
+      select: { isOnDuty: true },
+    });
+    const isNewDutyOn = !existing || !existing.isOnDuty;
+
     await prisma.technicianLocation.upsert({
       where: { technicianId },
       create: { technicianId, latitude, longitude, isOnDuty: true },
       update: { latitude, longitude, isOnDuty: true },
     });
+
+    // History logging is throttled independently of this write's own cadence
+    // (5-12s while on duty) — a fresh clock-in is always logged (infrequent,
+    // and it's the anchor the timeline reconstructs a day from), an ordinary
+    // ping only every ~90s or ~150m of travel, so an 8-hour shift produces
+    // roughly 300 rows rather than thousands. See TechnicianLocationEvent's
+    // doc comment in the schema for the full reasoning.
+    if (isNewDutyOn) {
+      await prisma.technicianLocationEvent.create({
+        data: { technicianId, eventType: "DUTY_ON", latitude, longitude },
+      });
+    } else {
+      const lastPing = await prisma.technicianLocationEvent.findFirst({
+        where: { technicianId, eventType: "PING" },
+        orderBy: { createdAt: "desc" },
+        select: { latitude: true, longitude: true, createdAt: true },
+      });
+      const secondsSincePing = lastPing ? (Date.now() - lastPing.createdAt.getTime()) / 1000 : Infinity;
+      const movedKm = lastPing ? haversineKm(lastPing.latitude, lastPing.longitude, latitude, longitude) : Infinity;
+      if (secondsSincePing >= 90 || movedKm >= 0.15) {
+        await prisma.technicianLocationEvent.create({
+          data: { technicianId, eventType: "PING", latitude, longitude },
+        });
+      }
+    }
+
     return { success: true };
   } catch (err) {
     console.error("Update technician location error:", err);
@@ -403,9 +673,23 @@ export async function setTechnicianDutyStatusAction(isOnDuty: boolean): Promise<
   if (!technicianId) return { success: false, error: error! };
 
   try {
+    const existing = await prisma.technicianLocation.findUnique({
+      where: { technicianId },
+      select: { latitude: true, longitude: true, isOnDuty: true },
+    });
+
     // updateMany (not update) so toggling off before any location was ever
     // recorded is a harmless no-op instead of a "row not found" error.
     await prisma.technicianLocation.updateMany({ where: { technicianId }, data: { isOnDuty } });
+
+    // Only log a real on->off transition, at wherever they last reported
+    // from — this is the timeline's "clock-out" anchor for the day.
+    if (existing?.isOnDuty && !isOnDuty) {
+      await prisma.technicianLocationEvent.create({
+        data: { technicianId, eventType: "DUTY_OFF", latitude: existing.latitude, longitude: existing.longitude },
+      });
+    }
+
     return { success: true };
   } catch (err) {
     console.error("Set technician duty status error:", err);
@@ -451,15 +735,200 @@ export async function getMyLastKnownLocationAction(): Promise<ActionResponse<Tec
   }
 }
 
-export async function getMyDutyStatusAction(): Promise<ActionResponse<{ isOnDuty: boolean }>> {
+/**
+ * Duty state plus whether this technician is mid-journey to a job.
+ *
+ * `hasJobEnRoute` rides along on a poll that already runs every 15s rather
+ * than getting a poll of its own, and it's what lets the device report its
+ * position faster while someone is actually watching the dot move — without
+ * paying that battery cost for a technician who is merely on duty.
+ */
+export async function getMyDutyStatusAction(): Promise<
+  ActionResponse<{ isOnDuty: boolean; hasJobEnRoute: boolean }>
+> {
   const { technicianId, error } = await requireTechnicianId();
   if (!technicianId) return { success: false, error: error! };
 
   try {
-    const location = await prisma.technicianLocation.findUnique({ where: { technicianId }, select: { isOnDuty: true } });
-    return { success: true, data: { isOnDuty: location?.isOnDuty ?? false } };
+    const [location, enRouteCount] = await Promise.all([
+      prisma.technicianLocation.findUnique({ where: { technicianId }, select: { isOnDuty: true } }),
+      prisma.serviceCall.count({ where: { technicianId, status: "EN_ROUTE" } }),
+    ]);
+    return {
+      success: true,
+      data: { isOnDuty: location?.isOnDuty ?? false, hasJobEnRoute: enRouteCount > 0 },
+    };
   } catch (err) {
     console.error("Get my duty status error:", err);
     return { success: false, error: "Failed to load duty status" };
+  }
+}
+
+export interface TechnicianStats {
+  jobsCompleted: number;
+  jobsActive: number;
+  /** Gross value of completed jobs — what the customer paid, not take-home. */
+  lifetimeValue: number;
+  ratingAvg: number | null;
+  ratingCount: number;
+}
+
+/**
+ * The technician's own running totals, for their history screen. Reads the
+ * denormalized rating aggregates off TechnicianProfile rather than averaging
+ * reviews here — they're kept in step by submitReviewAction's transaction.
+ */
+export async function getMyTechnicianStatsAction(): Promise<ActionResponse<TechnicianStats>> {
+  const { technicianId, error } = await requireTechnicianId();
+  if (!technicianId) return { success: false, error: error! };
+
+  try {
+    const [profile, jobsCompleted, jobsActive, completed] = await Promise.all([
+      prisma.technicianProfile.findUnique({
+        where: { id: technicianId },
+        select: { ratingAvg: true, ratingCount: true },
+      }),
+      prisma.serviceCall.count({ where: { technicianId, status: "COMPLETED" } }),
+      prisma.serviceCall.count({
+        where: { technicianId, OR: [{ status: "ASSIGNED" }, { status: "EN_ROUTE" }, { status: "IN_PROGRESS" }] },
+      }),
+      prisma.serviceCall.findMany({
+        where: { technicianId, status: "COMPLETED" },
+        select: { liveCall: { select: { total: true } } },
+      }),
+    ]);
+
+    return {
+      success: true,
+      data: {
+        jobsCompleted,
+        jobsActive,
+        lifetimeValue: completed.reduce((sum, c) => sum + c.liveCall.total, 0),
+        ratingAvg: profile?.ratingAvg ?? null,
+        ratingCount: profile?.ratingCount ?? 0,
+      },
+    };
+  } catch (err) {
+    console.error("Get technician stats error:", err);
+    return { success: false, error: "Failed to load your stats" };
+  }
+}
+
+async function requireTimelineAccess(
+  technicianId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { ok: false, error: "Not signed in" };
+
+  if (session.user.role === "SUPER_ADMIN") return { ok: true };
+
+  if (session.user.role === "VENDOR") {
+    const vendor = await prisma.vendorProfile.findUnique({ where: { userId: session.user.id }, select: { id: true } });
+    if (!vendor) return { ok: false, error: "Vendor profile not found" };
+    const owns = await prisma.technicianProfile.findFirst({
+      where: { id: technicianId, vendorId: vendor.id },
+      select: { id: true },
+    });
+    if (!owns) return { ok: false, error: "That technician isn't on your team" };
+    return { ok: true };
+  }
+
+  return { ok: false, error: "Not authorized" };
+}
+
+export interface TechnicianTimelineEvent {
+  id: string;
+  eventType: "PING" | "DUTY_ON" | "DUTY_OFF";
+  latitude: number;
+  longitude: number;
+  createdAt: string;
+}
+
+export interface TechnicianTimelineJob {
+  id: string;
+  itemSummary: string;
+  status: string;
+  customerName: string;
+  city: string;
+  total: number;
+  assignedAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
+export interface TechnicianTimeline {
+  technicianName: string;
+  events: TechnicianTimelineEvent[];
+  jobs: TechnicianTimelineJob[];
+}
+
+/**
+ * One day's reconstructed activity for a technician — every logged
+ * location/duty event plus every job they touched that day, for the "Google
+ * Maps timeline" view. `date` is a "YYYY-MM-DD" string in the server's local
+ * interpretation; omitted defaults to today.
+ */
+export async function getTechnicianTimelineAction(
+  technicianId: string,
+  date?: string
+): Promise<ActionResponse<TechnicianTimeline>> {
+  const auth = await requireTimelineAccess(technicianId);
+  if (!auth.ok) return { success: false, error: auth.error };
+
+  try {
+    const day = date ? new Date(`${date}T00:00:00`) : new Date(new Date().toDateString());
+    if (Number.isNaN(day.getTime())) return { success: false, error: "Invalid date" };
+    const dayStart = new Date(day);
+    const dayEnd = new Date(day.getTime() + 24 * 60 * 60 * 1000);
+
+    const [technician, events, jobs] = await Promise.all([
+      prisma.technicianProfile.findUnique({ where: { id: technicianId }, select: { user: { select: { name: true } } } }),
+      prisma.technicianLocationEvent.findMany({
+        where: { technicianId, createdAt: { gte: dayStart, lt: dayEnd } },
+        orderBy: { createdAt: "asc" },
+      }),
+      prisma.serviceCall.findMany({
+        where: {
+          technicianId,
+          OR: [
+            { assignedAt: { gte: dayStart, lt: dayEnd } },
+            { startedAt: { gte: dayStart, lt: dayEnd } },
+            { completedAt: { gte: dayStart, lt: dayEnd } },
+          ],
+        },
+        include: { liveCall: { select: { items: true, city: true, total: true, customerName: true } } },
+        orderBy: { assignedAt: "asc" },
+      }),
+    ]);
+
+    if (!technician) return { success: false, error: "Technician not found" };
+
+    return {
+      success: true,
+      data: {
+        technicianName: technician.user.name ?? "",
+        events: events.map((e) => ({
+          id: e.id,
+          eventType: e.eventType,
+          latitude: e.latitude,
+          longitude: e.longitude,
+          createdAt: e.createdAt.toISOString(),
+        })),
+        jobs: jobs.map((j) => ({
+          id: j.id,
+          itemSummary: j.liveCall.items.map((i) => i.packageName).join(", "),
+          status: j.status,
+          customerName: j.liveCall.customerName,
+          city: j.liveCall.city,
+          total: j.liveCall.total,
+          assignedAt: j.assignedAt?.toISOString() ?? null,
+          startedAt: j.startedAt?.toISOString() ?? null,
+          completedAt: j.completedAt?.toISOString() ?? null,
+        })),
+      },
+    };
+  } catch (err) {
+    console.error("Get technician timeline error:", err);
+    return { success: false, error: "Failed to load timeline" };
   }
 }

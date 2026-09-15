@@ -6,6 +6,14 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { ActionResponse } from "@/actions/auth.actions";
 import { serviceReportSchema, type ServiceReportInput } from "@/lib/validations/servicereport.schema";
+import { geoFixSchema, type GeoFixInput } from "@/lib/validations/geofix.schema";
+import { evaluateGeofence, formatDistance } from "@/lib/geo";
+import {
+  JOB_GEOFENCE_RADIUS_METERS,
+  GEOFENCE_ACCURACY_GRACE_METERS,
+  GEOFENCE_ENFORCED,
+  GEOFENCE_POSITION_REQUIRED,
+} from "@/lib/constants";
 
 /**
  * A fixed 4-digit customer PIN is only 10,000 combinations, so the gate has
@@ -45,7 +53,14 @@ async function verifyJobPin(
     where: { id: serviceCallId },
     include: {
       vendor: { select: { userId: true } },
-      liveCall: { select: { customerId: true, customer: { select: { startPin: true, completionPin: true } } } },
+      liveCall: {
+        select: {
+          customerId: true,
+          startPin: true,
+          completionPin: true,
+          customer: { select: { startPin: true, completionPin: true } },
+        },
+      },
     },
   });
   if (!call) return { ok: false, error: "Job not found" };
@@ -64,8 +79,13 @@ async function verifyJobPin(
   }
 
   // Each gate has its own PIN — the start PIN must never close a job out.
+  // An admin-created order's own liveCall.startPin/completionPin (see
+  // schema.prisma) takes priority over the customer account's permanent
+  // PIN when set — see adminlivecall.actions.ts.
   const expected =
-    expectedStatus === "EN_ROUTE" ? call.liveCall.customer.startPin : call.liveCall.customer.completionPin;
+    expectedStatus === "EN_ROUTE"
+      ? call.liveCall.startPin ?? call.liveCall.customer.startPin
+      : call.liveCall.completionPin ?? call.liveCall.customer.completionPin;
   if (!expected) {
     return { ok: false, error: "This customer doesn't have a service PIN yet. Ask your vendor for help." };
   }
@@ -94,19 +114,94 @@ async function verifyJobPin(
   };
 }
 
-/** EN_ROUTE → IN_PROGRESS, gated on the customer's PIN. */
-export async function startJobAction(serviceCallId: string, pin: string): Promise<ActionResponse> {
+interface GateGeoOutcome {
+  /** Null only when the caller should be blocked — the message is then in `error`. */
+  fields: Record<string, number | null>;
+  error: string | null;
+}
+
+/**
+ * Proximity half of a job gate. Always returns the columns to persist, so
+ * the distance is recorded whether or not it blocks — during the warn-only
+ * rollout (GEOFENCE_ENFORCED=false) that recording IS the point.
+ *
+ * Deliberately called only AFTER the PIN has verified, so being out of
+ * range never burns one of the five PIN attempts.
+ */
+async function evaluateJobGeofence(
+  serviceCallId: string,
+  fix: GeoFixInput | null,
+  phase: "start" | "complete"
+): Promise<GateGeoOutcome> {
+  const call = await prisma.serviceCall.findUnique({
+    where: { id: serviceCallId },
+    select: { geofenceBypass: true, liveCall: { select: { latitude: true, longitude: true } } },
+  });
+
+  const prefix = phase === "start" ? "start" : "complete";
+  const blank: Record<string, number | null> = {
+    [`${prefix}Latitude`]: fix?.latitude ?? null,
+    [`${prefix}Longitude`]: fix?.longitude ?? null,
+    [`${prefix}AccuracyM`]: fix?.accuracyM ?? null,
+    [`${prefix}DistanceM`]: null,
+  };
+  if (!call) return { fields: blank, error: null };
+
+  const result = evaluateGeofence(
+    { latitude: call.liveCall.latitude, longitude: call.liveCall.longitude },
+    fix,
+    {
+      radiusM: JOB_GEOFENCE_RADIUS_METERS,
+      accuracyGraceM: GEOFENCE_ACCURACY_GRACE_METERS,
+      bypass: call.geofenceBypass,
+    }
+  );
+
+  const fields = { ...blank, [`${prefix}DistanceM`]: result.distanceM };
+
+  if (result.ok) return { fields, error: null };
+
+  // Measured and recorded, but not enforced yet — see GEOFENCE_ENFORCED.
+  if (!GEOFENCE_ENFORCED) {
+    console.warn(
+      `[geofence] would block ${phase} of ${serviceCallId}: reason=${result.reason} distanceM=${result.distanceM?.toFixed(0) ?? "n/a"}`
+    );
+    return { fields, error: null };
+  }
+
+  const verb = phase === "start" ? "start" : "complete";
+  if (result.reason === "NO_FIX") {
+    return { fields, error: GEOFENCE_POSITION_REQUIRED };
+  }
+  return {
+    fields,
+    error: `You're ${formatDistance(result.distanceM ?? 0)} from the job site. Move within ${JOB_GEOFENCE_RADIUS_METERS} m of the customer's address to ${verb}.`,
+  };
+}
+
+/** EN_ROUTE → IN_PROGRESS, gated on the customer's PIN and on being at the site. */
+export async function startJobAction(
+  serviceCallId: string,
+  pin: string,
+  fix: GeoFixInput | null = null
+): Promise<ActionResponse> {
   const { technicianId, error } = await requireTechnicianId();
   if (!technicianId) return { success: false, error: error! };
+
+  const parsedFix = fix ? geoFixSchema.safeParse(fix) : null;
+  const usableFix = parsedFix?.success ? parsedFix.data : null;
 
   try {
     const verified = await verifyJobPin(serviceCallId, technicianId, pin, "EN_ROUTE");
     if (!verified.ok) return { success: false, error: verified.error };
 
+    const geo = await evaluateJobGeofence(serviceCallId, usableFix, "start");
+    if (geo.error) return { success: false, error: geo.error };
+
     await prisma.$transaction(async (tx) => {
       await tx.serviceCall.update({
         where: { id: serviceCallId },
-        data: { status: "IN_PROGRESS", startedAt: new Date(), pinAttempts: 0 },
+        data: { status: "IN_PROGRESS", startedAt: new Date(), pinAttempts: 0, ...geo.fields },
       });
       await tx.notification.create({
         data: {
@@ -129,11 +224,12 @@ export async function startJobAction(serviceCallId: string, pin: string): Promis
   }
 }
 
-/** IN_PROGRESS → COMPLETED, gated on the customer's PIN and the closing report. */
+/** IN_PROGRESS → COMPLETED, gated on the customer's PIN, being at the site, and the closing report. */
 export async function completeJobAction(
   serviceCallId: string,
   pin: string,
-  report: ServiceReportInput
+  report: ServiceReportInput,
+  fix: GeoFixInput | null = null
 ): Promise<ActionResponse> {
   const { technicianId, error } = await requireTechnicianId();
   if (!technicianId) return { success: false, error: error! };
@@ -144,14 +240,20 @@ export async function completeJobAction(
   }
   const data = validated.data;
 
+  const parsedFix = fix ? geoFixSchema.safeParse(fix) : null;
+  const usableFix = parsedFix?.success ? parsedFix.data : null;
+
   try {
     const verified = await verifyJobPin(serviceCallId, technicianId, pin, "IN_PROGRESS");
     if (!verified.ok) return { success: false, error: verified.error };
 
+    const geo = await evaluateJobGeofence(serviceCallId, usableFix, "complete");
+    if (geo.error) return { success: false, error: geo.error };
+
     await prisma.$transaction(async (tx) => {
       await tx.serviceCall.update({
         where: { id: serviceCallId },
-        data: { status: "COMPLETED", completedAt: new Date(), pinAttempts: 0 },
+        data: { status: "COMPLETED", completedAt: new Date(), pinAttempts: 0, ...geo.fields },
       });
       await tx.serviceReport.upsert({
         where: { serviceCallId },
@@ -201,30 +303,96 @@ export async function completeJobAction(
 }
 
 /** Vendor-only escape hatch after a technician burns through the PIN attempts. */
+/**
+ * Vendor-only for their own jobs, or admin for any job — same "look up the
+ * call's own vendorId instead of requiring it to match the caller's" shape
+ * used across every other admin-bypass added in this pass, so admin gets
+ * exactly vendor-equivalent power without a parallel action.
+ */
 export async function resetJobPinAttemptsAction(serviceCallId: string): Promise<ActionResponse> {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id || session.user.role !== "VENDOR") {
-    return { success: false, error: "Not signed in as a vendor" };
+  if (!session?.user?.id || (session.user.role !== "VENDOR" && session.user.role !== "SUPER_ADMIN")) {
+    return { success: false, error: "Not authorized" };
   }
 
   try {
-    const vendor = await prisma.vendorProfile.findUnique({
-      where: { userId: session.user.id },
-      select: { id: true },
-    });
-    if (!vendor) return { success: false, error: "Vendor profile not found" };
+    const isAdmin = session.user.role === "SUPER_ADMIN";
+    let where: { id: string; vendorId?: string } = { id: serviceCallId };
+    if (!isAdmin) {
+      const vendor = await prisma.vendorProfile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+      if (!vendor) return { success: false, error: "Vendor profile not found" };
+      where = { id: serviceCallId, vendorId: vendor.id };
+    }
 
-    const updated = await prisma.serviceCall.updateMany({
-      where: { id: serviceCallId, vendorId: vendor.id },
-      data: { pinAttempts: 0 },
-    });
+    const updated = await prisma.serviceCall.updateMany({ where, data: { pinAttempts: 0 } });
     if (updated.count === 0) return { success: false, error: "Service call not found" };
 
     revalidatePath("/vendor/service-calls");
+    revalidatePath("/admin/service-calls");
     return { success: true };
   } catch (err) {
     console.error("Reset job pin attempts error:", err);
     return { success: false, error: "Failed to unlock this job" };
+  }
+}
+
+/**
+ * Waives the proximity check for one job — same vendor-or-admin shape as
+ * resetJobPinAttemptsAction above. Needed because some orders carry a
+ * geocoded city centroid rather than a real pin, making the required
+ * distance unachievable no matter where the technician stands; without an
+ * escape hatch those jobs could never be started once enforcement is on.
+ */
+export async function setJobGeofenceBypassAction(
+  serviceCallId: string,
+  enabled: boolean,
+  reason: string
+): Promise<ActionResponse> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || (session.user.role !== "VENDOR" && session.user.role !== "SUPER_ADMIN")) {
+    return { success: false, error: "Not authorized" };
+  }
+
+  const trimmedReason = reason.trim();
+  if (enabled && trimmedReason.length < 3) {
+    return { success: false, error: "Say why the location check is being waived." };
+  }
+  if (trimmedReason.length > 300) return { success: false, error: "That reason is too long." };
+
+  try {
+    const isAdmin = session.user.role === "SUPER_ADMIN";
+    let where: { id: string; vendorId?: string } = { id: serviceCallId };
+    if (!isAdmin) {
+      const vendor = await prisma.vendorProfile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+      if (!vendor) return { success: false, error: "Vendor profile not found" };
+      where = { id: serviceCallId, vendorId: vendor.id };
+    }
+
+    const updated = await prisma.serviceCall.updateMany({
+      where,
+      data: enabled
+        ? {
+            geofenceBypass: true,
+            geofenceBypassBy: session.user.name?.trim() || (isAdmin ? "An admin" : "The vendor"),
+            geofenceBypassReason: trimmedReason,
+            geofenceBypassAt: new Date(),
+          }
+        : { geofenceBypass: false, geofenceBypassBy: null, geofenceBypassReason: null, geofenceBypassAt: null },
+    });
+    if (updated.count === 0) return { success: false, error: "Service call not found" };
+
+    revalidatePath("/vendor/service-calls");
+    revalidatePath("/admin/service-calls");
+    return { success: true };
+  } catch (err) {
+    console.error("Set job geofence bypass error:", err);
+    return { success: false, error: "Failed to update the location check" };
   }
 }
 
@@ -255,7 +423,8 @@ export async function getServiceReportAction(serviceCallId: string): Promise<Act
     const allowed =
       call.customerId === session.user.id ||
       call.vendor.userId === session.user.id ||
-      call.technician?.userId === session.user.id;
+      call.technician?.userId === session.user.id ||
+      session.user.role === "SUPER_ADMIN";
     if (!allowed) return { success: false, error: "You don't have access to this report" };
     if (!call.report) return { success: true, data: null };
 

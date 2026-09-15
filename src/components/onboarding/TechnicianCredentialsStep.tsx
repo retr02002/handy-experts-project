@@ -87,12 +87,12 @@ export function TechnicianCredentialsStep({ onBack, onAuthenticated }: Props) {
   const requestOtp = async () => {
     setError("");
     if (otpUsername.trim().length < 4) {
-      setError("Enter your username");
+      setError("Enter your username or mobile number");
       return;
     }
     setIsSendingOtp(true);
     try {
-      const res = await sendTechnicianOtp({ username: otpUsername, channel });
+      const res = await sendTechnicianOtp({ identifier: otpUsername, channel });
       if (!res.success) {
         setError(res.error);
         return;
@@ -111,7 +111,7 @@ export function TechnicianCredentialsStep({ onBack, onAuthenticated }: Props) {
     setError("");
     setIsSubmitting(true);
     try {
-      const res = await signIn("otp-technician", { redirect: false, username: otpUsername, code });
+      const res = await signIn("otp-technician", { redirect: false, identifier: otpUsername, code });
       if (res?.error) {
         setError(res.error);
         return;
@@ -264,11 +264,11 @@ export function TechnicianCredentialsStep({ onBack, onAuthenticated }: Props) {
               </div>
             )}
             <OnboardingField
-              label="Username"
+              label="Username or mobile number"
               icon="ph:at"
               value={otpUsername}
               onChange={(e) => setOtpUsername(e.target.value.toLowerCase())}
-              placeholder="your username"
+              placeholder="username or 10-digit mobile"
               required
             />
             <button
@@ -296,7 +296,7 @@ export function TechnicianCredentialsStep({ onBack, onAuthenticated }: Props) {
             isResending={isSendingOtp}
             error={error}
             destinationLabel={`Code sent via ${channel === "WHATSAPP" ? "WhatsApp" : "SMS"} to your registered number ${phoneHint}`}
-            backLabel="Change username"
+            backLabel="Change username or number"
             onBack={() => {
               setOtpStep("start");
               setError("");

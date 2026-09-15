@@ -16,6 +16,11 @@ import { usePolling } from "@/hooks/usePolling";
 // at a believable rate; the cost is roughly double the writes and GPS
 // wake-ups while on duty.
 const LOCATION_REPORT_INTERVAL_MS = 12000;
+// While a job is EN_ROUTE somebody is literally watching this dot cross a
+// map, so the durable write rate more than doubles. It drops back the moment
+// the journey ends — paying this all day for a technician who is merely on
+// duty would be a battery cost with nobody on the other end of it.
+const LOCATION_REPORT_INTERVAL_EN_ROUTE_MS = 5000;
 const DUTY_POLL_INTERVAL_MS = 15000;
 
 export function OnDutyToggle() {
@@ -23,6 +28,9 @@ export function OnDutyToggle() {
   const [isBusy, setIsBusy] = useState(false);
   const watchIdRef = useRef<number | null>(null);
   const lastReportRef = useRef(0);
+  // A ref, not state: the watchPosition callback below is registered once and
+  // would otherwise close over whatever the cadence was at subscribe time.
+  const reportIntervalRef = useRef(LOCATION_REPORT_INTERVAL_MS);
 
   /**
    * Starts reporting position, if it isn't already.
@@ -39,7 +47,7 @@ export function OnDutyToggle() {
     watchIdRef.current = navigator.geolocation.watchPosition(
       (p) => {
         const now = Date.now();
-        if (now - lastReportRef.current < LOCATION_REPORT_INTERVAL_MS) return;
+        if (now - lastReportRef.current < reportIntervalRef.current) return;
         lastReportRef.current = now;
         updateTechnicianLocationAction(p.coords.latitude, p.coords.longitude);
       },
@@ -62,6 +70,9 @@ export function OnDutyToggle() {
     const res = await getMyDutyStatusAction();
     if (!res.success || !res.data) return;
     setIsOnDuty(res.data.isOnDuty);
+    reportIntervalRef.current = res.data.hasJobEnRoute
+      ? LOCATION_REPORT_INTERVAL_EN_ROUTE_MS
+      : LOCATION_REPORT_INTERVAL_MS;
     if (res.data.isOnDuty) startWatch();
     else stopWatch();
   }, DUTY_POLL_INTERVAL_MS);

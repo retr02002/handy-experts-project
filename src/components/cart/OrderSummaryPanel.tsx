@@ -3,6 +3,7 @@
 import React from "react";
 import { useCart } from "@/context/CartContext";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { computeOrderTotal } from "@/lib/pricing";
 import { DiscountCodeForm } from "./DiscountCodeForm";
 
 interface OrderSummaryPanelProps {
@@ -13,6 +14,11 @@ interface OrderSummaryPanelProps {
   primaryDisabled?: boolean;
   onBack?: () => void;
   backLabel?: string;
+  /** Lifted to CartContainer so the same applied coupon affects every step's
+   *  total, not just the cart step it was entered on. */
+  appliedCoupon?: { code: string; discountAmount: number } | null;
+  onCouponApplied?: (coupon: { code: string; discountAmount: number }) => void;
+  onCouponRemoved?: () => void;
 }
 
 export function OrderSummaryPanel({
@@ -23,11 +29,14 @@ export function OrderSummaryPanel({
   primaryDisabled = false,
   onBack,
   backLabel = "Back",
+  appliedCoupon = null,
+  onCouponApplied,
+  onCouponRemoved,
 }: OrderSummaryPanelProps) {
   const { totalPrice, totalItems } = useCart();
 
-  const taxesAndFees = Math.round(totalPrice * 0.18);
-  const grandTotal = totalPrice + taxesAndFees;
+  const discountAmount = appliedCoupon?.discountAmount ?? 0;
+  const { tax: taxesAndFees, total: grandTotal } = computeOrderTotal(Math.max(0, totalPrice - discountAmount));
 
   if (totalItems === 0) return null;
 
@@ -41,13 +50,25 @@ export function OrderSummaryPanel({
             Order Summary
           </h3>
 
-          {showDiscount && <DiscountCodeForm />}
+          {showDiscount && (
+            <DiscountCodeForm
+              appliedCode={appliedCoupon?.code ?? null}
+              onApplied={onCouponApplied}
+              onRemoved={onCouponRemoved}
+            />
+          )}
 
           <div className="flex flex-col gap-3 text-sm mt-2">
             <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
               <span>Subtotal ({totalItems} items)</span>
               <span className="font-semibold text-slate-900 dark:text-white">₹{totalPrice}</span>
             </div>
+            {discountAmount > 0 && (
+              <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400">
+                <span>Discount ({appliedCoupon?.code})</span>
+                <span className="font-semibold">-₹{discountAmount}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
               <span className="flex items-center gap-2">GST (18%)</span>
               <span className="font-semibold text-slate-900 dark:text-white">₹{taxesAndFees}</span>

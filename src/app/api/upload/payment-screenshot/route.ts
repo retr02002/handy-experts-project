@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import crypto from "crypto";
+import { putObject } from "@/lib/storage/objectStorage";
 
 const ALLOWED_IMAGE_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -37,16 +35,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: `File too large. Max size is ${MAX_IMAGE_SIZE_BYTES / (1024 * 1024)}MB.` }, { status: 400 });
     }
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "payments");
-    await mkdir(uploadDir, { recursive: true });
-
-    const filename = `${Date.now()}-${crypto.randomUUID()}.${extension}`;
-    const filePath = path.join(uploadDir, filename);
-
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(filePath, buffer);
+    const stored = await putObject({
+      folder: "payments",
+      extension,
+      body: buffer,
+      contentType: file.type,
+    });
 
-    return NextResponse.json({ url: `/uploads/payments/${filename}` });
+    return NextResponse.json({ url: stored.url, key: stored.key });
   } catch (error) {
     console.error("Payment screenshot upload error:", error);
     return NextResponse.json({ error: "Failed to upload file" }, { status: 500 });

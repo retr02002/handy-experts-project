@@ -4,9 +4,15 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
-export function OrderSuccess({ orderId }: { orderId: string }) {
+export function OrderSuccess({ orderId, paymentMethod }: { orderId: string; paymentMethod: "ONLINE" | "COD" | "WALLET" }) {
   const [copied, setCopied] = useState(false);
   const displayId = orderId.toUpperCase();
+  const subtext =
+    paymentMethod === "WALLET"
+      ? "Paid from your wallet. We're finding you a professional now."
+      : paymentMethod === "ONLINE"
+        ? "Payment received. We're finding you a professional now."
+        : "Pay the technician in cash once the job is done. We're finding you a professional now.";
 
   const handleCopy = () => {
     navigator.clipboard.writeText(displayId);
@@ -29,9 +35,7 @@ export function OrderSuccess({ orderId }: { orderId: string }) {
         {/* Heading & Text */}
         <div className="mt-2">
           <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">Booking Confirmed!</h2>
-          <p className="text-[15px] text-slate-500 dark:text-slate-400 leading-relaxed px-4">
-            Your payment was successful. Our team will verify and confirm your booking shortly.
-          </p>
+          <p className="text-[15px] text-slate-500 dark:text-slate-400 leading-relaxed px-4">{subtext}</p>
         </div>
         
         {/* Order ID Box */}

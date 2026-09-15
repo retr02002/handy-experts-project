@@ -22,7 +22,6 @@ const prisma = new PrismaClient({ adapter });
 
 const PASSWORD = "Test@1234";
 const VENDOR_RADIUS_KM = 2;
-const TECHNICIAN_RADIUS_KM = 10;
 
 interface VendorSeed {
   pincode: string;
@@ -125,7 +124,12 @@ async function seedVendor(spec: VendorSeed) {
           phone: null,
         },
       });
-      const techProfile = await tx.technicianProfile.create({
+      // No TechnicianCategory/TechnicianService rows seeded here — that's
+      // real category data, not something this script should guess at.
+      // Assign categories via the admin/vendor UI after seeding, same as
+      // any other new technician, or this technician receives zero jobs
+      // under the category/service matching gate.
+      await tx.technicianProfile.create({
         data: {
           userId: user.id,
           type: "VENDOR_MANAGED",
@@ -133,15 +137,6 @@ async function seedVendor(spec: VendorSeed) {
           experienceYears: 4,
           servicePincode: spec.pincode,
           vendorId: vendor.id,
-        },
-      });
-      await tx.technicianServiceArea.create({
-        data: {
-          technicianId: techProfile.id,
-          pincode: spec.pincode,
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-          radiusKm: TECHNICIAN_RADIUS_KM,
         },
       });
     });

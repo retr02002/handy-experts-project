@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { ActionResponse } from "@/actions/auth.actions";
 import { getRoute } from "@/lib/routing";
+import { STALE_POSITION_AFTER_SECONDS } from "@/lib/constants";
 
 /**
  * Statuses where the technician's position is genuinely in play.
@@ -14,16 +15,6 @@ import { getRoute } from "@/lib/routing";
  * nothing about when they'll arrive. Tracking begins at EN_ROUTE.
  */
 const LIVE_STATUSES = ["EN_ROUTE", "IN_PROGRESS"];
-
-/**
- * Past this age a stored position stops being "where the technician is" and
- * becomes "where the technician last was". On duty the device writes every
- * ~12s, so 10 minutes is ~50 consecutive missed writes — a dead phone, denied
- * location, or a closed app, not a brief GPS gap. Callers must not present a
- * stale position as live tracking: a 6-hour-old fix reading "5 m away, approx
- * 1 min" tells the customer someone is at their door who may be miles away.
- */
-const STALE_POSITION_AFTER_SECONDS = 600;
 
 export interface JobRoute {
   /** [lng, lat] pairs for a GeoJSON LineString. */

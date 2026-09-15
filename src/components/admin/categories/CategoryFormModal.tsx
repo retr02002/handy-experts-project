@@ -181,7 +181,7 @@ export function CategoryFormModal({ isOpen, onClose, onSuccess, initialData, cat
           />
           <span className="flex flex-col">
             <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Is Popular</span>
-            <span className="text-xs text-slate-400">Popular categories appear in the "Popular Services" section on the homepage.</span>
+            <span className="text-xs text-slate-400">Popular categories appear in the &quot;Popular Services&quot; section on the homepage.</span>
           </span>
         </label>
       </div>

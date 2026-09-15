@@ -6,6 +6,7 @@ import { ClientIcon } from "@/components/ui/ClientIcon";
 import { usePolling } from "@/hooks/usePolling";
 import { MAP_PROVIDERS, formatDistance, formatEta } from "@/lib/mapLinks";
 import { haversineKm } from "@/lib/geo";
+import { useInterpolatedPosition } from "@/hooks/useInterpolatedPosition";
 import { getJobRouteAction, type JobRoute } from "@/actions/tracking.actions";
 
 const LiveMap = dynamic(() => import("./LiveMap").then((m) => m.LiveMap), {
@@ -13,7 +14,11 @@ const LiveMap = dynamic(() => import("./LiveMap").then((m) => m.LiveMap), {
   loading: () => <div className="w-full h-[240px] bg-slate-100 dark:bg-slate-800 animate-pulse" />,
 });
 
+// While the technician is actually travelling the map is the whole point, so
+// it's worth the extra requests; the rest of the time (assigned but not yet
+// moving, or already on site) a slow poll is plenty.
 const ROUTE_POLL_INTERVAL_MS = 15000;
+const ROUTE_POLL_INTERVAL_EN_ROUTE_MS = 5000;
 
 function agoLabel(iso: string): string {
   const seconds = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
@@ -48,15 +53,21 @@ interface Props {
    * someone is already inside the house reads as a bug.
    */
   onSite?: boolean;
+  /**
+   * The technician is travelling right now (status EN_ROUTE). Speeds the
+   * poll up and lets the marker glide between fixes instead of jumping.
+   */
+  enRoute?: boolean;
 }
 
 /**
  * Live job map: both pins, the road route between them, distance/ETA, and a
  * way out to a real navigation app. Position updates arrive by polling on
  * the same cadence as everything else here — the technician's device writes
- * a durable position every ~12s while on duty, so the dot moves in steps
- * rather than gliding. The "updated Xs ago" stamp keeps that honest instead
- * of implying a real-time feed.
+ * a durable position every ~5s while travelling, and the marker eases
+ * between those fixes so the movement reads as continuous. The "updated Xs
+ * ago" stamp still reflects the real fix age rather than the animation, so
+ * a smooth-looking dot can never imply fresher data than actually exists.
  */
 export function JobTrackingMap({
   serviceCallId,
@@ -70,6 +81,7 @@ export function JobTrackingMap({
   locating = false,
   onRetryLocation,
   onSite = false,
+  enRoute = false,
 }: Props) {
   const [route, setRoute] = useState<JobRoute | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -82,7 +94,8 @@ export function JobTrackingMap({
     setLoaded(true);
   }, [serviceCallId]);
 
-  usePolling(load, ROUTE_POLL_INTERVAL_MS, [serviceCallId]);
+  const pollIntervalMs = enRoute ? ROUTE_POLL_INTERVAL_EN_ROUTE_MS : ROUTE_POLL_INTERVAL_MS;
+  usePolling(load, pollIntervalMs, [serviceCallId]);
 
   useEffect(() => {
     if (!providerOpen) return;
@@ -112,6 +125,20 @@ export function JobTrackingMap({
     ? haversineKm(localPosition.lat, localPosition.lng, customerLatitude, customerLongitude)
     : null;
 
+  // Rendering-only. A stale dot must sit still — easing it would suggest
+  // movement we have no evidence for — so it animates only while travelling.
+  const animatedPosition = useInterpolatedPosition(
+    enRoute && !showingStalePosition ? moverPosition : null,
+    pollIntervalMs
+  );
+  const markerPosition = (enRoute && !showingStalePosition ? animatedPosition : null) ?? moverPosition;
+
+  // Framing, distance, ETA and deep links all key off the REAL position.
+  // Feeding them the animated one would re-fit the map on every frame and
+  // report a location the technician is only part-way toward.
+  const fitPoints: [number, number][] = [[customerLongitude, customerLatitude]];
+  if (moverPosition) fitPoints.push([moverPosition.lng, moverPosition.lat]);
+
   // The technician navigates to the customer; the customer watches the
   // technician come to them — so "open in maps" points at the other party.
   const destination =
@@ -129,19 +156,24 @@ export function JobTrackingMap({
         centerLongitude={moverPosition?.lng ?? customerLongitude}
         showCenterMarker={false}
         fitToMarkers
+        fitPoints={fitPoints}
         routeLine={isStale ? undefined : route?.coordinates}
         liveCallMarkers={[
-          { id: "customer", latitude: customerLatitude, longitude: customerLongitude, label: customerLabel },
+          { id: "customer", latitude: customerLatitude, longitude: customerLongitude, label: customerLabel, tone: "green" },
         ]}
         technicianMarkers={
-          moverPosition
+          markerPosition
             ? [
                 {
                   id: "technician",
-                  latitude: moverPosition.lat,
-                  longitude: moverPosition.lng,
+                  latitude: markerPosition.lat,
+                  longitude: markerPosition.lng,
                   label: viewer === "technician" ? "You" : technicianLabel,
-                  isOnDuty: !showingStalePosition,
+                  // Being tracked on this job at all implies on-duty — the
+                  // meaningful signal here is staleness (red dot), not the
+                  // on/off-duty binary the fleet-wide map uses.
+                  isOnDuty: true,
+                  isStale: showingStalePosition,
                   skillCategory: showingStalePosition
                     ? `Last known position · ${agoLabel(route!.updatedAt)}`
                     : viewer === "customer"

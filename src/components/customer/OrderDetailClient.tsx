@@ -25,14 +25,26 @@ const TechnicianDetailModal = dynamic(() =>
   import("@/components/shared/TechnicianDetailModal").then((m) => m.TechnicianDetailModal)
 );
 const RateJobModal = dynamic(() => import("./RateJobModal").then((m) => m.RateJobModal));
+const CancelOrderModal = dynamic(() => import("./CancelOrderModal").then((m) => m.CancelOrderModal));
 
 const PAYMENT_MODE_LABELS: Record<string, string> = {
+  ONLINE: "Paid Online",
+  WALLET: "Paid from Wallet",
+  ADMIN: "Admin Created",
+  COD: "Cash on Delivery",
   gpay: "Google Pay",
   phonepe: "PhonePe",
   paytm: "Paytm",
   amazonpay: "Amazon Pay",
   bhim: "BHIM UPI",
   "other-upi": "Other UPI",
+};
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  PENDING: "Awaiting payment",
+  PAID: "Payment confirmed",
+  FAILED: "Payment failed",
+  COD: "Pay on delivery",
 };
 
 const STATUS_LABELS: Record<OrderDisplayStatus, string> = {
@@ -98,6 +110,7 @@ export function OrderDetailClient({ orderId, initialOrder }: { orderId: string; 
   const [supportOpen, setSupportOpen] = useState(false);
   const [techOpen, setTechOpen] = useState(false);
   const [rateOpen, setRateOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     const res = await getMyOrderDetailAction(orderId);
@@ -181,6 +194,18 @@ export function OrderDetailClient({ orderId, initialOrder }: { orderId: string; 
           </div>
           <p className="text-lg font-bold leading-snug">{headline}</p>
           <p className="text-xs text-white/85 mt-1">{subline}</p>
+          {order.status === "CANCELLED" && order.cancelReason && (
+            <p className="text-xs text-white/85 mt-1">Reason: {order.cancelReason}</p>
+          )}
+          {order.canCancel && (
+            <button
+              type="button"
+              onClick={() => setCancelOpen(true)}
+              className="mt-3 h-9 px-4 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+            >
+              <ClientIcon icon="ph:x-circle-bold" className="w-4 h-4" /> Cancel Order
+            </button>
+          )}
         </div>
 
         {/* Scheduled: the "when", in place of a map that would have nothing
@@ -224,6 +249,7 @@ export function OrderDetailClient({ orderId, initialOrder }: { orderId: string; 
             viewer="customer"
             height="300px"
             onSite={order.status === "IN_PROGRESS"}
+            enRoute={order.status === "EN_ROUTE"}
           />
         )}
 
@@ -414,6 +440,27 @@ export function OrderDetailClient({ orderId, initialOrder }: { orderId: string; 
               <span>Total</span>
               <span>₹{order.total.toFixed(0)}</span>
             </div>
+
+            {/* The vendor revised what this job covers after payment. Showing
+                only the new number would misrepresent what was charged. */}
+            {order.originalTotal !== null && order.originalTotal !== order.total && (
+              <div className="mt-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/25">
+                <p className="text-xs font-bold text-amber-800 dark:text-amber-300">
+                  Your services were updated
+                </p>
+                <div className="flex items-center justify-between text-xs text-amber-800 dark:text-amber-300 mt-1.5">
+                  <span>You paid</span>
+                  <span className="font-bold">₹{order.originalTotal.toFixed(0)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-amber-800 dark:text-amber-300">
+                  <span>{order.total > order.originalTotal ? "Balance due" : "Refund due"}</span>
+                  <span className="font-bold">₹{Math.abs(order.total - order.originalTotal).toFixed(0)}</span>
+                </div>
+                <p className="text-[10px] text-amber-700/80 dark:text-amber-400/80 mt-1.5">
+                  Settle this directly with your technician or the provider.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -428,7 +475,27 @@ export function OrderDetailClient({ orderId, initialOrder }: { orderId: string; 
           <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
             <ClientIcon icon="ph:device-mobile-camera" className="w-4 h-4 shrink-0" />
             <span className="min-w-0 truncate">
-              {PAYMENT_MODE_LABELS[order.paymentMode] ?? order.paymentMode} &middot; {order.upiRef}
+              {order.paymentMode === "ADMIN" && order.createdByAdminName
+                ? `Created by ${order.createdByAdminName}`
+                : PAYMENT_MODE_LABELS[order.paymentMode] ?? order.paymentMode}
+              {order.upiRef && <> &middot; {order.upiRef}</>}
+              {order.paymentStatus && (
+                <>
+                  {" "}
+                  &middot;{" "}
+                  <span
+                    className={
+                      order.paymentStatus === "PAID"
+                        ? "text-emerald-600 dark:text-emerald-400 font-semibold"
+                        : order.paymentStatus === "FAILED"
+                          ? "text-rose-600 dark:text-rose-400 font-semibold"
+                          : "text-amber-600 dark:text-amber-400 font-semibold"
+                    }
+                  >
+                    {PAYMENT_STATUS_LABELS[order.paymentStatus] ?? order.paymentStatus}
+                  </span>
+                </>
+              )}
             </span>
           </div>
           <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
@@ -490,6 +557,17 @@ export function OrderDetailClient({ orderId, initialOrder }: { orderId: string; 
           onClose={() => setRateOpen(false)}
           onSubmitted={() => {
             setRateOpen(false);
+            refresh();
+          }}
+        />
+      )}
+
+      {cancelOpen && (
+        <CancelOrderModal
+          orderId={order.id}
+          onClose={() => setCancelOpen(false)}
+          onCancelled={() => {
+            setCancelOpen(false);
             refresh();
           }}
         />

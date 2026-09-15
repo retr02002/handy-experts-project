@@ -25,13 +25,13 @@ async function requireVendorId(): Promise<{ vendorId: string | null; error: stri
 }
 
 /**
- * Matching (getNearbyLiveCallsForVendorAction) and the admin map both depend
- * on this data, so every mutation revalidates all three surfaces.
+ * Matching (getNearbyLiveCallsForVendorAction) and the live-calls maps all
+ * depend on this data, so every mutation revalidates every surface.
  */
 function revalidateServiceAreaSurfaces() {
-  revalidatePath("/vendor/service-areas");
   revalidatePath("/vendor/live-calls");
   revalidatePath("/admin/live-calls");
+  revalidatePath("/admin/vendors");
 }
 
 export interface VendorServiceAreaSummary {
@@ -42,6 +42,11 @@ export interface VendorServiceAreaSummary {
   radiusKm: number;
 }
 
+/**
+ * A vendor's own read-only view of their coverage — they can see it, but
+ * can no longer add/edit/remove it themselves. Changes now go through
+ * admin, requested via a support ticket (src/actions/supportticket.actions.ts).
+ */
 export async function getMyServiceAreasAction(): Promise<ActionResponse<VendorServiceAreaSummary[]>> {
   const { vendorId, error } = await requireVendorId();
   if (!vendorId) return { success: false, error: error! };
@@ -53,24 +58,49 @@ export async function getMyServiceAreasAction(): Promise<ActionResponse<VendorSe
   return { success: true, data: areas };
 }
 
-export async function addServiceAreaAction(input: AddServiceAreaInput): Promise<ActionResponse<{ id: string }>> {
+export interface VendorCategorySummary {
+  categoryId: string;
+  categoryName: string;
+}
+
+/** A vendor's own read-only view of which categories they're assigned. */
+export async function getMyVendorCategoriesAction(): Promise<ActionResponse<VendorCategorySummary[]>> {
   const { vendorId, error } = await requireVendorId();
   if (!vendorId) return { success: false, error: error! };
+
+  const rows = await prisma.vendorCategory.findMany({
+    where: { vendorId },
+    select: { categoryId: true, category: { select: { name: true } } },
+    orderBy: { category: { name: "asc" } },
+  });
+  return { success: true, data: rows.map((r) => ({ categoryId: r.categoryId, categoryName: r.category.name })) };
+}
+
+/**
+ * Admin-only from here down — a vendor no longer self-manages their
+ * coverage circles. `vendorId` is explicit in every call because, unlike a
+ * vendor's own session, an admin isn't scoped to one vendor.
+ */
+export async function addServiceAreaAction(input: AddServiceAreaInput): Promise<ActionResponse<{ id: string }>> {
+  if (!(await requireAdmin())) return { success: false, error: "Not authorized" };
 
   const validated = addServiceAreaSchema.safeParse(input);
   if (!validated.success) {
     return { success: false, error: "Invalid input data", errors: validated.error.flatten().fieldErrors };
   }
-  const { pincode, radiusKm } = validated.data;
+  const { vendorId, pincode, radiusKm } = validated.data;
 
   try {
+    const vendor = await prisma.vendorProfile.findUnique({ where: { id: vendorId }, select: { id: true } });
+    if (!vendor) return { success: false, error: "Vendor not found" };
+
     const existing = await prisma.vendorServiceArea.findUnique({
       where: { vendorId_pincode: { vendorId, pincode } },
     });
     if (existing) {
       return {
         success: false,
-        error: "This pincode is already in your serviceable areas",
+        error: "This pincode is already one of this vendor's serviceable areas",
         errors: { pincode: ["Already added"] },
       };
     }
@@ -97,8 +127,7 @@ export async function addServiceAreaAction(input: AddServiceAreaInput): Promise<
 }
 
 export async function updateServiceAreaRadiusAction(input: UpdateServiceAreaRadiusInput): Promise<ActionResponse> {
-  const { vendorId, error } = await requireVendorId();
-  if (!vendorId) return { success: false, error: error! };
+  if (!(await requireAdmin())) return { success: false, error: "Not authorized" };
 
   const validated = updateServiceAreaRadiusSchema.safeParse(input);
   if (!validated.success) {
@@ -107,13 +136,7 @@ export async function updateServiceAreaRadiusAction(input: UpdateServiceAreaRadi
   const { id, radiusKm } = validated.data;
 
   try {
-    const area = await prisma.vendorServiceArea.findUnique({ where: { id }, select: { vendorId: true } });
-    if (!area || area.vendorId !== vendorId) {
-      return { success: false, error: "Serviceable area not found" };
-    }
-
     await prisma.vendorServiceArea.update({ where: { id }, data: { radiusKm } });
-
     revalidateServiceAreaSurfaces();
     return { success: true };
   } catch (err) {
@@ -123,17 +146,10 @@ export async function updateServiceAreaRadiusAction(input: UpdateServiceAreaRadi
 }
 
 export async function removeServiceAreaAction(id: string): Promise<ActionResponse> {
-  const { vendorId, error } = await requireVendorId();
-  if (!vendorId) return { success: false, error: error! };
+  if (!(await requireAdmin())) return { success: false, error: "Not authorized" };
 
   try {
-    const area = await prisma.vendorServiceArea.findUnique({ where: { id }, select: { vendorId: true } });
-    if (!area || area.vendorId !== vendorId) {
-      return { success: false, error: "Serviceable area not found" };
-    }
-
     await prisma.vendorServiceArea.delete({ where: { id } });
-
     revalidateServiceAreaSurfaces();
     return { success: true };
   } catch (err) {
@@ -174,4 +190,17 @@ export async function getAllVendorServiceAreasForAdminAction(): Promise<ActionRe
       radiusKm: a.radiusKm,
     })),
   };
+}
+
+/** One vendor's coverage areas, for the admin's per-vendor management panel. */
+export async function getVendorServiceAreasForAdminAction(
+  vendorId: string
+): Promise<ActionResponse<VendorServiceAreaSummary[]>> {
+  if (!(await requireAdmin())) return { success: false, error: "Not authorized" };
+
+  const areas = await prisma.vendorServiceArea.findMany({
+    where: { vendorId },
+    orderBy: { createdAt: "asc" },
+  });
+  return { success: true, data: areas };
 }

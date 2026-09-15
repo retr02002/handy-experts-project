@@ -20,11 +20,15 @@ export interface ChatMessageItem {
 /**
  * One thread per job. Readable and writable by the customer and the
  * assigned technician; the owning vendor can read it too, since they're the
- * one fielding complaints when something goes wrong on site.
+ * one fielding complaints when something goes wrong on site. Admin can also
+ * read — for full oversight of a job — but never write: `isAdmin` folds
+ * into `canWrite` the same way `isVendor` already does, so admin lands in
+ * the same read-only bucket without a separate code path at each call site.
  */
 async function authorizeThread(
   serviceCallId: string,
-  userId: string
+  userId: string,
+  isAdmin: boolean
 ): Promise<
   { ok: true; canWrite: boolean; otherPartyUserId: string | null } | { ok: false; error: string }
 > {
@@ -32,6 +36,7 @@ async function authorizeThread(
     where: { id: serviceCallId },
     select: {
       customerId: true,
+      status: true,
       vendor: { select: { userId: true } },
       technician: { select: { userId: true } },
     },
@@ -41,8 +46,18 @@ async function authorizeThread(
   const isCustomer = call.customerId === userId;
   const isTechnician = call.technician?.userId === userId;
   const isVendor = call.vendor.userId === userId;
-  if (!isCustomer && !isTechnician && !isVendor) {
+  if (!isCustomer && !isTechnician && !isVendor && !isAdmin) {
     return { ok: false, error: "You don't have access to this conversation" };
+  }
+
+  // A finished job ends the technician's need for the thread, and the
+  // transcript is the richest customer-PII surface left to them — message
+  // bodies carry names and phone numbers verbatim, which no amount of
+  // field-level masking elsewhere can redact. Enforced here rather than by
+  // hiding the chat button, because a hidden button is not access control.
+  // The customer and vendor keep their access; only the technician loses it.
+  if (isTechnician && !isCustomer && !isVendor && !isAdmin && (call.status === "COMPLETED" || call.status === "CANCELLED")) {
+    return { ok: false, error: "This conversation is closed now that the job is finished." };
   }
 
   const otherPartyUserId = isCustomer ? call.technician?.userId ?? null : isTechnician ? call.customerId : null;
@@ -55,7 +70,7 @@ export async function getMessagesAction(serviceCallId: string): Promise<ActionRe
   const userId = session.user.id;
 
   try {
-    const auth = await authorizeThread(serviceCallId, userId);
+    const auth = await authorizeThread(serviceCallId, userId, session.user.role === "SUPER_ADMIN");
     if (!auth.ok) return { success: false, error: auth.error };
 
     const messages = await prisma.chatMessage.findMany({
@@ -92,7 +107,7 @@ export async function sendMessageAction(serviceCallId: string, body: string): Pr
   if (trimmed.length > MAX_MESSAGE_LENGTH) return { success: false, error: "That message is too long" };
 
   try {
-    const auth = await authorizeThread(serviceCallId, userId);
+    const auth = await authorizeThread(serviceCallId, userId, session.user.role === "SUPER_ADMIN");
     if (!auth.ok) return { success: false, error: auth.error };
     if (!auth.canWrite) {
       return { success: false, error: "Only the customer and the assigned technician can post here" };
@@ -122,14 +137,23 @@ export async function sendMessageAction(serviceCallId: string, body: string): Pr
   }
 }
 
-/** Marks everything the other party sent as read — drives the unread badge. */
+/**
+ * Marks everything the other party sent as read — drives the unread badge.
+ * `readAt` is one shared field on the message, not per-viewer, so this must
+ * never be called for an admin's read-only look at a thread: it would mark
+ * messages read for the *real* customer/technician's own unread badge, not
+ * just clear admin's. The admin chat view intentionally never calls this.
+ */
 export async function markMessagesReadAction(serviceCallId: string): Promise<ActionResponse<{ count: number }>> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { success: false, error: "Not signed in" };
+  if (session.user.role === "SUPER_ADMIN") {
+    return { success: false, error: "Admin viewing does not affect read status" };
+  }
   const userId = session.user.id;
 
   try {
-    const auth = await authorizeThread(serviceCallId, userId);
+    const auth = await authorizeThread(serviceCallId, userId, false);
     if (!auth.ok) return { success: false, error: auth.error };
 
     const updated = await prisma.chatMessage.updateMany({
@@ -149,7 +173,7 @@ export async function getUnreadMessageCountAction(serviceCallId: string): Promis
   const userId = session.user.id;
 
   try {
-    const auth = await authorizeThread(serviceCallId, userId);
+    const auth = await authorizeThread(serviceCallId, userId, session.user.role === "SUPER_ADMIN");
     if (!auth.ok) return { success: false, error: auth.error };
 
     const count = await prisma.chatMessage.count({

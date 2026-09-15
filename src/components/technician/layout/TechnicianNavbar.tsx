@@ -70,12 +70,6 @@ export function TechnicianNavbar() {
               <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 md:w-2 md:h-2 bg-rose-500 rounded-full ring-2 ring-white dark:ring-slate-800" />
             )}
           </Link>
-
-          {/* Wallet Link */}
-          <Link href="/technician/wallet" className="relative p-1.5 md:p-2 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:text-amber-500 rounded-full transition-all hover:shadow-sm">
-            <ClientIcon icon="ph:wallet" className="w-4 h-4 md:w-5 md:h-5" />
-            <span className="absolute top-1.5 right-1 w-1.5 h-1.5 md:w-2 md:h-2 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-slate-800" />
-          </Link>
         </div>
 
         <div className="hidden sm:block w-px h-6 bg-slate-200 dark:bg-slate-800 mx-2" />

@@ -69,7 +69,7 @@ export function TestimonialCard({
               ref={textRef}
               className="text-[14px] sm:text-[15px] text-slate-600 dark:text-slate-300 leading-relaxed font-medium line-clamp-4 relative z-10 italic"
             >
-              "{text}"
+              &quot;{text}&quot;
             </p>
             
             {/* Stars centered vertically in remaining space */}
@@ -122,7 +122,7 @@ export function TestimonialCard({
           {/* Back Content (Scrollable) */}
           <div className="flex-grow overflow-y-auto pr-2 pb-2 custom-scrollbar">
             <p className="text-[13px] sm:text-[14px] text-slate-700 dark:text-slate-200 leading-relaxed font-medium">
-              "{text}"
+              &quot;{text}&quot;
             </p>
           </div>
         </div>

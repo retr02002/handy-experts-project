@@ -5,6 +5,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { categorySchema, CategoryInput } from "@/lib/validations/category.schema";
 import type { ActionResponse } from "@/actions/auth.actions";
 import { requireAdmin } from "@/lib/require-admin";
+import { getCategoriesWithServices } from "@/lib/services-data";
 
 /**
  * A category name/icon is rendered on the homepage grid and slider, the
@@ -112,5 +113,34 @@ export async function deleteCategory(id: string): Promise<ActionResponse> {
   } catch (error) {
     console.error("Delete category error:", error);
     return { success: false, error: "Failed to delete category" };
+  }
+}
+
+export interface CategoryWithServiceOptions {
+  id: string;
+  name: string;
+  services: { id: string; title: string }[];
+}
+
+/**
+ * Active categories + their services, minimal shape, for client-side
+ * pickers (the technician skill builder, vendor category assignment) — a
+ * client component can't call services-data.ts's getCategoriesWithServices
+ * directly (it isn't a server action), so this is the thin wrapper.
+ */
+export async function getCategoriesWithServiceOptionsAction(): Promise<ActionResponse<CategoryWithServiceOptions[]>> {
+  try {
+    const categories = await getCategoriesWithServices();
+    return {
+      success: true,
+      data: categories.map((c) => ({
+        id: c.id,
+        name: c.name,
+        services: c.services.map((s) => ({ id: s.id, title: s.title })),
+      })),
+    };
+  } catch (error) {
+    console.error("Get categories with service options error:", error);
+    return { success: false, error: "Failed to load categories" };
   }
 }

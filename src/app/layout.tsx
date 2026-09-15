@@ -70,7 +70,9 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col pb-24 lg:pb-0 overflow-x-hidden lg:overflow-x-visible w-full max-w-full">
+      {/* overflow-x-clip (not hidden) — a `hidden` here makes body a scroll
+          container and breaks every `position: sticky` descendant. */}
+      <body className="min-h-full flex flex-col pb-24 lg:pb-0 overflow-x-clip w-full max-w-full">
         <NextTopLoader
           color="#00B4FF"
           initialPosition={0.08}

@@ -104,6 +104,14 @@ export function ImageUploadField({ label, value, onChange, error }: Props) {
       {value && (
         <div className="relative w-full h-40 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
           <Image src={value} alt="Preview" fill className="object-cover" unoptimized />
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            title="Remove image"
+            className="absolute top-2 right-2 w-9 h-9 rounded-full bg-slate-900/70 hover:bg-slate-900 text-white flex items-center justify-center backdrop-blur-sm transition-colors cursor-pointer"
+          >
+            <ClientIcon icon="ph:x-bold" className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>

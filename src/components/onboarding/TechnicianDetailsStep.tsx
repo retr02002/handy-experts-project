@@ -3,9 +3,10 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
 import { completeTechnicianOnboarding } from "@/actions/onboarding.actions";
-import { SKILL_CATEGORIES } from "@/lib/validations/onboarding.schema";
 import { OnboardingField } from "./OnboardingField";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { SkillAssignmentBuilder } from "@/components/shared/SkillAssignmentBuilder";
+import type { SkillAssignmentInput } from "@/lib/validations/technician.schema";
 
 interface Props {
   initialName?: string;
@@ -16,7 +17,6 @@ interface Props {
 const EMPTY_FORM = {
   name: "",
   phone: "",
-  skillCategory: "",
   experienceYears: "",
   aadhaarNumber: "",
   servicePincode: "",
@@ -24,6 +24,7 @@ const EMPTY_FORM = {
 
 export function TechnicianDetailsStep({ initialName = "", onBack, onSuccess }: Props) {
   const [form, setForm] = useState({ ...EMPTY_FORM, name: initialName });
+  const [skillAssignments, setSkillAssignments] = useState<SkillAssignmentInput[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -38,7 +39,7 @@ export function TechnicianDetailsStep({ initialName = "", onBack, onSuccess }: P
     try {
       const res = await completeTechnicianOnboarding({
         ...form,
-        skillCategory: form.skillCategory as (typeof SKILL_CATEGORIES)[number],
+        skillAssignments,
         experienceYears: Number(form.experienceYears),
       });
       if (!res.success) {
@@ -103,16 +104,9 @@ export function TechnicianDetailsStep({ initialName = "", onBack, onSuccess }: P
             />
           </div>
 
+          <SkillAssignmentBuilder value={skillAssignments} onChange={setSkillAssignments} error={errors.skillAssignments} />
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <OnboardingField
-              as="select"
-              label="Primary Skill"
-              icon="ph:wrench"
-              value={form.skillCategory}
-              onChange={(e) => set("skillCategory", e.target.value)}
-              options={SKILL_CATEGORIES}
-              error={errors.skillCategory}
-            />
             <OnboardingField
               label="Years of Experience"
               icon="ph:briefcase"
@@ -125,9 +119,6 @@ export function TechnicianDetailsStep({ initialName = "", onBack, onSuccess }: P
               error={errors.experienceYears}
               required
             />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <OnboardingField
               label="Aadhaar Number"
               icon="ph:identification-card"
@@ -138,17 +129,17 @@ export function TechnicianDetailsStep({ initialName = "", onBack, onSuccess }: P
               error={errors.aadhaarNumber}
               required
             />
-            <OnboardingField
-              label="Service Area Pincode"
-              icon="ph:map-pin"
-              inputMode="numeric"
-              value={form.servicePincode}
-              onChange={(e) => set("servicePincode", e.target.value.replace(/\D/g, "").slice(0, 6))}
-              placeholder="6-digit pincode"
-              error={errors.servicePincode}
-              required
-            />
           </div>
+
+          <OnboardingField
+            label="Service Area Pincode (optional)"
+            icon="ph:map-pin"
+            inputMode="numeric"
+            value={form.servicePincode}
+            onChange={(e) => set("servicePincode", e.target.value.replace(/\D/g, "").slice(0, 6))}
+            placeholder="6-digit pincode"
+            error={errors.servicePincode}
+          />
 
           <p className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
             <ClientIcon icon="ph:shield-check" className="w-3.5 h-3.5 shrink-0" />

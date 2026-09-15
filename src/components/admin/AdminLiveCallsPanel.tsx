@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { getAllLiveCallsAction, type AdminLiveCall } from "@/actions/livecall.actions";
 import { getAllTechniciansForAdminAction, type AdminTechnician } from "@/actions/technician.actions";
 import { getAllVendorsForAdminAction, type AdminVendor } from "@/actions/admin.actions";
 import { getAllVendorServiceAreasForAdminAction, type AdminVendorServiceArea } from "@/actions/vendorservicearea.actions";
-import { getAllTechnicianServiceAreasForAdminAction, type AdminTechnicianServiceArea } from "@/actions/technicianservicearea.actions";
 import { usePolling } from "@/hooks/usePolling";
 import dynamic from "next/dynamic";
 
@@ -25,11 +25,11 @@ const VENDORS_POLL_INTERVAL_MS = 30000;
 const DEFAULT_CENTER = { lat: 28.6139, lng: 77.209 };
 
 export function AdminLiveCallsPanel() {
+  const router = useRouter();
   const [calls, setCalls] = useState<AdminLiveCall[]>([]);
   const [technicians, setTechnicians] = useState<AdminTechnician[]>([]);
   const [vendors, setVendors] = useState<AdminVendor[]>([]);
   const [serviceAreas, setServiceAreas] = useState<AdminVendorServiceArea[]>([]);
-  const [technicianServiceAreas, setTechnicianServiceAreas] = useState<AdminTechnicianServiceArea[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   usePolling(async () => {
@@ -53,11 +53,6 @@ export function AdminLiveCallsPanel() {
     if (res.success && res.data) setServiceAreas(res.data);
   }, VENDORS_POLL_INTERVAL_MS);
 
-  usePolling(async () => {
-    const res = await getAllTechnicianServiceAreasForAdminAction();
-    if (res.success && res.data) setTechnicianServiceAreas(res.data);
-  }, TECHNICIANS_POLL_INTERVAL_MS);
-
   const center = calls.length > 0 ? { lat: calls[0].latitude, lng: calls[0].longitude } : DEFAULT_CENTER;
 
   return (
@@ -80,6 +75,7 @@ export function AdminLiveCallsPanel() {
               longitude: t.longitude,
               label: `${t.name} — ${t.vendorName}`,
               isOnDuty: t.isOnDuty,
+              isStale: t.isStale,
               skillCategory: t.skillCategory,
               phone: t.phone,
             }))}
@@ -101,12 +97,7 @@ export function AdminLiveCallsPanel() {
             longitude: a.longitude,
             radiusKm: a.radiusKm,
           }))}
-          technicianServiceAreaCircles={technicianServiceAreas.map((a) => ({
-            id: a.id,
-            latitude: a.latitude,
-            longitude: a.longitude,
-            radiusKm: a.radiusKm,
-          }))}
+          onViewTechnicianHistory={(id) => router.push(`/admin/technicians/${id}`)}
         />
       </div>
 

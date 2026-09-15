@@ -20,6 +20,8 @@ export interface LiveCallMarkerData {
   latitude: number;
   longitude: number;
   label: string;
+  /** "green" renders a distinct destination pin instead of the default blue phone-call bubble — used for a job-site marker on a tracking map. Defaults to "blue". */
+  tone?: "blue" | "green";
 }
 
 export interface TechnicianMarkerData {
@@ -30,6 +32,8 @@ export interface TechnicianMarkerData {
   isOnDuty: boolean;
   skillCategory: string;
   phone: string;
+  /** On-duty but hasn't reported a position in a while — overlays a small pulsing red dot on the marker rather than recoloring it (a full red recolor would be indistinguishable from off-duty/slate at a glance). Defaults to false. */
+  isStale?: boolean;
 }
 
 export interface VendorMarkerData {
@@ -59,6 +63,13 @@ interface LiveMapProps {
   serviceAreaCircles?: ServiceAreaCircleData[];
   technicianServiceAreaCircles?: ServiceAreaCircleData[];
   onCallMarkerClick?: (id: string) => void;
+  /**
+   * Shows a "View history →" link in a technician's hover popup. Omitted by
+   * default — only the vendor/admin panels that actually have a history
+   * page to send the technician to pass this; every other LiveMap caller
+   * (customer tracking, job panels) is unaffected.
+   */
+  onViewTechnicianHistory?: (technicianId: string) => void;
   height?: string;
   /** [lng, lat] pairs — drawn as a route line between two points. */
   routeLine?: [number, number][];
@@ -68,6 +79,13 @@ interface LiveMapProps {
    * is fine for a static overview but useless for live tracking.
    */
   fitToMarkers?: boolean;
+  /**
+   * Explicit [lng, lat] points to frame, instead of deriving them from the
+   * markers. A caller that animates a marker between polls must pass the
+   * *target* positions here: the animated coordinate changes every frame,
+   * and framing on it would re-run fitBounds ~60 times a second.
+   */
+  fitPoints?: [number, number][];
   /**
    * The black "your business location" dot at the map centre. On by default
    * so the vendor/admin panels keep it; a customer tracking screen turns it
@@ -85,9 +103,11 @@ export function LiveMap({
   serviceAreaCircles = [],
   technicianServiceAreaCircles = [],
   onCallMarkerClick,
+  onViewTechnicianHistory,
   height = "500px",
   routeLine,
   fitToMarkers = false,
+  fitPoints: fitPointsOverride,
   showCenterMarker = true,
 }: LiveMapProps) {
   const [hoveredTech, setHoveredTech] = useState<TechnicianMarkerData | null>(null);
@@ -98,13 +118,14 @@ export function LiveMap({
   // Every point the caller wants visible, as a stable key so the effect only
   // refits when something actually moved.
   const fitPoints: [number, number][] = fitToMarkers
-    ? [
+    ? (fitPointsOverride ?? [
         ...liveCallMarkers.map((m) => [m.longitude, m.latitude] as [number, number]),
         ...technicianMarkers.map((m) => [m.longitude, m.latitude] as [number, number]),
         ...vendorMarkers.map((m) => [m.longitude, m.latitude] as [number, number]),
-      ]
+      ])
     : [];
-  const fitKey = fitPoints.map(([lng, lat]) => `${lng.toFixed(5)},${lat.toFixed(5)}`).join("|");
+  // 4dp is ~11m. Finer than that and GPS jitter alone re-frames the map.
+  const fitKey = fitPoints.map(([lng, lat]) => `${lng.toFixed(4)},${lat.toFixed(4)}`).join("|");
 
   useEffect(() => {
     // Nothing can be framed until the style has loaded — calling fitBounds
@@ -158,7 +179,20 @@ export function LiveMap({
         initialViewState={{ longitude: centerLongitude, latitude: centerLatitude, zoom: 11 }}
         mapStyle={MAP_STYLE}
         style={{ width: "100%", height: "100%" }}
-        onLoad={() => setIsLoaded(true)}
+        // OpenStreetMap's licence and OpenFreeMap's terms both require the
+        // credit stay visible, so it can't be dropped — compact is meant to
+        // collapse it to a corner ⓘ that expands on click instead of a text
+        // banner lying across the map. maplibre-gl actually initializes
+        // compact mode already expanded (it adds "maplibregl-compact-show"
+        // on load, not just "maplibregl-compact") — a library quirk, not
+        // something fixable via props — so onLoad below strips that class
+        // once, right after mount. The control's own click-to-toggle handler
+        // is untouched, so tapping the ⓘ still expands/collapses normally.
+        attributionControl={{ compact: true }}
+        onLoad={(e) => {
+          setIsLoaded(true);
+          e.target.getContainer().querySelector(".maplibregl-compact-show")?.classList.remove("maplibregl-compact-show");
+        }}
       >
         <NavigationControl position="top-right" />
 
@@ -228,38 +262,61 @@ export function LiveMap({
           </Marker>
         )}
 
-        {liveCallMarkers.map((call) => (
-          <Marker
-            key={call.id}
-            longitude={call.longitude}
-            latitude={call.latitude}
-            anchor="bottom"
-            onClick={() => onCallMarkerClick?.(call.id)}
-            style={{ zIndex: 2 }}
-          >
-            <div className="relative w-7 h-7 flex items-center justify-center">
-              <span className="absolute inset-0 rounded-full bg-[#00B4FF]/60 animate-ping" />
+        {liveCallMarkers.map((call) =>
+          call.tone === "green" ? (
+            <Marker key={call.id} longitude={call.longitude} latitude={call.latitude} anchor="bottom" style={{ zIndex: 2 }}>
               <button
                 type="button"
                 title={call.label}
-                className="relative w-7 h-7 rounded-full bg-[#00B4FF] text-white border-2 border-white shadow-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
+                onClick={() => onCallMarkerClick?.(call.id)}
+                className="w-7 h-7 rounded-full bg-green-600 text-white border-2 border-white shadow-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
               >
-                <ClientIcon icon="ph:phone-call-fill" className="w-3.5 h-3.5" />
+                <ClientIcon icon="ph:map-pin-fill" className="w-3.5 h-3.5" />
               </button>
-            </div>
-          </Marker>
-        ))}
+            </Marker>
+          ) : (
+            <Marker
+              key={call.id}
+              longitude={call.longitude}
+              latitude={call.latitude}
+              anchor="bottom"
+              onClick={() => onCallMarkerClick?.(call.id)}
+              style={{ zIndex: 2 }}
+            >
+              <div className="relative w-7 h-7 flex items-center justify-center">
+                <span className="absolute inset-0 rounded-full bg-[#00B4FF]/60 animate-ping" />
+                <button
+                  type="button"
+                  title={call.label}
+                  className="relative w-7 h-7 rounded-full bg-[#00B4FF] text-white border-2 border-white shadow-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
+                >
+                  <ClientIcon icon="ph:phone-call-fill" className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </Marker>
+          )
+        )}
 
         {technicianMarkers.map((tech) => (
           <Marker key={tech.id} longitude={tech.longitude} latitude={tech.latitude} anchor="bottom" style={{ zIndex: 1 }}>
             <div
               onMouseEnter={() => setHoveredTech(tech)}
               onMouseLeave={() => setHoveredTech((cur) => (cur?.id === tech.id ? null : cur))}
-              className={`w-6 h-6 rounded-full border-2 border-white shadow-lg flex items-center justify-center transition-colors cursor-pointer ${
-                tech.isOnDuty ? "bg-emerald-500" : "bg-slate-400"
-              }`}
+              className="relative w-6 h-6"
             >
-              <ClientIcon icon="ph:user-fill" className="w-3 h-3 text-white" />
+              <div
+                className={`w-6 h-6 rounded-full border-2 border-white shadow-lg flex items-center justify-center transition-colors cursor-pointer ${
+                  tech.isOnDuty ? "bg-emerald-500" : "bg-slate-400"
+                }`}
+              >
+                <ClientIcon icon="ph:user-fill" className="w-3 h-3 text-white" />
+              </div>
+              {tech.isOnDuty && tech.isStale && (
+                <span
+                  title="Not reporting location — may have gone offline"
+                  className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border border-white animate-pulse"
+                />
+              )}
             </div>
           </Marker>
         ))}
@@ -293,11 +350,24 @@ export function LiveMap({
               <p className="font-bold text-slate-900">{hoveredTech.label}</p>
               <p className="text-slate-600">{hoveredTech.skillCategory}</p>
               <p className="text-slate-600">
-                <span className={hoveredTech.isOnDuty ? "text-emerald-600 font-semibold" : "text-slate-400"}>
-                  {hoveredTech.isOnDuty ? "On duty" : "Off duty"}
-                </span>
+                {hoveredTech.isOnDuty && hoveredTech.isStale ? (
+                  <span className="text-red-500 font-semibold">Not reporting location</span>
+                ) : (
+                  <span className={hoveredTech.isOnDuty ? "text-emerald-600 font-semibold" : "text-slate-400"}>
+                    {hoveredTech.isOnDuty ? "On duty" : "Off duty"}
+                  </span>
+                )}
                 {hoveredTech.phone && <> &middot; {hoveredTech.phone}</>}
               </p>
+              {onViewTechnicianHistory && (
+                <button
+                  type="button"
+                  onClick={() => onViewTechnicianHistory(hoveredTech.id)}
+                  className="mt-1.5 text-xs font-bold text-[#00B4FF] hover:underline cursor-pointer"
+                >
+                  View history →
+                </button>
+              )}
             </div>
           </Popup>
         )}

@@ -11,9 +11,17 @@ import {
   type ServiceCallStatusValue,
   type ReassignCandidate,
 } from "@/actions/servicecall.actions";
-import { resetJobPinAttemptsAction, getServiceReportAction, type ServiceReportSummary } from "@/actions/servicejob.actions";
+import {
+  resetJobPinAttemptsAction,
+  setJobGeofenceBypassAction,
+  getServiceReportAction,
+  type ServiceReportSummary,
+} from "@/actions/servicejob.actions";
 import Image from "next/image";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { TicketBadge } from "@/components/shared/TicketBadge";
+import { JobPhotoGallery } from "@/components/shared/JobPhotoGallery";
+import { JobItemsEditor } from "./JobItemsEditor";
 import { jobStatusLabel } from "@/lib/jobStatus";
 
 /**
@@ -28,7 +36,14 @@ const REASSIGNABLE_STATUSES = ["UNASSIGNED", "ASSIGNED", "EN_ROUTE"];
 
 const PIN_MAX_ATTEMPTS = 5;
 
+/** Waiving the proximity check is pointless once the job is over. */
+const ACTIVE_DONE_STATUSES = ["COMPLETED", "CANCELLED"];
+
 const PAYMENT_MODE_LABELS: Record<string, string> = {
+  ONLINE: "Paid Online",
+  WALLET: "Paid from Wallet",
+  ADMIN: "Admin Created",
+  COD: "Cash on Delivery",
   gpay: "Google Pay",
   phonepe: "PhonePe",
   paytm: "Paytm",
@@ -52,10 +67,13 @@ export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCall
   const [candidates, setCandidates] = useState<ReassignCandidate[]>([]);
   const [report, setReport] = useState<ServiceReportSummary | null>(null);
   const [reassignMode, setReassignMode] = useState(false);
+  const [editingItems, setEditingItems] = useState(false);
   const [selectedTechId, setSelectedTechId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [bypassOpen, setBypassOpen] = useState(false);
+  const [bypassReason, setBypassReason] = useState("");
 
   useEffect(() => {
     getReassignCandidatesAction(call.id).then((res) => {
@@ -77,6 +95,23 @@ export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCall
         return;
       }
       toast.success("PIN attempts reset");
+      onChanged();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGeofenceBypass = async (enabled: boolean) => {
+    setIsSubmitting(true);
+    try {
+      const res = await setJobGeofenceBypassAction(call.id, enabled, enabled ? bypassReason : "");
+      if (!res.success) {
+        toast.error(res.error || "Failed to update the location check");
+        return;
+      }
+      toast.success(enabled ? "Location check waived for this job" : "Location check re-enabled");
+      setBypassOpen(false);
+      setBypassReason("");
       onChanged();
     } finally {
       setIsSubmitting(false);
@@ -148,6 +183,7 @@ export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCall
         </button>
 
         <h3 className="text-lg font-bold text-slate-900 dark:text-white pr-8">{call.itemSummary}</h3>
+        <TicketBadge ticketNumber={call.ticketNumber} className="mt-1.5" />
 
         <div className="flex flex-col gap-3 mt-4">
           <div className="grid grid-cols-2 gap-3 text-sm">
@@ -191,10 +227,10 @@ export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCall
               </div>
             ))}
             <div className="flex items-center justify-between text-slate-500 pt-1.5 border-t border-slate-200 dark:border-slate-700 text-xs">
-              <span>Subtotal</span><span>₹{call.subtotal.toFixed(0)}</span>
+              <span>Subtotal</span><span>₹{(call.subtotal ?? 0).toFixed(0)}</span>
             </div>
             <div className="flex items-center justify-between text-slate-500 text-xs">
-              <span>GST</span><span>₹{call.tax.toFixed(0)}</span>
+              <span>GST</span><span>₹{(call.tax ?? 0).toFixed(0)}</span>
             </div>
             <div className="flex items-center justify-between font-bold text-slate-900 dark:text-white pt-1">
               <span>Total</span><span>₹{call.total.toFixed(0)}</span>
@@ -204,7 +240,10 @@ export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCall
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
               <ClientIcon icon="ph:device-mobile-camera" className="w-4 h-4 text-slate-400 shrink-0" />
-              {PAYMENT_MODE_LABELS[call.paymentMode] ?? call.paymentMode} &middot; {call.upiRef}
+              {call.paymentMode === "ADMIN" && call.createdByAdminName
+                ? `Created by ${call.createdByAdminName}`
+                : PAYMENT_MODE_LABELS[call.paymentMode] ?? call.paymentMode}
+              {call.upiRef && <> &middot; {call.upiRef}</>}
             </div>
             {call.paymentScreenshotUrl && (
               <button type="button" onClick={() => setZoomOpen(true)} className="text-[#00B4FF] font-bold underline underline-offset-2 cursor-pointer text-xs">
@@ -234,6 +273,45 @@ export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCall
                 </button>
               </div>
             )}
+
+            {!ACTIVE_DONE_STATUSES.includes(call.status) && (
+              <div className="mt-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Location check</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      {call.geofenceBypass
+                        ? "Waived — this technician can start/finish from anywhere."
+                        : "Technician must be near the customer to start or finish."}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => (call.geofenceBypass ? handleGeofenceBypass(false) : setBypassOpen((v) => !v))}
+                    disabled={isSubmitting}
+                    className="shrink-0 text-xs font-bold text-[#00B4FF] underline disabled:opacity-50 cursor-pointer"
+                  >
+                    {call.geofenceBypass ? "Re-enable" : "Waive"}
+                  </button>
+                </div>
+                {bypassOpen && !call.geofenceBypass && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={bypassReason}
+                      onChange={(e) => setBypassReason(e.target.value)}
+                      placeholder="Why? e.g. address pin is wrong"
+                      className="flex-1 min-w-0 h-10 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                    />
+                    <button
+                      onClick={() => handleGeofenceBypass(true)}
+                      disabled={isSubmitting || bypassReason.trim().length < 3}
+                      className="h-10 px-3 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold disabled:opacity-50 cursor-pointer shrink-0"
+                    >
+                      Save
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
             {report && (
               <div className="mt-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 flex flex-col gap-1">
                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Completion Report</p>
@@ -249,6 +327,9 @@ export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCall
                 <p className="text-xs text-slate-600 dark:text-slate-300 break-words mt-1">{report.remarks}</p>
               </div>
             )}
+            <div className="mt-3">
+              <JobPhotoGallery serviceCallId={call.id} />
+            </div>
           </div>
           <div className="grid grid-cols-3 gap-3 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-3">
             <div>
@@ -284,6 +365,19 @@ export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCall
                 {isSubmitting ? "Cancelling..." : "Cancel Call"}
               </button>
             </div>
+          </div>
+        ) : editingItems ? (
+          <div className="mt-4">
+            <JobItemsEditor
+              serviceCallId={call.id}
+              items={call.items}
+              paidTotal={call.total}
+              onClose={() => setEditingItems(false)}
+              onSaved={() => {
+                setEditingItems(false);
+                onChanged();
+              }}
+            />
           </div>
         ) : reassignMode ? (
           <div className="mt-4 flex flex-col gap-3">
@@ -367,16 +461,25 @@ export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCall
               </div>
             </div>
             {REASSIGNABLE_STATUSES.includes(call.status) ? (
-              <button
-                onClick={() => setReassignMode(true)}
-                className="w-full h-11 rounded-xl bg-[#00B4FF] hover:bg-[#0096fa] text-white text-sm font-bold flex items-center justify-center gap-2 cursor-pointer mt-2"
-              >
-                <ClientIcon icon="ph:arrows-left-right-bold" className="w-4 h-4" />
-                {call.technicianId ? "Reassign Technician" : "Assign Technician"}
-              </button>
+              <>
+                <button
+                  onClick={() => setReassignMode(true)}
+                  className="w-full h-11 rounded-xl bg-[#00B4FF] hover:bg-[#0096fa] text-white text-sm font-bold flex items-center justify-center gap-2 cursor-pointer mt-2"
+                >
+                  <ClientIcon icon="ph:arrows-left-right-bold" className="w-4 h-4" />
+                  {call.technicianId ? "Reassign Technician" : "Assign Technician"}
+                </button>
+                <button
+                  onClick={() => setEditingItems(true)}
+                  className="w-full h-11 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-bold flex items-center justify-center gap-2 cursor-pointer mt-2"
+                >
+                  <ClientIcon icon="ph:pencil-simple-bold" className="w-4 h-4" />
+                  Edit Services
+                </button>
+              </>
             ) : (
               <p className="text-[11px] text-slate-400 text-center mt-2">
-                Work has started — this job can no longer be reassigned.
+                Work has started — this job can no longer be reassigned or repriced.
               </p>
             )}
             <button

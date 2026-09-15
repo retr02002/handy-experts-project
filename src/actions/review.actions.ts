@@ -191,6 +191,27 @@ export async function getReviewsForVendorAction(): Promise<ActionResponse<Review
   }
 }
 
+/** Admin-by-id counterpart to getReviewsForVendorAction (which is session-derived, for the vendor's own dashboard) — used by the admin vendor detail page. */
+export async function getReviewsForVendorByIdAction(vendorId: string): Promise<ActionResponse<ReviewItem[]>> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || session.user.role !== "SUPER_ADMIN") {
+    return { success: false, error: "Not authorized" };
+  }
+
+  try {
+    const rows = await prisma.review.findMany({
+      where: { vendorId },
+      include: reviewWithContext,
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+    return { success: true, data: rows.map(mapReview) };
+  } catch (err) {
+    console.error("Get vendor reviews by id error:", err);
+    return { success: false, error: "Failed to load reviews" };
+  }
+}
+
 /** The signed-in technician's own reviews. */
 export async function getMyTechnicianReviewsAction(): Promise<ActionResponse<ReviewItem[]>> {
   const session = await getServerSession(authOptions);
@@ -207,6 +228,47 @@ export async function getMyTechnicianReviewsAction(): Promise<ActionResponse<Rev
 
     const rows = await prisma.review.findMany({
       where: { technicianId: profile.id },
+      include: reviewWithContext,
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+    return { success: true, data: rows.map(mapReview) };
+  } catch (err) {
+    console.error("Get technician reviews error:", err);
+    return { success: false, error: "Failed to load reviews" };
+  }
+}
+
+/**
+ * Reviews for one technician, readable by the vendor who manages them or by
+ * an admin. Scoped rather than open so one vendor can't read another's
+ * team's feedback by guessing an id.
+ */
+export async function getReviewsForTechnicianAction(
+  technicianId: string
+): Promise<ActionResponse<ReviewItem[]>> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { success: false, error: "Not signed in" };
+
+  try {
+    if (session.user.role === "VENDOR") {
+      const vendor = await prisma.vendorProfile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+      if (!vendor) return { success: false, error: "Vendor profile not found" };
+
+      const owns = await prisma.technicianProfile.findFirst({
+        where: { id: technicianId, vendorId: vendor.id },
+        select: { id: true },
+      });
+      if (!owns) return { success: false, error: "That technician isn't on your team" };
+    } else if (session.user.role !== "SUPER_ADMIN") {
+      return { success: false, error: "Not authorized" };
+    }
+
+    const rows = await prisma.review.findMany({
+      where: { technicianId },
       include: reviewWithContext,
       orderBy: { createdAt: "desc" },
       take: 100,
@@ -235,6 +297,22 @@ export async function getAllReviewsAction(): Promise<ActionResponse<ReviewItem[]
   } catch (err) {
     console.error("Get all reviews error:", err);
     return { success: false, error: "Failed to load reviews" };
+  }
+}
+
+/** The review for one job, if it has one — for the admin's full job-detail view. */
+export async function getReviewForServiceCallAction(serviceCallId: string): Promise<ActionResponse<ReviewItem | null>> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || session.user.role !== "SUPER_ADMIN") {
+    return { success: false, error: "Not authorized" };
+  }
+
+  try {
+    const review = await prisma.review.findUnique({ where: { serviceCallId }, include: reviewWithContext });
+    return { success: true, data: review ? mapReview(review) : null };
+  } catch (err) {
+    console.error("Get review for service call error:", err);
+    return { success: false, error: "Failed to load the review" };
   }
 }
 

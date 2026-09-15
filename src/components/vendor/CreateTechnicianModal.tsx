@@ -4,16 +4,17 @@ import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { createTechnicianAction, type CreatedTechnicianCredentials } from "@/actions/technician.actions";
-import { SKILL_CATEGORIES } from "@/lib/validations/onboarding.schema";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { SkillAssignmentBuilder } from "@/components/shared/SkillAssignmentBuilder";
+import type { SkillAssignmentInput } from "@/lib/validations/technician.schema";
 
 const EMPTY_FORM = {
   name: "",
   email: "",
   phone: "",
-  skillCategory: "",
   experienceYears: "",
   servicePincode: "",
+  username: "",
 };
 
 interface CreateTechnicianModalProps {
@@ -23,6 +24,7 @@ interface CreateTechnicianModalProps {
 
 export function CreateTechnicianModal({ onClose, onCreated }: CreateTechnicianModalProps) {
   const [form, setForm] = useState(EMPTY_FORM);
+  const [skillAssignments, setSkillAssignments] = useState<SkillAssignmentInput[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [credentials, setCredentials] = useState<CreatedTechnicianCredentials | null>(null);
@@ -38,7 +40,7 @@ export function CreateTechnicianModal({ onClose, onCreated }: CreateTechnicianMo
     try {
       const res = await createTechnicianAction({
         ...form,
-        skillCategory: form.skillCategory as (typeof SKILL_CATEGORIES)[number],
+        skillAssignments,
         experienceYears: Number(form.experienceYears),
       });
       if (!res.success) {
@@ -148,43 +150,43 @@ export function CreateTechnicianModal({ onClose, onCreated }: CreateTechnicianMo
               placeholder="10-digit mobile number"
             />
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[13px] font-bold text-slate-700 dark:text-slate-300 mb-1.5 block">Skill</label>
-                <select
-                  value={form.skillCategory}
-                  onChange={(e) => set("skillCategory", e.target.value)}
-                  className="w-full h-11 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
-                >
-                  <option value="" disabled>
-                    Select skill
-                  </option>
-                  {SKILL_CATEGORIES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-                {errors.skillCategory && <p className="text-xs text-red-500 mt-1">{errors.skillCategory}</p>}
-              </div>
+            <Field
+              label="Experience (yrs)"
+              type="number"
+              value={form.experienceYears}
+              onChange={(v) => set("experienceYears", v)}
+              error={errors.experienceYears}
+              placeholder="e.g. 3"
+            />
+
+            <SkillAssignmentBuilder value={skillAssignments} onChange={setSkillAssignments} error={errors.skillAssignments} />
+
+            <div>
               <Field
-                label="Experience (yrs)"
-                type="number"
-                value={form.experienceYears}
-                onChange={(v) => set("experienceYears", v)}
-                error={errors.experienceYears}
-                placeholder="e.g. 3"
+                label="Service Area Pincode (optional)"
+                inputMode="numeric"
+                value={form.servicePincode}
+                onChange={(v) => set("servicePincode", v.replace(/\D/g, "").slice(0, 6))}
+                error={errors.servicePincode}
+                placeholder="6-digit pincode"
               />
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                For display only — job matching now uses their live location.
+              </p>
             </div>
 
-            <Field
-              label="Service Area Pincode"
-              inputMode="numeric"
-              value={form.servicePincode}
-              onChange={(v) => set("servicePincode", v.replace(/\D/g, "").slice(0, 6))}
-              error={errors.servicePincode}
-              placeholder="6-digit pincode"
-            />
+            <div>
+              <Field
+                label="Login Username (optional)"
+                value={form.username}
+                onChange={(v) => set("username", v.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 20))}
+                error={errors.username}
+                placeholder="Leave blank to generate one"
+              />
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                They can sign in with this or their mobile number. You can always look it up later.
+              </p>
+            </div>
 
             <button
               type="submit"

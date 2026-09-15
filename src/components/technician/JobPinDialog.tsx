@@ -6,7 +6,12 @@ import { toast } from "sonner";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { startJobAction, completeJobAction } from "@/actions/servicejob.actions";
 import { CompletionReportForm, type ReportDraft, emptyReportDraft, draftToInput } from "./CompletionReportForm";
+import { GeofenceGate } from "./GeofenceGate";
+import { JobPhotoUploader } from "./JobPhotoUploader";
+import { SignaturePad } from "./SignaturePad";
 import type { ServiceCallSummary } from "@/actions/servicecall.actions";
+import type { GeoFix } from "@/lib/geo";
+import { GEOFENCE_POSITION_REQUIRED } from "@/lib/constants";
 
 interface Props {
   call: ServiceCallSummary;
@@ -26,8 +31,15 @@ export function JobPinDialog({ call, gate, onClose, onDone }: Props) {
   const [draft, setDraft] = useState<ReportDraft>(emptyReportDraft);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [fix, setFix] = useState<GeoFix | null>(null);
 
   useEffect(() => setMounted(true), []);
+
+  // Only the raw fix is kept — the evaluated result is already rendered by
+  // GeofenceGate itself, and the server re-evaluates authoritatively.
+  const handleGeoChange = React.useCallback((nextFix: GeoFix | null) => {
+    setFix(nextFix);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,9 +52,13 @@ export function JobPinDialog({ call, gate, onClose, onDone }: Props) {
     setIsSubmitting(true);
     try {
       if (gate === "start") {
-        const res = await startJobAction(call.id, pin);
+        const res = await startJobAction(call.id, pin, fix);
         if (!res.success) {
-          setError(res.error || "Couldn't start the job");
+          setError(
+            res.error === GEOFENCE_POSITION_REQUIRED
+              ? "We couldn't confirm where you are. Turn location on and try again."
+              : res.error || "Couldn't start the job"
+          );
           return;
         }
         toast.success("Job started");
@@ -52,9 +68,13 @@ export function JobPinDialog({ call, gate, onClose, onDone }: Props) {
           setError(input.error);
           return;
         }
-        const res = await completeJobAction(call.id, pin, input.value);
+        const res = await completeJobAction(call.id, pin, input.value, fix);
         if (!res.success) {
-          setError(res.error || "Couldn't complete the job");
+          setError(
+            res.error === GEOFENCE_POSITION_REQUIRED
+              ? "We couldn't confirm where you are. Turn location on and try again."
+              : res.error || "Couldn't complete the job"
+          );
           return;
         }
         toast.success("Job completed and report submitted");
@@ -88,6 +108,14 @@ export function JobPinDialog({ call, gate, onClose, onDone }: Props) {
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4">
+          <GeofenceGate
+            customerLat={call.latitude}
+            customerLng={call.longitude}
+            bypass={call.geofenceBypass}
+            action={gate}
+            onChange={handleGeoChange}
+          />
+
           <div>
             <label className="text-[13px] font-bold text-slate-700 dark:text-slate-300 mb-1.5 block">
               Customer&apos;s service PIN
@@ -111,7 +139,23 @@ export function JobPinDialog({ call, gate, onClose, onDone }: Props) {
             )}
           </div>
 
-          {gate === "complete" && <CompletionReportForm draft={draft} onChange={setDraft} />}
+          {/* Photos upload immediately and independently of this form, so
+              anything already sent survives a failed PIN entry or a dropped
+              connection at submit time. */}
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+            <JobPhotoUploader serviceCallId={call.id} phase={gate === "start" ? "BEFORE" : "AFTER"} />
+          </div>
+
+          {gate === "complete" && (
+            <>
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+                <SignaturePad serviceCallId={call.id} defaultSignerName={call.siteContactName || call.customerName} />
+              </div>
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+                <CompletionReportForm draft={draft} onChange={setDraft} />
+              </div>
+            </>
+          )}
 
           {error && (
             <p className="text-xs font-semibold text-rose-500 bg-rose-50 dark:bg-rose-500/10 rounded-lg px-3 py-2">
@@ -129,6 +173,14 @@ export function JobPinDialog({ call, gate, onClose, onDone }: Props) {
           >
             Cancel
           </button>
+          {/* Deliberately NOT disabled when out of range. Whether the fence
+              actually blocks is a server-side flag (GEOFENCE_ENFORCED) that
+              a client bundle can't read, and mirroring it into a second
+              NEXT_PUBLIC_ var would be two things to keep in sync. So the
+              server stays the single authority: the gate card above warns
+              prominently, and if enforcement is on the action returns the
+              exact distance sentence. During the warn-only rollout this is
+              also what keeps the fence genuinely non-blocking. */}
           <button
             type="submit"
             disabled={isSubmitting}

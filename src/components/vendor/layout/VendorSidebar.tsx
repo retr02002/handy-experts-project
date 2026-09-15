@@ -15,14 +15,14 @@ interface VendorSidebarProps {
 const navItems = [
   { label: "Dashboard", href: "/vendor", icon: "ph:squares-four" },
   { label: "Live Calls", href: "/vendor/live-calls", icon: "ph:phone-call" },
-  { label: "Service Areas", href: "/vendor/service-areas", icon: "ph:map-pin-area" },
   { label: "Service Calls", href: "/vendor/service-calls", icon: "ph:wrench" },
+  { label: "Lookup", href: "/vendor/lookup", icon: "ph:magnifying-glass" },
   { label: "Technicians", href: "/vendor/technicians", icon: "ph:users-three" },
-  { label: "Bookings", href: "/vendor/bookings", icon: "ph:calendar-check" },
   { label: "Revenue", href: "/vendor/revenue", icon: "ph:chart-line-up" },
   { label: "Reviews", href: "/vendor/reviews", icon: "ph:star" },
   { label: "Profile", href: "/vendor/profile", icon: "ph:user" },
   { label: "Wallet", href: "/vendor/wallet", icon: "ph:wallet" },
+  { label: "Support", href: "/vendor/support", icon: "ph:headset" },
 ];
 
 export function VendorSidebar({ isCollapsed, setCollapsed, isMobileMenuOpen, setMobileMenuOpen }: VendorSidebarProps) {

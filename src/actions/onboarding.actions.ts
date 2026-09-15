@@ -13,6 +13,7 @@ import {
   type TechnicianOnboardingInput,
 } from "@/lib/validations/onboarding.schema";
 import { forwardGeocodePincode } from "@/lib/geocode";
+import { applySkillAssignments, deriveLegacySkillLabel } from "@/lib/technicianSkills";
 
 /**
  * Phone is globally unique across every role (OTP login depends on this).
@@ -155,8 +156,10 @@ export async function completeVendorOnboarding(input: VendorOnboardingInput): Pr
 
     if (isFirstCompletion) {
       // Best-effort so a brand-new vendor isn't stuck at zero live-call
-      // coverage until they visit /vendor/service-areas themselves. 15km
-      // mirrors the old flat-radius default; a failed geocode is non-fatal.
+      // coverage from day one — service areas are admin-managed now, so
+      // this auto-seed is the only area a vendor gets until an admin adds
+      // more or resolves a support ticket asking for one. 15km mirrors the
+      // old flat-radius default; a failed geocode is non-fatal.
       const coords = await forwardGeocodePincode(pincode);
       if (coords) {
         await prisma.vendorServiceArea.create({
@@ -183,23 +186,20 @@ export async function completeTechnicianOnboarding(input: TechnicianOnboardingIn
     return { success: false, error: "Invalid input data", errors: validated.error.flatten().fieldErrors };
   }
 
-  const { name, phone, skillCategory, experienceYears, aadhaarNumber, servicePincode } = validated.data;
+  const { name, phone, skillAssignments, experienceYears, aadhaarNumber, servicePincode } = validated.data;
 
   try {
     const phoneConflict = await checkPhoneAvailable(phone, userId);
     if (phoneConflict) return phoneConflict;
 
-    // Checked before the upsert so we know whether this is a first-time
-    // completion (auto-seed one serviceable area below) vs. a repeat
-    // profile edit (never re-seed on every save).
-    const isFirstCompletion = (await prisma.technicianProfile.findUnique({ where: { userId }, select: { id: true } })) === null;
+    const skillCategory = await deriveLegacySkillLabel(prisma, skillAssignments);
 
-    const [, technicianProfile] = await prisma.$transaction([
-      prisma.user.update({
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
         where: { id: userId },
         data: { role: "TECHNICIAN", name, phone },
-      }),
-      prisma.technicianProfile.upsert({
+      });
+      const technicianProfile = await tx.technicianProfile.upsert({
         where: { userId },
         create: {
           userId,
@@ -207,37 +207,17 @@ export async function completeTechnicianOnboarding(input: TechnicianOnboardingIn
           skillCategory,
           experienceYears,
           aadhaarNumber,
-          servicePincode,
+          servicePincode: servicePincode || null,
         },
         update: {
           skillCategory,
           experienceYears,
           aadhaarNumber,
-          servicePincode,
+          servicePincode: servicePincode || null,
         },
-      }),
-    ]);
-
-    if (isFirstCompletion) {
-      // Best-effort so a brand-new technician isn't stuck with no coverage
-      // circle visible on the vendor/admin map until they visit
-      // /technician/service-areas themselves. 15km mirrors the vendor
-      // round's auto-seed default; a failed geocode is non-fatal.
-      const coords = await forwardGeocodePincode(servicePincode);
-      if (coords) {
-        await prisma.technicianServiceArea.create({
-          data: {
-            technicianId: technicianProfile.id,
-            pincode: servicePincode,
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-            radiusKm: 15,
-          },
-        });
-      } else {
-        console.error(`Could not auto-seed a service area for new technician ${technicianProfile.id} (pincode ${servicePincode})`);
-      }
-    }
+      });
+      await applySkillAssignments(tx, technicianProfile.id, skillAssignments);
+    });
 
     return { success: true };
   } catch (err) {

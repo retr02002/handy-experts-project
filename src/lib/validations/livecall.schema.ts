@@ -1,9 +1,10 @@
 import { z } from "zod";
-import { PAYMENT_MODE_OPTIONS } from "@/components/cart/checkoutTypes";
 
-const PAYMENT_MODES = PAYMENT_MODE_OPTIONS.map((opt) => opt.value) as [string, ...string[]];
-
-export const createLiveCallSchema = z.object({
+// Shared shape for both checkout paths — Cash on Delivery (createLiveCallAction)
+// and Pay Online (createRazorpayOrderAction). Payment mode is no longer part
+// of the client payload: it's implied by which action the client calls, and
+// each action sets paymentMode/paymentStatus itself rather than trusting it.
+export const checkoutDetailsSchema = z.object({
   customerName: z.string().trim().min(2, "Enter your full name").max(100),
   customerEmail: z.string().trim().email("Enter a valid email"),
   customerPhone: z.string().trim().regex(/^\d{10}$/, "Enter a valid 10-digit mobile number"),
@@ -21,11 +22,24 @@ export const createLiveCallSchema = z.object({
   // to forward-geocoding the address in that case rather than rejecting it.
   latitude: z.number().min(-90).max(90).nullable(),
   longitude: z.number().min(-180).max(180).nullable(),
-  paymentMode: z.enum(PAYMENT_MODES),
-  upiRef: z.string().trim().min(3, "Enter a valid UPI reference").max(100),
-  paymentScreenshotUrl: z.string().trim().min(1).optional(),
   // Null means "as soon as possible" — the customer picked the Instant
   // option at checkout rather than a scheduled slot.
   scheduledFor: z.string().datetime().nullable(),
+  // How much of the customer's wallet balance they'd like applied — always
+  // re-clamped server-side against their real balance and the real order
+  // total, never trusted as-is (same principle every price computation here
+  // already follows). Optional — most orders don't touch the wallet at all.
+  walletAmountRequested: z.number().min(0).optional().default(0),
+  couponCode: z.string().trim().max(50).optional(),
 });
-export type CreateLiveCallInput = z.infer<typeof createLiveCallSchema>;
+export type CheckoutDetailsInput = z.infer<typeof checkoutDetailsSchema>;
+
+// Cash on Delivery uses the shared shape as-is.
+export const createLiveCallSchema = checkoutDetailsSchema;
+export type CreateLiveCallInput = CheckoutDetailsInput;
+
+export const cancelOrderSchema = z.object({
+  liveCallId: z.string().min(1),
+  reason: z.string().trim().min(3, "Please tell us why you're cancelling").max(300),
+});
+export type CancelOrderInput = z.infer<typeof cancelOrderSchema>;

@@ -7,11 +7,13 @@ import { ClientIcon } from "@/components/ui/ClientIcon";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { motion } from "framer-motion";
 
+// Wallet's old slot is filled with Ratings for now — swap it back to Wallet
+// (or add both) once the technician wallet returns in a future update.
 const BOTTOM_NAV_LINKS = [
   { href: "/technician", label: "Home", icon: "ph:squares-four" },
   { href: "/technician/service-calls", label: "Jobs", icon: "ph:wrench" },
   { href: "theme", label: "Theme", icon: "theme" },
-  { href: "/technician/wallet", label: "Wallet", icon: "ph:wallet" },
+  { href: "/technician/feedback", label: "Ratings", icon: "ph:star" },
   { href: "/technician/profile", label: "Profile", icon: "ph:user" },
 ];
 

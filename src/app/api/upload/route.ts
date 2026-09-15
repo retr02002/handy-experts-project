@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import crypto from "crypto";
+import { putObject } from "@/lib/storage/objectStorage";
 
 const ALLOWED_IMAGE_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -46,17 +44,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: `File too large. Max size is ${maxSize / (1024 * 1024)}MB.` }, { status: 400 });
     }
 
-    const subfolder = isVideo ? "videos" : "images";
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "services", subfolder);
-    await mkdir(uploadDir, { recursive: true });
-
-    const filename = `${Date.now()}-${crypto.randomUUID()}.${extension}`;
-    const filePath = path.join(uploadDir, filename);
-
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(filePath, buffer);
+    const stored = await putObject({
+      folder: "services",
+      prefix: isVideo ? "videos" : "images",
+      extension,
+      body: buffer,
+      contentType: file.type,
+    });
 
-    return NextResponse.json({ url: `/uploads/services/${subfolder}/${filename}` });
+    return NextResponse.json({ url: stored.url, key: stored.key });
   } catch (error) {
     console.error("Upload error:", error);
     return NextResponse.json({ error: "Failed to upload file" }, { status: 500 });

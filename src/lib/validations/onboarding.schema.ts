@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { skillAssignmentSchema } from "@/lib/validations/technician.schema";
 
 export const COMPANY_TYPES = [
   "Private Limited",
@@ -7,17 +8,6 @@ export const COMPANY_TYPES = [
   "LLP",
   "Proprietorship",
   "Other",
-] as const;
-
-export const SKILL_CATEGORIES = [
-  "Electrical",
-  "Plumbing",
-  "AC & Appliance Repair",
-  "Carpentry",
-  "Painting",
-  "Cleaning",
-  "Pest Control",
-  "General Handyman",
 ] as const;
 
 const nameSchema = z.string().trim().min(2, "Name must be at least 2 characters").max(100);
@@ -81,9 +71,11 @@ export type VendorOnboardingInput = z.infer<typeof vendorOnboardingSchema>;
 export const technicianOnboardingSchema = z.object({
   name: nameSchema,
   phone: phoneSchema,
-  skillCategory: z.enum(SKILL_CATEGORIES),
+  skillAssignments: z.array(skillAssignmentSchema).min(1, "Select at least one category or service"),
   experienceYears: z.coerce.number().int().min(0, "Can't be negative").max(60),
   aadhaarNumber: aadhaarSchema,
-  servicePincode: pincodeSchema,
+  // Courtesy display field only — no longer required; matching is live-
+  // location-based now, not pincode-based.
+  servicePincode: pincodeSchema.optional().or(z.literal("")),
 });
 export type TechnicianOnboardingInput = z.infer<typeof technicianOnboardingSchema>;

@@ -76,3 +76,61 @@ export async function reverseGeocodeAction(
     return { success: false, error: "Reverse geocoding failed" };
   }
 }
+
+export interface TimelinePointLabel {
+  /** Rounded-coordinate key this label was resolved for — see the batch fn. */
+  key: string;
+  localArea: string;
+  pincode: string | null;
+}
+
+/** ~110m grid — points this close together share one Nominatim lookup. */
+function roundKey(lat: number, lng: number): string {
+  return `${lat.toFixed(3)},${lng.toFixed(3)}`;
+}
+
+/**
+ * Bulk reverse-geocode for the technician location timeline. Never called
+ * for a whole day's history eagerly — only for the page of points actually
+ * rendered in the "one by one" list — and even then, points within ~110m of
+ * each other in the same batch share one lookup rather than one each, to
+ * stay well inside Nominatim's free-tier rate limit. Best-effort: a point
+ * that fails to resolve is simply omitted, never blocks the rest.
+ */
+export async function reverseGeocodeBatchAction(
+  points: { lat: number; lng: number }[]
+): Promise<ActionResponse<TimelinePointLabel[]>> {
+  const unique = new Map<string, { lat: number; lng: number }>();
+  for (const p of points) {
+    if (Number.isNaN(p.lat) || Number.isNaN(p.lng)) continue;
+    const key = roundKey(p.lat, p.lng);
+    if (!unique.has(key)) unique.set(key, p);
+  }
+
+  const results: TimelinePointLabel[] = [];
+  // Sequential, not parallel — Nominatim's usage policy caps free-tier use
+  // at ~1 request/second; a batch page is small (tens of points, deduped
+  // further by rounding), so this stays fast enough for a UI paginated by
+  // the caller in the first place.
+  for (const [key, p] of unique) {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${p.lat}&lon=${p.lng}&addressdetails=1`,
+        { headers: { "User-Agent": "Handyzo/1.0 (hello@Handyzo.in)" } }
+      );
+      if (!res.ok) continue;
+      const data = await res.json();
+      const address = data?.address;
+      if (!address) continue;
+      results.push({
+        key,
+        localArea: address.neighbourhood || address.suburb || address.city_district || address.city || "Unknown area",
+        pincode: address.postcode ?? null,
+      });
+    } catch {
+      // best-effort — skip this point, keep going
+    }
+  }
+
+  return { success: true, data: results };
+}

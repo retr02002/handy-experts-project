@@ -61,19 +61,26 @@ async function postToApitxt(body: Record<string, string>): Promise<{ ok: true } 
       signal: controller.signal,
     });
 
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      console.error("ApiTxt send failed:", res.status, text.slice(0, 500));
-      // Confirmed response shape: {status:"error", message, code}. Surface
-      // their message when present (e.g. their own rate-limit text) since
-      // it's more useful than a generic fallback.
-      let apitxtMessage: string | undefined;
-      try {
-        apitxtMessage = JSON.parse(text)?.message;
-      } catch {
-        // non-JSON body — ignore, fall through to generic error
-      }
-      return { ok: false, error: apitxtMessage || "Couldn't send the message — please try again" };
+    const text = await res.text().catch(() => "");
+
+    // ApiTxt signals failure two ways: a non-2xx HTTP status, OR a 200 whose
+    // JSON body reads {status:"error", ...} — confirmed live during Phase 4
+    // verification, where a template-locked account returned HTTP 200 with
+    // body {"status":"error","message":"Missing otp"} for a free-text send.
+    // Checking res.ok alone (the original implementation) reported that as
+    // {ok:true} — a message that was never actually delivered read as a
+    // successful send everywhere sendTextMessage/sendOtpMessage is called.
+    let parsed: { status?: string; message?: string } | undefined;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      // non-JSON body — fall through to the res.ok check below
+    }
+
+    if (!res.ok || parsed?.status === "error") {
+      if (!res.ok) console.error("ApiTxt send failed:", res.status, text.slice(0, 500));
+      else console.error("ApiTxt reported an error on a 2xx response:", text.slice(0, 500));
+      return { ok: false, error: parsed?.message || "Couldn't send the message — please try again" };
     }
 
     return { ok: true };

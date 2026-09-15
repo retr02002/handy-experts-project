@@ -59,14 +59,23 @@ function Card({ call, onUpdated, onView }: { call: ServiceCallSummary; onUpdated
         </span>
       </div>
       <div className="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-400">
-        <div className="flex items-center gap-1.5">
-          <ClientIcon icon="ph:user" className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-          {call.customerName} &middot; {call.siteContactPhone || call.customerPhone}
-        </div>
-        <div className="flex items-start gap-1.5">
-          <ClientIcon icon="ph:map-pin" className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-          <span className="truncate">{call.address}, {call.city}</span>
-        </div>
+        {call.piiMasked ? (
+          <div className="flex items-center gap-1.5 text-slate-400 italic">
+            <ClientIcon icon="ph:lock-simple-bold" className="w-3.5 h-3.5 shrink-0" />
+            Details hidden after completion
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-1.5">
+              <ClientIcon icon="ph:user" className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              {call.customerName} &middot; {call.siteContactPhone || call.customerPhone}
+            </div>
+            <div className="flex items-start gap-1.5">
+              <ClientIcon icon="ph:map-pin" className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+              <span className="truncate">{call.address}, {call.city}</span>
+            </div>
+          </>
+        )}
       </div>
       <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
         <span className="text-sm font-bold text-slate-900 dark:text-white">₹{call.total.toFixed(0)}</span>

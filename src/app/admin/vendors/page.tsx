@@ -1,20 +1,21 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getAllVendorsForAdminAction, type AdminVendor } from "@/actions/admin.actions";
 import { VendorsTable } from "@/components/admin/VendorsTable";
 import { VendorsCardGrid } from "@/components/admin/VendorsCardGrid";
 import { CreateVendorModal } from "@/components/admin/CreateVendorModal";
-import { VendorDetailModal } from "@/components/admin/VendorDetailModal";
 import { ViewToggle, type ViewMode } from "@/components/ui/ViewToggle";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
 export default function VendorsPage() {
+  const router = useRouter();
   const [vendors, setVendors] = useState<AdminVendor[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [view, setView] = useState<ViewMode>("cards");
-  const [detailVendor, setDetailVendor] = useState<AdminVendor | null>(null);
+  const openVendor = (vendor: AdminVendor) => router.push(`/admin/vendors/${vendor.id}`);
 
   const load = useCallback(async () => {
     const res = await getAllVendorsForAdminAction();
@@ -64,15 +65,12 @@ export default function VendorsPage() {
           </button>
         </div>
       ) : view === "table" ? (
-        <VendorsTable data={vendors} onView={setDetailVendor} />
+        <VendorsTable data={vendors} onView={openVendor} />
       ) : (
-        <VendorsCardGrid data={vendors} onView={setDetailVendor} />
+        <VendorsCardGrid data={vendors} onView={openVendor} />
       )}
 
       {modalOpen && <CreateVendorModal onClose={() => setModalOpen(false)} onCreated={load} />}
-      {detailVendor && (
-        <VendorDetailModal vendor={detailVendor} onClose={() => setDetailVendor(null)} onChanged={load} />
-      )}
     </div>
   );
 }

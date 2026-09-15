@@ -9,12 +9,15 @@ import { NEXT_STEP, JOB_STATUS_COLORS, jobStatusLabel, DECLINE_REASONS } from "@
 import {
   updateServiceCallStatusAction,
   declineJobAction,
+  getMyHandoverContextAction,
   type ServiceCallSummary,
+  type HandoverContext,
 } from "@/actions/servicecall.actions";
-import { getMyLastKnownLocationAction } from "@/actions/technician.actions";
+import { getMyLastKnownLocationAction, updateTechnicianLocationAction } from "@/actions/technician.actions";
 import { getUnreadMessageCountAction } from "@/actions/chat.actions";
 import { usePolling } from "@/hooks/usePolling";
 import { canStartTravel, describeTimeUntil, formatScheduledFor, TRAVEL_WINDOW_MINUTES } from "@/lib/jobSchedule";
+import { TicketBadge } from "@/components/shared/TicketBadge";
 
 const JobTrackingMap = dynamic(() => import("@/components/shared/JobTrackingMap").then((m) => m.JobTrackingMap), {
   ssr: false,
@@ -29,6 +32,10 @@ const PRE_START_STATUSES = ["ASSIGNED", "EN_ROUTE"];
 const UNREAD_POLL_INTERVAL_MS = 10000;
 
 const PAYMENT_MODE_LABELS: Record<string, string> = {
+  ONLINE: "Paid Online",
+  WALLET: "Paid from Wallet",
+  ADMIN: "Admin Created",
+  COD: "Cash on Delivery",
   gpay: "Google Pay",
   phonepe: "PhonePe",
   paytm: "Paytm",
@@ -64,8 +71,15 @@ export function TechnicianJobPanel({ call, onClose, onChanged, onGatedStep }: Pr
   const [chatOpen, setChatOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [handover, setHandover] = useState<HandoverContext["previous"]>(null);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    getMyHandoverContextAction(call.id).then((res) => {
+      if (res.success && res.data) setHandover(res.data.previous);
+    });
+  }, [call.id]);
 
   /**
    * Live GPS first, last-known stored position second. Previously this was a
@@ -95,6 +109,14 @@ export function TechnicianJobPanel({ call, onClose, onChanged, onGatedStep }: Pr
         setMyPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setPositionSource("live");
         setLocating(false);
+        // OnDutyToggle's background watcher also reports position, but on a
+        // throttled cadence (5-12s) — right after a job flips to EN_ROUTE
+        // there can be a real gap before it's written a fresh fix. This
+        // screen already has one in hand, so it seeds the server
+        // immediately rather than waiting for that next tick, which is what
+        // was leaving the map without a route line ("straight line from
+        // your device" only) for the first several seconds of tracking.
+        updateTechnicianLocationAction(pos.coords.latitude, pos.coords.longitude);
       },
       () => {
         void fromStored();
@@ -127,8 +149,9 @@ export function TechnicianJobPanel({ call, onClose, onChanged, onGatedStep }: Pr
   // the same rule is enforced in updateServiceCallStatusAction.
   const scheduledLabel = formatScheduledFor(call.scheduledFor);
   const travelLocked = call.status === "ASSIGNED" && !canStartTravel(call.scheduledFor);
-  // Tracking only means something once they're actually moving.
-  const showTracking = call.status === "EN_ROUTE" || call.status === "IN_PROGRESS";
+  // Tracking only means something once they're actually moving — and never
+  // after completion, when the customer's coordinates are masked away.
+  const showTracking = !call.piiMasked && (call.status === "EN_ROUTE" || call.status === "IN_PROGRESS");
 
   const whatsappTemplate = `Hi ${contactName}, this is your Handyzo technician for "${call.itemSummary}". I'm on my way to ${call.address}, ${call.city}. Please keep your service PIN handy — I'll need it to start the job.`;
   const smsTemplate = `Hi ${contactName}, your Handyzo technician here for "${call.itemSummary}". On my way to ${call.address}.`;
@@ -197,13 +220,16 @@ export function TechnicianJobPanel({ call, onClose, onChanged, onGatedStep }: Pr
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h2 className="text-base font-bold text-slate-900 dark:text-white truncate">{call.itemSummary}</h2>
-              <span
-                className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
-                  JOB_STATUS_COLORS[call.status] ?? ""
-                }`}
-              >
-                {jobStatusLabel(call.status)}
-              </span>
+              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                <span
+                  className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
+                    JOB_STATUS_COLORS[call.status] ?? ""
+                  }`}
+                >
+                  {jobStatusLabel(call.status)}
+                </span>
+                <TicketBadge ticketNumber={call.ticketNumber} />
+              </div>
             </div>
             <button
               onClick={onClose}
@@ -250,6 +276,18 @@ export function TechnicianJobPanel({ call, onClose, onChanged, onGatedStep }: Pr
             </>
           ) : (
             <>
+              {handover && (
+                <div className="shrink-0 p-3.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 flex items-start gap-2.5">
+                  <ClientIcon icon="ph:arrows-left-right-bold" className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-amber-700 dark:text-amber-400">
+                      Handed over from {handover.technicianName}
+                    </p>
+                    {handover.reason && <p className="text-xs text-amber-600 dark:text-amber-400/90 mt-0.5">{handover.reason}</p>}
+                  </div>
+                </div>
+              )}
+
               {/* Before departure the job is a diary entry, not a journey. */}
               {!showTracking && (
                 <div className="shrink-0 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-3">
@@ -286,8 +324,8 @@ export function TechnicianJobPanel({ call, onClose, onChanged, onGatedStep }: Pr
               {showTracking && (
               <JobTrackingMap
                 serviceCallId={call.id}
-                customerLatitude={call.latitude}
-                customerLongitude={call.longitude}
+                customerLatitude={call.latitude!}
+                customerLongitude={call.longitude!}
                 customerLabel={`${call.customerName} — ₹${call.total}`}
                 viewer="technician"
                 height="220px"
@@ -295,6 +333,7 @@ export function TechnicianJobPanel({ call, onClose, onChanged, onGatedStep }: Pr
                 locating={locating}
                 onRetryLocation={() => void locate()}
                 onSite={call.status === "IN_PROGRESS"}
+                enRoute={call.status === "EN_ROUTE"}
               />
               )}
               {showTracking && positionSource === "stored" && !locating && (
@@ -304,80 +343,93 @@ export function TechnicianJobPanel({ call, onClose, onChanged, onGatedStep }: Pr
               )}
 
               {/* Customer + contact actions */}
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 flex flex-col gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{contactName}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 break-words">
-                    {call.address}, {call.city}, {call.state} {call.pincode}
+              {call.piiMasked ? (
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 flex items-start gap-2.5">
+                  <ClientIcon icon="ph:lock-simple-bold" className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Customer contact, address and the full receipt are hidden once a job is completed. Your vendor has the full details.
                   </p>
-                  {call.siteContactName && (
-                    <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1">
-                      Site contact — booked by {call.customerName}
+                </div>
+              ) : (
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 flex flex-col gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{contactName}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 break-words">
+                      {call.address}, {call.city}, {call.state} {call.pincode}
                     </p>
-                  )}
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                  <a
-                    href={`tel:${contactPhone}`}
-                    className="flex flex-col items-center gap-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-emerald-400 transition-colors"
-                  >
-                    <ClientIcon icon="ph:phone-fill" className="w-4 h-4 text-emerald-500" />
-                    <span className="text-[11px] font-bold">Call</span>
-                  </a>
-                  <a
-                    href={`sms:${contactPhone}?&body=${encodeURIComponent(smsTemplate)}`}
-                    className="flex flex-col items-center gap-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-blue-400 transition-colors"
-                  >
-                    <ClientIcon icon="ph:chat-teardrop-text-fill" className="w-4 h-4 text-blue-500" />
-                    <span className="text-[11px] font-bold">SMS</span>
-                  </a>
-                  <a
-                    href={whatsappUrl(contactPhone, whatsappTemplate)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex flex-col items-center gap-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-green-400 transition-colors"
-                  >
-                    <ClientIcon icon="ph:whatsapp-logo-fill" className="w-4 h-4 text-green-500" />
-                    <span className="text-[11px] font-bold">WhatsApp</span>
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setChatOpen(true);
-                      setUnread(0);
-                    }}
-                    className="relative flex flex-col items-center gap-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-[#00B4FF] transition-colors cursor-pointer"
-                  >
-                    <ClientIcon icon="ph:chat-circle-fill" className="w-4 h-4 text-[#00B4FF]" />
-                    <span className="text-[11px] font-bold">Chat</span>
-                    {unread > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-                        {unread > 9 ? "9+" : unread}
-                      </span>
+                    {call.siteContactName && (
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1">
+                        Site contact — booked by {call.customerName}
+                      </p>
                     )}
-                  </button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    <a
+                      href={`tel:${contactPhone}`}
+                      className="flex flex-col items-center gap-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-emerald-400 transition-colors"
+                    >
+                      <ClientIcon icon="ph:phone-fill" className="w-4 h-4 text-emerald-500" />
+                      <span className="text-[11px] font-bold">Call</span>
+                    </a>
+                    <a
+                      href={`sms:${contactPhone}?&body=${encodeURIComponent(smsTemplate)}`}
+                      className="flex flex-col items-center gap-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-blue-400 transition-colors"
+                    >
+                      <ClientIcon icon="ph:chat-teardrop-text-fill" className="w-4 h-4 text-blue-500" />
+                      <span className="text-[11px] font-bold">SMS</span>
+                    </a>
+                    <a
+                      href={whatsappUrl(contactPhone!, whatsappTemplate)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex flex-col items-center gap-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-green-400 transition-colors"
+                    >
+                      <ClientIcon icon="ph:whatsapp-logo-fill" className="w-4 h-4 text-green-500" />
+                      <span className="text-[11px] font-bold">WhatsApp</span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setChatOpen(true);
+                        setUnread(0);
+                      }}
+                      className="relative flex flex-col items-center gap-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-[#00B4FF] transition-colors cursor-pointer"
+                    >
+                      <ClientIcon icon="ph:chat-circle-fill" className="w-4 h-4 text-[#00B4FF]" />
+                      <span className="text-[11px] font-bold">Chat</span>
+                      {unread > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                          {unread > 9 ? "9+" : unread}
+                        </span>
+                      )}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Order summary */}
               <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-1.5 text-sm">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Order Summary</p>
-                {call.items.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between text-slate-700 dark:text-slate-300">
-                    <span className="min-w-0 truncate">
-                      {item.packageName} {item.quantity > 1 ? `x${item.quantity}` : ""}
-                    </span>
-                    <span className="font-medium shrink-0">₹{(item.unitPrice * item.quantity).toFixed(0)}</span>
-                  </div>
-                ))}
-                <div className="flex items-center justify-between text-xs text-slate-500 pt-1.5 border-t border-slate-100 dark:border-slate-800">
-                  <span>Subtotal</span>
-                  <span>₹{call.subtotal.toFixed(0)}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs text-slate-500">
-                  <span>GST</span>
-                  <span>₹{call.tax.toFixed(0)}</span>
-                </div>
+                {!call.piiMasked && (
+                  <>
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Order Summary</p>
+                    {call.items.map((item, i) => (
+                      <div key={i} className="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                        <span className="min-w-0 truncate">
+                          {item.packageName} {item.quantity > 1 ? `x${item.quantity}` : ""}
+                        </span>
+                        <span className="font-medium shrink-0">₹{(item.unitPrice * item.quantity).toFixed(0)}</span>
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between text-xs text-slate-500 pt-1.5 border-t border-slate-100 dark:border-slate-800">
+                      <span>Subtotal</span>
+                      <span>₹{(call.subtotal ?? 0).toFixed(0)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <span>GST</span>
+                      <span>₹{(call.tax ?? 0).toFixed(0)}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex items-center justify-between font-bold text-slate-900 dark:text-white pt-1">
                   <span>Total</span>
                   <span>₹{call.total.toFixed(0)}</span>
@@ -385,7 +437,10 @@ export function TechnicianJobPanel({ call, onClose, onChanged, onGatedStep }: Pr
                 <div className="flex items-center justify-between text-xs text-slate-500 pt-1.5 border-t border-slate-100 dark:border-slate-800">
                   <span>Paid via</span>
                   <span className="truncate ml-2">
-                    {PAYMENT_MODE_LABELS[call.paymentMode] ?? call.paymentMode} &middot; {call.upiRef}
+                    {call.paymentMode === "ADMIN" && call.createdByAdminName
+                      ? `Created by ${call.createdByAdminName}`
+                      : PAYMENT_MODE_LABELS[call.paymentMode] ?? call.paymentMode}
+                    {call.upiRef && <> &middot; {call.upiRef}</>}
                   </span>
                 </div>
                 {call.scheduledFor && (

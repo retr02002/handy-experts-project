@@ -35,16 +35,14 @@ export const EMPTY_CUSTOMER_DETAILS: CustomerDetails = {
   longitude: null,
 };
 
-export type PaymentMode = "gpay" | "phonepe" | "paytm" | "amazonpay" | "bhim" | "other-upi";
+export type PaymentMethod = "ONLINE" | "COD";
 
 export interface PaymentDetails {
-  mode: PaymentMode | "";
-  upiRef: string;
+  method: PaymentMethod | "";
 }
 
 export const EMPTY_PAYMENT_DETAILS: PaymentDetails = {
-  mode: "",
-  upiRef: "",
+  method: "",
 };
 
 export interface SlotDetails {
@@ -62,13 +60,24 @@ export function isSlotComplete(slot: SlotDetails): boolean {
   return slot.isInstant || slot.scheduledFor !== null;
 }
 
-export const PAYMENT_MODE_OPTIONS: { value: PaymentMode; label: string; color: string }[] = [
-  { value: "gpay", label: "Google Pay", color: "bg-blue-500" },
-  { value: "phonepe", label: "PhonePe", color: "bg-violet-600" },
-  { value: "paytm", label: "Paytm", color: "bg-sky-600" },
-  { value: "amazonpay", label: "Amazon Pay", color: "bg-orange-500" },
-  { value: "bhim", label: "BHIM UPI", color: "bg-emerald-600" },
-  { value: "other-upi", label: "Other UPI App", color: "bg-slate-500" },
+export const PAYMENT_METHOD_OPTIONS: {
+  value: PaymentMethod;
+  label: string;
+  description: string;
+  icon: string;
+}[] = [
+  {
+    value: "ONLINE",
+    label: "Pay Online",
+    description: "UPI, cards, netbanking & wallets — pay securely now",
+    icon: "ph:lightning-bold",
+  },
+  {
+    value: "COD",
+    label: "Cash on Delivery",
+    description: "Pay the technician in cash once the job is done",
+    icon: "ph:hand-coins-bold",
+  },
 ];
 
 export function isDetailsComplete(details: CustomerDetails): boolean {
@@ -85,5 +94,5 @@ export function isDetailsComplete(details: CustomerDetails): boolean {
 }
 
 export function isPaymentComplete(payment: PaymentDetails): boolean {
-  return payment.mode !== "" && payment.upiRef.trim().length > 3;
+  return payment.method !== "";
 }

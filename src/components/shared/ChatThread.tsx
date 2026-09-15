@@ -24,6 +24,7 @@ export function ChatThread({
   heightClass = "h-72",
   hideHeader = false,
   bare = false,
+  readOnly = false,
 }: {
   serviceCallId: string;
   counterpartName: string;
@@ -32,6 +33,12 @@ export function ChatThread({
   hideHeader?: boolean;
   /** Drops the card border/background so it can fill a modal edge to edge. */
   bare?: boolean;
+  /**
+   * Admin's full-oversight view: hides the reply form entirely and never
+   * marks messages read — readAt is one shared field on the message, not
+   * per-viewer, so an admin reading a thread must never touch it.
+   */
+  readOnly?: boolean;
 }) {
   const [messages, setMessages] = useState<ChatMessageItem[]>([]);
   const [draft, setDraft] = useState("");
@@ -44,10 +51,10 @@ export function ChatThread({
     const res = await getMessagesAction(serviceCallId);
     if (res.success && res.data) {
       setMessages(res.data);
-      if (res.data.some((m) => !m.isMine)) markMessagesReadAction(serviceCallId);
+      if (!readOnly && res.data.some((m) => !m.isMine)) markMessagesReadAction(serviceCallId);
     }
     setLoaded(true);
-  }, [serviceCallId]);
+  }, [serviceCallId, readOnly]);
 
   usePolling(load, MESSAGES_POLL_INTERVAL_MS, [serviceCallId]);
 
@@ -118,23 +125,30 @@ export function ChatThread({
         )}
       </div>
 
-      <form onSubmit={send} className="p-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
-        <input
-          type="text"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Type a message..."
-          maxLength={1000}
-          className="flex-1 min-w-0 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00B4FF]/40"
-        />
-        <button
-          type="submit"
-          disabled={isSending || !draft.trim()}
-          className="shrink-0 w-10 h-10 rounded-xl bg-[#00B4FF] hover:bg-[#0096fa] disabled:opacity-40 text-white flex items-center justify-center transition-colors cursor-pointer"
-        >
-          <ClientIcon icon="ph:paper-plane-right-fill" className="w-4 h-4" />
-        </button>
-      </form>
+      {readOnly ? (
+        <div className="p-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2 text-xs text-slate-400">
+          <ClientIcon icon="ph:eye-fill" className="w-3.5 h-3.5" />
+          Viewing only — this conversation is between the customer and technician.
+        </div>
+      ) : (
+        <form onSubmit={send} className="p-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
+          <input
+            type="text"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Type a message..."
+            maxLength={1000}
+            className="flex-1 min-w-0 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00B4FF]/40"
+          />
+          <button
+            type="submit"
+            disabled={isSending || !draft.trim()}
+            className="shrink-0 w-10 h-10 rounded-xl bg-[#00B4FF] hover:bg-[#0096fa] disabled:opacity-40 text-white flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <ClientIcon icon="ph:paper-plane-right-fill" className="w-4 h-4" />
+          </button>
+        </form>
+      )}
     </div>
   );
 }

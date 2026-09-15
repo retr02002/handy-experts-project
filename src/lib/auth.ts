@@ -6,6 +6,7 @@ import { prisma } from "./prisma";
 import bcrypt from "bcrypt";
 import type { PrismaClient } from "@prisma/client";
 import { consumeOtp } from "@/actions/otp.actions";
+import { findTechnicianByIdentifier } from "@/lib/technicianIdentifier";
 
 declare module "next-auth" {
   interface Session {
@@ -92,23 +93,26 @@ export const authOptions: NextAuthOptions = {
       id: "otp-technician",
       name: "Technician OTP",
       credentials: {
-        username: { label: "Username", type: "text" },
+        identifier: { label: "Username or mobile number", type: "text" },
         code: { label: "Code", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.username || !credentials?.code) {
+        if (!credentials?.identifier || !credentials?.code) {
           throw new Error("Invalid code");
         }
 
-        const technician = await prisma.user.findFirst({
-          where: { username: credentials.username, role: "TECHNICIAN" },
-        });
-        if (!technician?.phone) {
-          throw new Error("No technician account found for that username");
+        // Same resolver the send step used, so a code can never be issued
+        // against one account and redeemed against another.
+        const match = await findTechnicianByIdentifier(credentials.identifier);
+        if (!match?.phone) {
+          throw new Error("No technician account found for that username or number");
         }
 
-        const result = await consumeOtp({ phone: technician.phone, purpose: "TECHNICIAN_LOGIN", code: credentials.code });
+        const result = await consumeOtp({ phone: match.phone, purpose: "TECHNICIAN_LOGIN", code: credentials.code });
         if (!result.ok) throw new Error(result.error);
+
+        const technician = await prisma.user.findUnique({ where: { id: match.id } });
+        if (!technician) throw new Error("No technician account found for that username or number");
 
         return technician;
       },

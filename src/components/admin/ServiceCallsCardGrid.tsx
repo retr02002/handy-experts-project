@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import type { AdminServiceCallSummary } from "@/actions/servicecall.actions";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { jobStatusLabel } from "@/lib/jobStatus";
@@ -25,9 +26,10 @@ export function ServiceCallsCardGrid({ data }: { data: AdminServiceCallSummary[]
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
       {data.map((call) => (
-        <div
+        <Link
           key={call.id}
-          className="flex flex-col gap-3 p-5 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm"
+          href={`/admin/service-calls/${call.id}`}
+          className="flex flex-col gap-3 p-5 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm hover:border-blue-400 dark:hover:border-blue-500/60 transition-colors"
         >
           <div className="flex items-start justify-between gap-2">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">{call.itemSummary}</h3>
@@ -61,7 +63,7 @@ export function ServiceCallsCardGrid({ data }: { data: AdminServiceCallSummary[]
             </span>
             <span className="text-sm font-bold text-slate-900 dark:text-white">₹{call.total.toFixed(2)}</span>
           </div>
-        </div>
+        </Link>
       ))}
     </div>
   );

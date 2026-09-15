@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { getNearbyLiveCallsForVendorAction, type NearbyLiveCall } from "@/actions/livecall.actions";
 import { getMyTechniciansAction, type VendorTechnician } from "@/actions/technician.actions";
@@ -16,7 +17,7 @@ import { usePolling } from "@/hooks/usePolling";
 import dynamic from "next/dynamic";
 
 import { LiveCallCard } from "./LiveCallCard";
-import { AcceptCallModal } from "./AcceptCallModal";
+import { BuyLeadModal } from "./BuyLeadModal";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
 // maplibre-gl is ~800KB — kept out of the first-load bundle and
@@ -36,6 +37,7 @@ interface LiveCallsPanelProps {
 }
 
 export function LiveCallsPanel({ vendorLatitude, vendorLongitude }: LiveCallsPanelProps) {
+  const router = useRouter();
   const [calls, setCalls] = useState<NearbyLiveCall[]>([]);
   const [technicians, setTechnicians] = useState<VendorTechnician[]>([]);
   const [serviceAreas, setServiceAreas] = useState<VendorServiceAreaSummary[]>([]);
@@ -44,7 +46,7 @@ export function LiveCallsPanel({ vendorLatitude, vendorLongitude }: LiveCallsPan
   const [locationError, setLocationError] = useState(false);
   const [inactiveError, setInactiveError] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [acceptingCall, setAcceptingCall] = useState<NearbyLiveCall | null>(null);
+  const [buyingCall, setBuyingCall] = useState<NearbyLiveCall | null>(null);
   const [awaitingCalls, setAwaitingCalls] = useState<AwaitingJobSummary[]>([]);
   const [rebroadcastingId, setRebroadcastingId] = useState<string | null>(null);
 
@@ -128,11 +130,13 @@ export function LiveCallsPanel({ vendorLatitude, vendorLongitude }: LiveCallsPan
         <div className="p-4 flex items-center gap-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-2xl">
           <ClientIcon icon="ph:map-pin-area-fill" className="w-6 h-6 text-amber-500 shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-amber-900 dark:text-amber-200">You haven&apos;t added any serviceable areas yet</p>
-            <p className="text-xs text-amber-700/80 dark:text-amber-400/80">Add one to start receiving live calls.</p>
+            <p className="text-sm font-bold text-amber-900 dark:text-amber-200">You have no serviceable areas yet</p>
+            <p className="text-xs text-amber-700/80 dark:text-amber-400/80">
+              Areas are set by our team — raise a support ticket to get one added.
+            </p>
           </div>
-          <Link href="/vendor/service-areas" className="text-sm font-bold text-amber-700 dark:text-amber-300 underline shrink-0">
-            Add Area
+          <Link href="/vendor/support" className="text-sm font-bold text-amber-700 dark:text-amber-300 underline shrink-0">
+            Raise a ticket
           </Link>
         </div>
       )}
@@ -146,7 +150,7 @@ export function LiveCallsPanel({ vendorLatitude, vendorLongitude }: LiveCallsPan
               id: c.id,
               latitude: c.latitude,
               longitude: c.longitude,
-              label: `${c.customerName} — ₹${c.total}`,
+              label: `${c.customerFirstName} — ₹${c.total}`,
             }))}
             technicianMarkers={technicians
               .filter((t): t is VendorTechnician & { latitude: number; longitude: number } => t.latitude !== null && t.longitude !== null)
@@ -156,6 +160,7 @@ export function LiveCallsPanel({ vendorLatitude, vendorLongitude }: LiveCallsPan
                 longitude: t.longitude,
                 label: t.name,
                 isOnDuty: t.isOnDuty,
+                isStale: t.isStale,
                 skillCategory: t.skillCategory,
                 phone: t.phone,
               }))}
@@ -165,15 +170,8 @@ export function LiveCallsPanel({ vendorLatitude, vendorLongitude }: LiveCallsPan
               longitude: a.longitude,
               radiusKm: a.radiusKm,
             }))}
-            technicianServiceAreaCircles={technicians.flatMap((t) =>
-              t.serviceAreas.map((a) => ({
-                id: a.id,
-                latitude: a.latitude,
-                longitude: a.longitude,
-                radiusKm: a.radiusKm,
-              }))
-            )}
             onCallMarkerClick={setSelectedId}
+            onViewTechnicianHistory={(id) => router.push(`/vendor/technicians/${id}/history`)}
           />
         </div>
 
@@ -195,7 +193,7 @@ export function LiveCallsPanel({ vendorLatitude, vendorLongitude }: LiveCallsPan
                   call={call}
                   isSelected={selectedId === call.id}
                   onSelect={setSelectedId}
-                  onAccept={setAcceptingCall}
+                  onBuy={setBuyingCall}
                 />
               ))
             )}
@@ -252,11 +250,11 @@ export function LiveCallsPanel({ vendorLatitude, vendorLongitude }: LiveCallsPan
         </div>
       )}
 
-      {acceptingCall && (
-        <AcceptCallModal
-          call={acceptingCall}
-          onClose={() => setAcceptingCall(null)}
-          onAccepted={() => {
+      {buyingCall && (
+        <BuyLeadModal
+          call={buyingCall}
+          onClose={() => setBuyingCall(null)}
+          onBought={() => {
             refetchCalls();
             refetchAwaiting();
           }}

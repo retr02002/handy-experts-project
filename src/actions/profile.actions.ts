@@ -212,7 +212,8 @@ export interface ProfileDetails {
   technicianProfile: {
     skillCategory: string;
     experienceYears: number;
-    servicePincode: string;
+    /** Courtesy display field only — no longer required or matching-relevant. */
+    servicePincode: string | null;
     type: string;
   } | null;
 }

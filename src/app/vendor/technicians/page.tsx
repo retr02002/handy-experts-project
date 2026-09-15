@@ -1,20 +1,21 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getMyTechniciansAction, type VendorTechnician } from "@/actions/technician.actions";
 import { TechniciansTable } from "@/components/vendor/TechniciansTable";
 import { TechniciansCardGrid } from "@/components/vendor/TechniciansCardGrid";
 import { CreateTechnicianModal } from "@/components/vendor/CreateTechnicianModal";
-import { TechnicianDetailModal } from "@/components/vendor/TechnicianDetailModal";
 import { ViewToggle, type ViewMode } from "@/components/ui/ViewToggle";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
 export default function VendorTechniciansPage() {
+  const router = useRouter();
   const [technicians, setTechnicians] = useState<VendorTechnician[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [view, setView] = useState<ViewMode>("cards");
-  const [detailTech, setDetailTech] = useState<VendorTechnician | null>(null);
+  const openTechnician = (t: VendorTechnician) => router.push(`/vendor/technicians/${t.id}`);
 
   const load = useCallback(async () => {
     const res = await getMyTechniciansAction();
@@ -64,15 +65,12 @@ export default function VendorTechniciansPage() {
           </button>
         </div>
       ) : view === "table" ? (
-        <TechniciansTable data={technicians} onView={setDetailTech} />
+        <TechniciansTable data={technicians} onView={openTechnician} />
       ) : (
-        <TechniciansCardGrid data={technicians} onView={setDetailTech} />
+        <TechniciansCardGrid data={technicians} onView={openTechnician} />
       )}
 
       {modalOpen && <CreateTechnicianModal onClose={() => setModalOpen(false)} onCreated={load} />}
-      {detailTech && (
-        <TechnicianDetailModal technician={detailTech} onClose={() => setDetailTech(null)} onChanged={load} />
-      )}
     </div>
   );
 }

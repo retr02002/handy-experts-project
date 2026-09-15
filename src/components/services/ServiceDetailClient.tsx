@@ -26,7 +26,10 @@ export function ServiceDetailClient({ service }: { service: Service }) {
   const categoryNames = Object.keys(packageCategories);
 
   return (
-    <div className="bg-slate-50/90 dark:bg-[#060B15] min-h-screen pt-3 sm:pt-6 pb-36 lg:pb-24 text-slate-800 dark:text-slate-100 overflow-x-hidden lg:overflow-visible w-full max-w-full">
+    // overflow-x-clip rather than hidden: this element is an ancestor of the
+    // two sticky side columns below, and `hidden` would make it a scroll
+    // container that they'd stick to instead of the viewport.
+    <div className="bg-slate-50/90 dark:bg-[#060B15] min-h-screen pt-3 sm:pt-6 pb-36 lg:pb-24 text-slate-800 dark:text-slate-100 overflow-x-clip w-full max-w-full">
       {/* Top Breadcrumb & Back Strip (Server Component) */}
       <ServiceBreadcrumb service={service} />
 
@@ -37,8 +40,14 @@ export function ServiceDetailClient({ service }: { service: Service }) {
       <div className="max-w-[1320px] mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full relative">
 
-          {/* LEFT COLUMN: Service Summary & Category Selector */}
-          <div className="w-full lg:w-[27%] lg:sticky lg:top-24 shrink-0 flex flex-col gap-4 min-w-0 z-20">
+          {/* LEFT COLUMN: Service Summary & Category Selector.
+              max-h + overflow-y-auto are what actually make the stickiness
+              visible: a sticky element taller than the viewport can never
+              pin (there's no room for it to stop against `top`), so it just
+              scrolls away with the page. Bounding it to the viewport and
+              letting its own content scroll internally is what gives the
+              pinned-sidebar behaviour. */}
+          <div className="w-full lg:w-[27%] lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto custom-scrollbar shrink-0 flex flex-col gap-4 min-w-0 z-20">
             <ServiceSummaryCard service={service} />
             <DesktopCategorySelectorCard categoryNames={categoryNames} packageCategories={packageCategories} />
           </div>
@@ -91,8 +100,9 @@ export function ServiceDetailClient({ service }: { service: Service }) {
             <ServiceFaqsSection service={service} />
           </div>
 
-          {/* RIGHT COLUMN: Responsive Cart (No Height Bounds/Clipping), Promise Guarantee & Assistance */}
-          <div className="w-full lg:w-[27%] lg:sticky lg:top-24 shrink-0 flex flex-col gap-4 min-w-0 z-20">
+          {/* RIGHT COLUMN: Cart, Promise Guarantee & Assistance — same
+              viewport-bounded sticky treatment as the left column. */}
+          <div className="w-full lg:w-[27%] lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto custom-scrollbar shrink-0 flex flex-col gap-4 min-w-0 z-20">
             <ServiceCartCard />
             <ServicePromiseCard />
             <ServiceNeedHelpCard />

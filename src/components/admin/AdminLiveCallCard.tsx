@@ -14,6 +14,10 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const PAYMENT_MODE_LABELS: Record<string, string> = {
+  ONLINE: "Paid Online",
+  WALLET: "Paid from Wallet",
+  ADMIN: "Admin Created",
+  COD: "Cash on Delivery",
   gpay: "Google Pay",
   phonepe: "PhonePe",
   paytm: "Paytm",
@@ -50,6 +54,15 @@ export function AdminLiveCallCard({ call }: { call: AdminLiveCall }) {
       <p className="text-xs text-slate-500">{call.city}, {call.pincode}</p>
       {call.acceptedByVendorName && (
         <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Accepted by {call.acceptedByVendorName}</p>
+      )}
+      {call.status === "CANCELLED" && call.cancelReason && (
+        <p className="text-xs text-red-600 dark:text-red-400">Cancelled: {call.cancelReason}</p>
+      )}
+
+      {call.paymentStatus === "REFUNDED" && (
+        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+          <ClientIcon icon="ph:check-circle-bold" className="w-3.5 h-3.5" /> Refunded to customer&apos;s wallet
+        </p>
       )}
 
       <button
@@ -93,7 +106,10 @@ export function AdminLiveCallCard({ call }: { call: AdminLiveCall }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
               <ClientIcon icon="ph:device-mobile-camera" className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              {PAYMENT_MODE_LABELS[call.paymentMode] ?? call.paymentMode} &middot; {call.upiRef}
+              {call.paymentMode === "ADMIN" && call.createdByAdminName
+                ? `Created by ${call.createdByAdminName}`
+                : PAYMENT_MODE_LABELS[call.paymentMode] ?? call.paymentMode}
+              {call.upiRef && <> &middot; {call.upiRef}</>}
             </div>
             {call.paymentScreenshotUrl && (
               <button

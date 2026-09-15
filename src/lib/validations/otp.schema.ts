@@ -15,10 +15,21 @@ export const sendCustomerOtpSchema = z.object({
 });
 export type SendCustomerOtpInput = z.infer<typeof sendCustomerOtpSchema>;
 
+/**
+ * Either a username or a 10-digit mobile. Validated loosely here (the two
+ * formats can't be expressed as one regex without rejecting valid input);
+ * findTechnicianByIdentifier decides which it is and whether it resolves.
+ */
+const technicianIdentifierSchema = z
+  .string()
+  .trim()
+  .min(4, "Enter your username or 10-digit mobile number")
+  .max(20, "Enter your username or 10-digit mobile number");
+
 export const sendTechnicianOtpSchema = z.object({
-  username: usernameSchema,
+  identifier: technicianIdentifierSchema,
   channel: channelSchema,
 });
 export type SendTechnicianOtpInput = z.infer<typeof sendTechnicianOtpSchema>;
 
-export { phoneSchema, usernameSchema };
+export { phoneSchema, usernameSchema, technicianIdentifierSchema };

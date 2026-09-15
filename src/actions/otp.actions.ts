@@ -7,6 +7,7 @@ import { sendOtpMessage, type OtpChannel } from "@/lib/apitxt";
 import type { ActionResponse } from "@/actions/auth.actions";
 import { sendCustomerOtpSchema, sendTechnicianOtpSchema } from "@/lib/validations/otp.schema";
 import type { OtpPurpose } from "@prisma/client";
+import { findTechnicianByIdentifier } from "@/lib/technicianIdentifier";
 
 const RESEND_COOLDOWN_SECONDS = 45;
 const HOURLY_SEND_CAP = 5;
@@ -88,7 +89,7 @@ export async function sendCustomerOtp(input: {
 }
 
 export async function sendTechnicianOtp(input: {
-  username: string;
+  identifier: string;
   channel: OtpChannel;
 }): Promise<ActionResponse<{ cooldownSeconds: number; phoneHint: string }>> {
   const validated = sendTechnicianOtpSchema.safeParse(input);
@@ -96,12 +97,9 @@ export async function sendTechnicianOtp(input: {
     return { success: false, error: "Invalid input data", errors: validated.error.flatten().fieldErrors };
   }
 
-  const technician = await prisma.user.findFirst({
-    where: { username: validated.data.username, role: "TECHNICIAN" },
-    select: { phone: true },
-  });
+  const technician = await findTechnicianByIdentifier(validated.data.identifier);
   if (!technician?.phone) {
-    return { success: false, error: "No technician account found for that username" };
+    return { success: false, error: "No technician account found for that username or number" };
   }
 
   const result = await issueOtp(technician.phone, "TECHNICIAN_LOGIN", validated.data.channel);

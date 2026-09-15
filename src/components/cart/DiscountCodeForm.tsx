@@ -2,20 +2,63 @@
 
 import React, { useState } from "react";
 import { toast } from "sonner";
+import { useCart } from "@/context/CartContext";
+import { validateCouponAction } from "@/actions/coupon.actions";
+import { ClientIcon } from "@/components/ui/ClientIcon";
 
-export function DiscountCodeForm({ className = "" }: { className?: string }) {
+interface Props {
+  className?: string;
+  /** The currently-applied coupon code, if any — lifted to CartContainer so
+   *  it persists and affects the total across every checkout step. */
+  appliedCode?: string | null;
+  onApplied?: (coupon: { code: string; discountAmount: number }) => void;
+  onRemoved?: () => void;
+}
+
+export function DiscountCodeForm({ className = "", appliedCode = null, onApplied, onRemoved }: Props) {
+  const { items } = useCart();
   const [couponCode, setCouponCode] = useState("");
   const [isApplying, setIsApplying] = useState(false);
 
-  const handleApplyCoupon = (e: React.FormEvent) => {
+  const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!couponCode.trim()) return;
+    if (!couponCode.trim() || items.length === 0) return;
+
     setIsApplying(true);
-    setTimeout(() => {
+    try {
+      const res = await validateCouponAction(
+        couponCode,
+        items.map((item) => ({ packageId: item.id, unitPrice: item.pkg.price, quantity: item.quantity }))
+      );
+      if (!res.success || !res.data) {
+        toast.error((res.success ? undefined : res.error) || "Invalid or expired coupon code.");
+        return;
+      }
+      toast.success(`Coupon applied — you save ₹${res.data.discountAmount}`);
+      onApplied?.({ code: res.data.couponCode, discountAmount: res.data.discountAmount });
+      setCouponCode("");
+    } finally {
       setIsApplying(false);
-      toast.error("Invalid or expired coupon code.");
-    }, 1000);
+    }
   };
+
+  if (appliedCode) {
+    return (
+      <div className={`flex items-center justify-between gap-2 px-3 h-11 rounded-lg border border-dashed border-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 ${className}`}>
+        <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+          <ClientIcon icon="ph:ticket-fill" className="w-4 h-4" />
+          {appliedCode} applied
+        </span>
+        <button
+          type="button"
+          onClick={onRemoved}
+          className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 underline underline-offset-2 cursor-pointer"
+        >
+          Remove
+        </button>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleApplyCoupon} className={`relative flex items-center ${className}`}>

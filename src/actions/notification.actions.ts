@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { ActionResponse } from "@/actions/auth.actions";
 import type { NotificationType } from "@prisma/client";
+import { sendTextMessage } from "@/lib/apitxt";
 
 export interface NotificationItem {
   id: string;
@@ -118,5 +119,46 @@ export async function notifyAllAdmins(
     });
   } catch (err) {
     console.error("Notify all admins error:", err);
+  }
+}
+
+/**
+ * WhatsApp equivalent of notifyAllAdmins, for events that warrant a phone
+ * alert rather than just an in-app one (a new support ticket). Sends to
+ * every SUPER_ADMIN who has a phone on file — silently a no-op for any who
+ * don't, same "best effort, never blocks the caller" contract as every
+ * other sendTextMessage call site in this codebase.
+ */
+export async function notifyAdminsByWhatsApp(message: string): Promise<void> {
+  try {
+    const admins = await prisma.user.findMany({
+      where: { role: "SUPER_ADMIN", phone: { not: null } },
+      select: { phone: true },
+    });
+    await Promise.all(admins.map((a) => sendTextMessage({ phone: a.phone!, channel: "WHATSAPP", message })));
+  } catch (err) {
+    console.error("Notify admins by WhatsApp error:", err);
+  }
+}
+
+/**
+ * Single-recipient in-app notification — the symmetric counterpart to
+ * notifyAllAdmins' fan-out, for events with exactly one recipient (a
+ * support ticket reply going back to the one vendor who raised it).
+ */
+export async function notifyUser(
+  userId: string,
+  type: NotificationType,
+  title: string,
+  message: string,
+  liveCallId?: string,
+  serviceCallId?: string
+): Promise<void> {
+  try {
+    await prisma.notification.create({
+      data: { userId, type, title, message, liveCallId: liveCallId ?? null, serviceCallId: serviceCallId ?? null },
+    });
+  } catch (err) {
+    console.error("Notify user error:", err);
   }
 }

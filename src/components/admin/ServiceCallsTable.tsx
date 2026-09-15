@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { DataTable, ColumnDef } from "@/components/ui/DataTable";
 import type { AdminServiceCallSummary } from "@/actions/servicecall.actions";
 import { jobStatusLabel } from "@/lib/jobStatus";
@@ -17,6 +18,11 @@ const columns: ColumnDef<AdminServiceCallSummary>[] = [
     header: "Customer",
     accessorKey: "customerName",
     sortable: true,
+    cell: (item) => (
+      <Link href={`/admin/service-calls/${item.id}`} className="font-semibold text-slate-900 dark:text-white hover:underline">
+        {item.customerName}
+      </Link>
+    ),
   },
   {
     header: "Phone",

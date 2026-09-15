@@ -48,3 +48,6 @@ next-env.d.ts
 .prisma/
 
 /generated/prisma
+
+# Local-dev object storage fallback (see src/lib/storage/provider.localDisk.ts)
+.storage/

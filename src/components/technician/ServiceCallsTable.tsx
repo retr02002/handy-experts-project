@@ -68,7 +68,7 @@ function buildColumns(onUpdated: () => void, onView: (item: ServiceCallSummary) 
       header: "Location",
       cell: (item) => (
         <span className="text-sm max-w-[200px] truncate block">
-          {item.address}, {item.city}
+          {item.piiMasked ? <span className="text-slate-400 italic">{item.city}</span> : `${item.address}, ${item.city}`}
         </span>
       ),
     },

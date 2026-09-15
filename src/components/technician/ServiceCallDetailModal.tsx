@@ -6,8 +6,13 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { updateServiceCallStatusAction, type ServiceCallSummary, type ServiceCallStatusValue } from "@/actions/servicecall.actions";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { TicketBadge } from "@/components/shared/TicketBadge";
 
 const PAYMENT_MODE_LABELS: Record<string, string> = {
+  ONLINE: "Paid Online",
+  WALLET: "Paid from Wallet",
+  ADMIN: "Admin Created",
+  COD: "Cash on Delivery",
   gpay: "Google Pay",
   phonepe: "PhonePe",
   paytm: "Paytm",
@@ -70,53 +75,69 @@ export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCall
           <ClientIcon icon="ph:x-bold" className="w-4 h-4" />
         </button>
 
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white pr-8">{call.itemSummary}</h3>
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white pr-8">{call.itemSummary || "Completed Job"}</h3>
+        <TicketBadge ticketNumber={call.ticketNumber} className="mt-1.5" />
 
         <div className="flex flex-col gap-3 mt-4">
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Customer</p>
-              <p className="font-semibold text-slate-900 dark:text-white">{call.customerName}</p>
-            </div>
-            <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Phone</p>
-              <p className="font-semibold text-slate-900 dark:text-white">{call.customerPhone}</p>
-            </div>
-          </div>
-          <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Email</p>
-            <p className="text-sm text-slate-700 dark:text-slate-300">{call.customerEmail}</p>
-          </div>
-          {call.siteContactPhone && (
-            <div className="bg-amber-50 dark:bg-amber-500/10 rounded-xl p-3">
-              <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">Site Contact</p>
-              <p className="font-semibold text-slate-900 dark:text-white">
-                {call.siteContactName || "—"} &middot; {call.siteContactPhone}
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Call this number when you arrive — it may differ from the customer above.
+          {call.piiMasked ? (
+            <div className="bg-slate-50 dark:bg-slate-900/60 rounded-xl p-3 flex items-start gap-2.5">
+              <ClientIcon icon="ph:lock-simple-bold" className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Customer contact, address and the full receipt are hidden once a job is completed. Your vendor has the full details.
               </p>
             </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Customer</p>
+                  <p className="font-semibold text-slate-900 dark:text-white">{call.customerName}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Phone</p>
+                  <p className="font-semibold text-slate-900 dark:text-white">{call.customerPhone}</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Email</p>
+                <p className="text-sm text-slate-700 dark:text-slate-300">{call.customerEmail}</p>
+              </div>
+              {call.siteContactPhone && (
+                <div className="bg-amber-50 dark:bg-amber-500/10 rounded-xl p-3">
+                  <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">Site Contact</p>
+                  <p className="font-semibold text-slate-900 dark:text-white">
+                    {call.siteContactName || "—"} &middot; {call.siteContactPhone}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Call this number when you arrive — it may differ from the customer above.
+                  </p>
+                </div>
+              )}
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Address</p>
+                <p className="text-sm text-slate-700 dark:text-slate-300">{call.address}, {call.city}, {call.state} {call.pincode}</p>
+              </div>
+            </>
           )}
-          <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Address</p>
-            <p className="text-sm text-slate-700 dark:text-slate-300">{call.address}, {call.city}, {call.state} {call.pincode}</p>
-          </div>
 
           <div className="bg-slate-50 dark:bg-slate-900/60 rounded-xl p-3 flex flex-col gap-1.5 text-sm">
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Items</p>
-            {call.items.map((item, i) => (
-              <div key={i} className="flex items-center justify-between text-slate-700 dark:text-slate-300">
-                <span>{item.packageName} {item.quantity > 1 ? `x${item.quantity}` : ""}</span>
-                <span className="font-medium">₹{(item.unitPrice * item.quantity).toFixed(0)}</span>
-              </div>
-            ))}
-            <div className="flex items-center justify-between text-slate-500 pt-1.5 border-t border-slate-200 dark:border-slate-700 text-xs">
-              <span>Subtotal</span><span>₹{call.subtotal.toFixed(0)}</span>
-            </div>
-            <div className="flex items-center justify-between text-slate-500 text-xs">
-              <span>GST</span><span>₹{call.tax.toFixed(0)}</span>
-            </div>
+            {!call.piiMasked && (
+              <>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Items</p>
+                {call.items.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                    <span>{item.packageName} {item.quantity > 1 ? `x${item.quantity}` : ""}</span>
+                    <span className="font-medium">₹{(item.unitPrice * item.quantity).toFixed(0)}</span>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between text-slate-500 pt-1.5 border-t border-slate-200 dark:border-slate-700 text-xs">
+                  <span>Subtotal</span><span>₹{(call.subtotal ?? 0).toFixed(0)}</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-500 text-xs">
+                  <span>GST</span><span>₹{(call.tax ?? 0).toFixed(0)}</span>
+                </div>
+              </>
+            )}
             <div className="flex items-center justify-between font-bold text-slate-900 dark:text-white pt-1">
               <span>Total</span><span>₹{call.total.toFixed(0)}</span>
             </div>
@@ -125,7 +146,10 @@ export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCall
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
               <ClientIcon icon="ph:device-mobile-camera" className="w-4 h-4 text-slate-400 shrink-0" />
-              {PAYMENT_MODE_LABELS[call.paymentMode] ?? call.paymentMode} &middot; {call.upiRef}
+              {call.paymentMode === "ADMIN" && call.createdByAdminName
+                ? `Created by ${call.createdByAdminName}`
+                : PAYMENT_MODE_LABELS[call.paymentMode] ?? call.paymentMode}
+              {call.upiRef && <> &middot; {call.upiRef}</>}
             </div>
             {call.paymentScreenshotUrl && (
               <button
