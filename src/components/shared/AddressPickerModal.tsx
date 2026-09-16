@@ -59,6 +59,7 @@ export function AddressPickerModal({ onSelect, onClose }: Props) {
             pincode: result.data.pincode.replace(/^,\s*/, ""),
             latitude,
             longitude,
+            locality: result.data.localArea || null,
             isDefault: false,
           });
         } finally {

@@ -6,6 +6,9 @@ import { getProfileDetails } from "@/actions/profile.actions";
 import { AccountSettingsCard } from "@/components/shared/AccountSettingsCard";
 import { LogoutMenuItem } from "@/components/shared/LogoutMenuItem";
 import { SetLocationBanner } from "@/components/vendor/SetLocationBanner";
+import { VendorDocumentsSection } from "@/components/vendor/VendorDocumentsSection";
+import { VendorLogoCard } from "@/components/vendor/VendorLogoCard";
+import { getMyVendorDocumentsAction } from "@/actions/kyc.actions";
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
@@ -23,6 +26,10 @@ export default async function VendorProfilePage() {
   const userName = profile.name || "Vendor";
   const avatarInitial = userName.charAt(0).toUpperCase() || "V";
   const vendor = profile.vendorProfile;
+
+  const docsResult = await getMyVendorDocumentsAction();
+  const documents = docsResult.success ? (docsResult.data?.documents ?? []) : [];
+  const logoUrl = docsResult.success ? (docsResult.data?.logoUrl ?? null) : null;
 
   return (
     <div className="flex flex-col w-full h-full max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -109,6 +116,10 @@ export default async function VendorProfilePage() {
               </div>
             </div>
           )}
+
+          <VendorDocumentsSection initialDocuments={documents} />
+
+          <VendorLogoCard initialLogoUrl={logoUrl} />
 
           <AccountSettingsCard name={userName} email={profile.email || ""} hasPassword={profile.hasPassword} />
         </div>

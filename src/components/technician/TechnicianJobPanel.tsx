@@ -407,29 +407,10 @@ export function TechnicianJobPanel({ call, onClose, onChanged, onGatedStep }: Pr
                 </div>
               )}
 
-              {/* Order summary */}
+              {/* Order summary — only the final total, never the GST/subtotal
+                  breakdown or per-line prices; the server never sends a
+                  technician session anything else to render here. */}
               <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-1.5 text-sm">
-                {!call.piiMasked && (
-                  <>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Order Summary</p>
-                    {call.items.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between text-slate-700 dark:text-slate-300">
-                        <span className="min-w-0 truncate">
-                          {item.packageName} {item.quantity > 1 ? `x${item.quantity}` : ""}
-                        </span>
-                        <span className="font-medium shrink-0">₹{(item.unitPrice * item.quantity).toFixed(0)}</span>
-                      </div>
-                    ))}
-                    <div className="flex items-center justify-between text-xs text-slate-500 pt-1.5 border-t border-slate-100 dark:border-slate-800">
-                      <span>Subtotal</span>
-                      <span>₹{(call.subtotal ?? 0).toFixed(0)}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-slate-500">
-                      <span>GST</span>
-                      <span>₹{(call.tax ?? 0).toFixed(0)}</span>
-                    </div>
-                  </>
-                )}
                 <div className="flex items-center justify-between font-bold text-slate-900 dark:text-white pt-1">
                   <span>Total</span>
                   <span>₹{call.total.toFixed(0)}</span>

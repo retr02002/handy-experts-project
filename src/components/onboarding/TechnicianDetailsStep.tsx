@@ -7,6 +7,7 @@ import { OnboardingField } from "./OnboardingField";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { SkillAssignmentBuilder } from "@/components/shared/SkillAssignmentBuilder";
 import type { SkillAssignmentInput } from "@/lib/validations/technician.schema";
+import { SERVICEABLE_CITIES, type ServiceableCity } from "@/lib/cities";
 
 interface Props {
   initialName?: string;
@@ -20,6 +21,7 @@ const EMPTY_FORM = {
   experienceYears: "",
   aadhaarNumber: "",
   servicePincode: "",
+  city: "",
 };
 
 export function TechnicianDetailsStep({ initialName = "", onBack, onSuccess }: Props) {
@@ -39,6 +41,7 @@ export function TechnicianDetailsStep({ initialName = "", onBack, onSuccess }: P
     try {
       const res = await completeTechnicianOnboarding({
         ...form,
+        city: form.city as ServiceableCity,
         skillAssignments,
         experienceYears: Number(form.experienceYears),
       });
@@ -130,6 +133,17 @@ export function TechnicianDetailsStep({ initialName = "", onBack, onSuccess }: P
               required
             />
           </div>
+
+          <OnboardingField
+            as="select"
+            label="City"
+            icon="ph:map-pin"
+            value={form.city}
+            onChange={(e) => set("city", e.target.value)}
+            options={SERVICEABLE_CITIES}
+            placeholder="Select your city"
+            error={errors.city}
+          />
 
           <OnboardingField
             label="Service Area Pincode (optional)"

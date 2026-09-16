@@ -12,12 +12,13 @@ import { getReviewsForVendorByIdAction } from "@/actions/review.actions";
 import { getCategoriesWithServiceOptionsAction } from "@/actions/category.actions";
 import { getVendorServiceAreasForAdminAction } from "@/actions/vendorservicearea.actions";
 import { getServiceCallsForVendorAction } from "@/actions/servicecall.actions";
+import { getVendorDocumentsForAdminAction } from "@/actions/kyc.actions";
 import { VendorDetailTabs } from "@/components/admin/vendor-detail/VendorDetailTabs";
 
 export default async function VendorDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const [vendorRes, walletRes, performanceRes, reviewsRes, categoriesRes, assignedRes, areasRes, ordersRes] =
+  const [vendorRes, walletRes, performanceRes, reviewsRes, categoriesRes, assignedRes, areasRes, ordersRes, documentsRes] =
     await Promise.all([
       getAdminVendorByIdAction(id),
       getAdminVendorWalletAction(id),
@@ -27,6 +28,7 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ i
       getVendorCategoriesAction(id),
       getVendorServiceAreasForAdminAction(id),
       getServiceCallsForVendorAction(id),
+      getVendorDocumentsForAdminAction(id),
     ]);
 
   if (!vendorRes.success || !vendorRes.data) notFound();
@@ -100,6 +102,7 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ i
     { id: "reviews", label: "Reviews", icon: "ph:star-bold", badge: reviewsRes.success ? reviewsRes.data?.length : undefined },
     { id: "performance", label: "Performance", icon: "ph:chart-line-up-bold" },
     { id: "coverage", label: "Coverage", icon: "ph:map-pin-area-bold" },
+    { id: "documents", label: "Documents", icon: "ph:folder-lock" },
   ];
 
   return (
@@ -116,6 +119,8 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ i
         categories={categoriesRes.success ? categoriesRes.data ?? [] : []}
         assignedCategoryIds={assignedRes.success ? (assignedRes.data ?? []).map((c) => c.categoryId) : []}
         areas={areasRes.success ? areasRes.data ?? [] : []}
+        documents={documentsRes.success ? documentsRes.data?.documents ?? [] : []}
+        logoUrl={documentsRes.success ? documentsRes.data?.logoUrl ?? null : null}
       />
     </div>
   );

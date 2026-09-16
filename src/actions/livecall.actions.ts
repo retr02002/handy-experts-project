@@ -19,6 +19,8 @@ import { notifyAllAdmins } from "@/actions/notification.actions";
 import { getPackageServiceCategoryMap } from "@/lib/technicianSkills";
 import { computeOrderTotal, computeLeadPrice } from "@/lib/pricing";
 import { resolveCouponDiscount } from "@/lib/coupons";
+import { getCityCode, getAreaCode } from "@/lib/locationCodes";
+import { nextSequence } from "@/lib/sequenceCounter";
 
 export async function requireCustomerId(): Promise<{ userId: string | null; error: string | null }> {
   const session = await getServerSession(authOptions);
@@ -227,6 +229,10 @@ export async function createLiveCallAction(input: CreateLiveCallInput): Promise<
         }
       }
 
+      const orderCityCode = getCityCode(data.city);
+      const orderLocalityCode = getAreaCode(data.locality, orderCityCode);
+      const orderSeq = await nextSequence(`ORDER:${orderCityCode}`, tx);
+
       const created = await tx.liveCall.create({
         data: {
           customerId: userId,
@@ -241,6 +247,10 @@ export async function createLiveCallAction(input: CreateLiveCallInput): Promise<
           pincode: data.pincode,
           latitude: coords.latitude,
           longitude: coords.longitude,
+          locality: data.locality,
+          orderCityCode,
+          orderLocalityCode,
+          orderSeq,
           // This action is the COD / wallet-only path — Pay Online goes
           // through createRazorpayOrderAction instead, which starts the
           // LiveCall in AWAITING_PAYMENT and only broadcasts it once payment

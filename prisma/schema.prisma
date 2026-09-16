@@ -8,18 +8,18 @@ datasource db {
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -43,39 +43,39 @@ enum Role {
 }
 
 model User {
-  id                String             @id @default(cuid())
-  name              String?
-  email             String?            @unique
-  emailVerified     DateTime?
-  image             String?
-  password          String?
+  id                    String                 @id @default(cuid())
+  name                  String?
+  email                 String?                @unique
+  emailVerified         DateTime?
+  image                 String?
+  password              String?
   // Globally unique across every role — OTP login looks accounts up by
   // phone, so a phone number can only ever belong to one account, whichever
   // role it registered under first.
-  phone             String?            @unique
+  phone                 String?                @unique
   // Technician-only login handle (self-chosen at signup, or auto-generated
   // when a vendor creates the account). Null for every other role.
-  username          String?            @unique
-  role              Role               @default(PENDING)
+  username              String?                @unique
+  role                  Role                   @default(PENDING)
   // Customer-only: two fixed 4-digit PINs the customer reads out — one to
   // let a technician start a job, a different one to let them close it, so
   // knowing the start PIN never lets anyone mark work complete. Generated
   // lazily on their first order. Never sent to a technician's device — they
   // submit a candidate and the server compares.
-  startPin          String?
-  completionPin     String?
-  accounts          Account[]
-  sessions          Session[]
-  cartItems         CartItem[]
-  vendorProfile     VendorProfile?
-  technicianProfile TechnicianProfile?
-  wallet            CustomerWallet?
-  liveCalls         LiveCall[]
-  serviceCalls      ServiceCall[]
-  notifications     Notification[]
-  addresses         Address[]
-  chatMessages      ChatMessage[]
-  reviews           Review[]
+  startPin              String?
+  completionPin         String?
+  accounts              Account[]
+  sessions              Session[]
+  cartItems             CartItem[]
+  vendorProfile         VendorProfile?
+  technicianProfile     TechnicianProfile?
+  wallet                CustomerWallet?
+  liveCalls             LiveCall[]
+  serviceCalls          ServiceCall[]
+  notifications         Notification[]
+  addresses             Address[]
+  chatMessages          ChatMessage[]
+  reviews               Review[]
   supportTicketMessages SupportTicketMessage[]
 }
 
@@ -97,6 +97,11 @@ model Address {
   pincode     String
   latitude    Float
   longitude   Float
+  // Neighbourhood/suburb text from reverse-geocoding when this address was
+  // pinned via "use current location" — null for a manually-typed address.
+  // Carried through to checkout to derive the order's structured-ID area
+  // code (see LiveCall.locality, src/lib/locationCodes.ts).
+  locality    String?
   isDefault   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -119,6 +124,18 @@ model VendorProfile {
   gstNumber         String?
   panNumber         String?
   aadhaarNumber     String?
+  // Branding asset for invoices/ID cards, not a compliance document — kept
+  // separate from KycDocument so invoice/ID-card rendering is a plain field
+  // read. Raster-only (enforced at the upload route), so it embeds straight
+  // into @react-pdf/renderer's <Image> with no SVG-to-raster conversion.
+  logoUrl           String?
+  logoStorageKey    String?
+  // Structured Vendor ID parts (city is already required above, so this is
+  // always assigned synchronously at creation — see issueVendorId in
+  // src/lib/structuredIds.ts). Nullable only for the one-time backfill
+  // window immediately after this migration.
+  idCityCode        String?
+  idSeq             Int?
   address           String
   city              String
   state             String
@@ -147,8 +164,11 @@ model VendorProfile {
   serviceAreas      VendorServiceArea[]
   categories        VendorCategory[]
   supportTickets    SupportTicket[]
+  kycDocuments      KycDocument[]
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
+
+  @@unique([idCityCode, idSeq])
 }
 
 enum LeadPricingType {
@@ -185,42 +205,52 @@ enum TechnicianType {
 }
 
 model TechnicianProfile {
-  id              String         @id @default(cuid())
-  userId          String         @unique
-  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type            TechnicianType @default(FREELANCE)
-  skillCategory   String
-  experienceYears Int
-  aadhaarNumber   String?
+  id                String                    @id @default(cuid())
+  userId            String                    @unique
+  user              User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              TechnicianType            @default(FREELANCE)
+  skillCategory     String
+  experienceYears   Int
+  aadhaarNumber     String?
   // Courtesy display field only ("where do you generally work") — no longer
   // collected at creation/onboarding and never used for job matching, which
   // is now live-location-based (see TechnicianLocation + VendorServiceArea).
   // Nullable rather than dropped: existing rows and a handful of display
   // sites still read it.
-  servicePincode  String?
+  servicePincode    String?
+  // One of SERVICEABLE_CITIES (src/lib/cities.ts), collected at creation for
+  // new technicians and gated behind a one-time /select-city prompt (mirrors
+  // the existing /capture-photo gate) for technicians who predate this
+  // field. Drives the city code in the structured Technician ID below.
+  city              String?
+  idCityCode        String?
+  idSeq             Int?
   // Set only for technicians a vendor creates from their own dashboard — not
   // part of the public self-signup flow this schema currently supports.
-  vendorId        String?
-  vendor          VendorProfile? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
-  serviceCalls    ServiceCall[]
+  vendorId          String?
+  vendor            VendorProfile?            @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  serviceCalls      ServiceCall[]
   serviceCallOffers ServiceCallOffer[]
-  location        TechnicianLocation?
-  locationEvents  TechnicianLocationEvent[]
+  location          TechnicianLocation?
+  locationEvents    TechnicianLocationEvent[]
   // Broad ("I do everything in this category") and narrow ("I only do this
   // specific service") skill assignment — independent of each other, not
   // nested. A technician's real offered set is the union of both; see
   // technicianOffersAnyService in src/lib/technicianSkills.ts, the one place
   // that union is resolved.
-  categories      TechnicianCategory[]
-  offeredServices TechnicianService[]
-  reviews         Review[]
+  categories        TechnicianCategory[]
+  offeredServices   TechnicianService[]
+  reviews           Review[]
+  kycDocuments      KycDocument[]
   // Denormalised from Review on every write. The storefront and the
   // customer's tracking screen both show these on load, so they can't be a
   // live AVG() join per render.
-  ratingAvg       Float?
-  ratingCount     Int            @default(0)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  ratingAvg         Float?
+  ratingCount       Int                       @default(0)
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  @@unique([idCityCode, idSeq])
 }
 
 enum OtpChannel {
@@ -263,24 +293,24 @@ model VerificationToken {
 // slider tabs, the /services filter tabs and the footer links — previously all
 // five of those were separate hardcoded lists that drifted apart.
 model Category {
-  id          String    @id @default(cuid())
-  slug        String    @unique
-  name        String
-  description String?
+  id                   String               @id @default(cuid())
+  slug                 String               @unique
+  name                 String
+  description          String?
   // Iconify name (e.g. "ph:broom"). Rendered icon-only on /services tabs.
-  icon        String?
+  icon                 String?
   // Tile photo for the homepage grid, which shows an image with an icon pill
   // overlaid — hence both fields rather than one.
-  image       String?
-  isActive    Boolean   @default(true)
-  isPopular   Boolean   @default(false)
-  sortOrder   Int       @default(0)
-  services    Service[]
+  image                String?
+  isActive             Boolean              @default(true)
+  isPopular            Boolean              @default(false)
+  sortOrder            Int                  @default(0)
+  services             Service[]
   technicianCategories TechnicianCategory[]
   vendorCategories     VendorCategory[]
   couponScopes         CouponScope[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
 }
 
 // Broad technician skill assignment — "does everything in this category."
@@ -331,44 +361,44 @@ model VendorCategory {
 }
 
 model Service {
-  id          String    @id @default(cuid())
+  id                 String              @id @default(cuid())
   // Live aggregate from Review. The admin-entered `rating` display string
   // below stays as the fallback while ratingCount is 0, so nothing goes
   // blank before the first review lands.
-  ratingAvg   Float?
-  ratingCount Int       @default(0)
-  slug        String    @unique
-  title       String
+  ratingAvg          Float?
+  ratingCount        Int                 @default(0)
+  slug               String              @unique
+  title              String
   // Nullable so deleting a category degrades gracefully (SetNull) rather than
   // blocking at the DB layer — the app-level guard in category.actions.ts is
   // what actually refuses a delete while services are still attached.
-  categoryId  String?
-  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  badge       String?
-  badgeColor  String?
-  rating      String?
-  isPopular   Boolean   @default(false)
-  image       String
-  videoUrl    String?
-  time        String?
-  warranty    String?
-  description String    @db.Text
-  benefits    Json?
-  howItWorks  Json?
-  faqs        Json?
-  packages    ServicePackage[]
+  categoryId         String?
+  category           Category?           @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  badge              String?
+  badgeColor         String?
+  rating             String?
+  isPopular          Boolean             @default(false)
+  image              String
+  videoUrl           String?
+  time               String?
+  warranty           String?
+  description        String              @db.Text
+  benefits           Json?
+  howItWorks         Json?
+  faqs               Json?
+  packages           ServicePackage[]
   technicianServices TechnicianService[]
   couponScopes       CouponScope[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
   @@index([categoryId])
 }
 
 model ServicePackage {
-  id            String     @id @default(cuid())
+  id            String         @id @default(cuid())
   serviceId     String
-  service       Service    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  service       Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   name          String
   price         Float
   originalPrice Float
@@ -379,8 +409,8 @@ model ServicePackage {
   image         String?
   features      Json
   details       Json?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   cartItems     CartItem[]
   liveCallItems LiveCallItem[]
   couponScopes  CouponScope[]
@@ -482,39 +512,39 @@ enum ServiceCallOfferStatus {
 // details as they were at order time even if the customer edits their
 // profile later.
 model LiveCall {
-  id                  String          @id @default(cuid())
-  customerId          String
-  customer            User            @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  customerName        String
-  customerPhone       String
+  id                   String             @id @default(cuid())
+  customerId           String
+  customer             User               @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerName         String
+  customerPhone        String
   // Optional alternate contact for when the booking is on behalf of someone
   // else and the technician should call a different number/person at the
   // site instead of the customer. Plain free-text order metadata —
   // deliberately unrelated to and not validated against User.phone (that
   // column is unique and used for OTP account lookup; this one is not
   // unique and has no auth role).
-  siteContactName     String?
-  siteContactPhone    String?
-  customerEmail       String
-  address             String
-  city                String
-  state               String
-  pincode             String
-  latitude            Float
-  longitude           Float
+  siteContactName      String?
+  siteContactPhone     String?
+  customerEmail        String
+  address              String
+  city                 String
+  state                String
+  pincode              String
+  latitude             Float
+  longitude            Float
   // Null means "as soon as possible" — the customer picked the Instant
   // option at checkout rather than a scheduled slot.
-  scheduledFor        DateTime?
+  scheduledFor         DateTime?
   // "ONLINE" or "COD" for new orders. Historical orders predate this split
   // and hold one of the six old self-reported UPI-app labels instead
   // (e.g. "gpay") — every consumer must treat this as free text, not an enum.
-  paymentMode         String
+  paymentMode          String
   // Set only when paymentMode is "ADMIN" (created via the admin panel,
   // single or bulk) — the specific admin's name, snapshotted at creation
   // time so it stays accurate even if that admin later renames their own
   // profile, same reasoning as customerName being snapshotted rather than
   // joined live.
-  createdByAdminName  String?
+  createdByAdminName   String?
   // Per-order job PINs, set only for admin-created live calls (single or
   // bulk). When present these override the customer's own fixed
   // startPin/completionPin (see User.startPin) for this one order — admin
@@ -523,8 +553,8 @@ model LiveCall {
   // account's permanent PIN) is what actually gets used on-site. Generated
   // from a letters+digits alphabet (see src/lib/pins.ts) specifically so
   // they never collide in form with a real customer's plain-numeric PIN.
-  startPin            String?
-  completionPin       String?
+  startPin             String?
+  completionPin        String?
   // Short, human-readable, chronological order reference (displayed as
   // "HZ-100234" via src/lib/ticketNumber.ts) — for on-site verification,
   // handover context, and vendor ticket-number search. Backfilled by hand
@@ -532,22 +562,36 @@ model LiveCall {
   // than left to a plain `db push`, since a freshly-added autoincrement
   // column would assign values in physical row order, not createdAt order,
   // which would make old orders' ticket numbers read out of sequence.
-  ticketSeq           Int             @default(autoincrement()) @unique
+  ticketSeq            Int                @unique @default(autoincrement())
+  // Structured ticket number parts, frozen at creation. Raw neighbourhood
+  // text from reverse-geocoding at checkout (locality) plus the codes and
+  // per-city sequence derived from it (see src/lib/locationCodes.ts,
+  // src/lib/sequenceCounter.ts) — formatted on read by
+  // src/lib/ticketNumber.ts as e.g. "HANDYZONDDW369369". All nullable and
+  // left permanently null on orders that predate this feature — no
+  // backfill, since renumbering a ticket already referenced in support
+  // conversations or paperwork is pure churn. Frozen (not re-derived from
+  // city/locality on every read) so an already-issued, already-shared
+  // number stays stable even if the code lookup table changes later.
+  locality             String?
+  orderCityCode        String?
+  orderLocalityCode    String?
+  orderSeq             Int?
   // Superseded by razorpayPaymentId for online orders. Nullable because COD
   // and online orders never collect a customer-typed reference.
-  upiRef              String?
+  upiRef               String?
   // Optional — checkout no longer requires a manual payment-proof upload.
   // Every consumer of this field must treat it as possibly absent.
   paymentScreenshotUrl String?
   // Null means "predates payment-status tracking" (historical order).
-  paymentStatus       PaymentStatus?
+  paymentStatus        PaymentStatus?
   // Idempotency key shared by the client-return verify call and the webhook
   // — whichever gets there first wins via a conditional updateMany claim.
-  razorpayOrderId     String?         @unique
-  razorpayPaymentId   String?
-  subtotal            Float
-  tax                 Float
-  total               Float
+  razorpayOrderId      String?            @unique
+  razorpayPaymentId    String?
+  subtotal             Float
+  tax                  Float
+  total                Float
   // How much of this order's total was covered by the customer's wallet
   // balance (Amazon-Pay-style optional apply-at-checkout). For the online
   // path this is debited immediately at order-creation time (reserved), not
@@ -555,37 +599,51 @@ model LiveCall {
   // expires from AWAITING_PAYMENT, the sweep refunds it back. COD/wallet-only
   // orders never sit in AWAITING_PAYMENT, so there's no reservation window
   // to worry about there.
-  walletAmountApplied Float           @default(0)
-  couponCode          String?
-  discountAmount      Float           @default(0)
+  walletAmountApplied  Float              @default(0)
+  couponCode           String?
+  discountAmount       Float              @default(0)
   // The total as the customer originally paid it. Written once, the first
   // time a vendor edits the job's items, so a revised price can always be
   // shown against what was actually charged instead of silently replacing
   // it. Null means the job has never been edited.
-  originalTotal       Float?
-  status              LiveCallStatus  @default(BROADCASTING)
-  acceptedByVendorId  String?
-  acceptedByVendor    VendorProfile?  @relation(fields: [acceptedByVendorId], references: [id], onDelete: SetNull)
-  acceptedAt          DateTime?
+  originalTotal        Float?
+  status               LiveCallStatus     @default(BROADCASTING)
+  acceptedByVendorId   String?
+  acceptedByVendor     VendorProfile?     @relation(fields: [acceptedByVendorId], references: [id], onDelete: SetNull)
+  acceptedAt           DateTime?
   // Set only by cancelMyOrderAction — the customer's self-service cancel
   // while the order is still unclaimed (BROADCASTING). Once a vendor has
   // accepted, cancellation goes through the ServiceCall's own status flow
   // instead.
-  cancelReason        String?
-  cancelledAt         DateTime?
+  cancelReason         String?
+  cancelledAt          DateTime?
   // No longer used to auto-expire BROADCASTING orders — a paid order
   // vanishing into a refund after a timeout is a business cost, not a
   // technical cleanliness win. Still used to expire AWAITING_PAYMENT rows,
   // where nothing has been charged yet.
-  expiresAt           DateTime?
-  items               LiveCallItem[]
-  serviceCall         ServiceCall?
-  offers              ServiceCallOffer[]
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
+  expiresAt            DateTime?
+  items                LiveCallItem[]
+  serviceCall          ServiceCall?
+  offers               ServiceCallOffer[]
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 
+  // Nullable columns are exempt from Postgres unique enforcement, so every
+  // pre-feature row (both null) never collides with a real issued number.
+  @@unique([orderCityCode, orderSeq])
   @@index([status])
   @@index([customerId])
+}
+
+// Backs every structured ID in the app (order tickets, technician IDs,
+// vendor IDs) — one row per (entity-type, city-code) scope, e.g. "ORDER:ND",
+// "TECHNICIAN:MU", "VENDOR:PU", created lazily on first use. See
+// src/lib/sequenceCounter.ts: the increment is a single atomic
+// upsert-by-primary-key (INSERT ... ON CONFLICT DO UPDATE SET value =
+// value + 1), safe under concurrent callers with no read-then-write race.
+model SequenceCounter {
+  id    String @id
+  value Int    @default(0)
 }
 
 // Snapshot of a cart line item at the moment the LiveCall was created —
@@ -607,52 +665,52 @@ model LiveCallItem {
 // The execution record once a vendor accepts a LiveCall and assigns a
 // technician — one-to-one with the LiveCall it was converted from.
 model ServiceCall {
-  id            String             @id @default(cuid())
-  liveCallId    String             @unique
-  liveCall      LiveCall           @relation(fields: [liveCallId], references: [id], onDelete: Cascade)
-  vendorId      String
-  vendor        VendorProfile      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  id                     String                @id @default(cuid())
+  liveCallId             String                @unique
+  liveCall               LiveCall              @relation(fields: [liveCallId], references: [id], onDelete: Cascade)
+  vendorId               String
+  vendor                 VendorProfile         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   // Null while UNASSIGNED. SetNull rather than Cascade so deleting a
   // technician orphans the job back to the vendor instead of destroying
   // the customer's order history along with it.
-  technicianId  String?
-  technician    TechnicianProfile? @relation(fields: [technicianId], references: [id], onDelete: SetNull)
-  customerId    String
-  customer      User               @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  status        ServiceCallStatus  @default(UNASSIGNED)
+  technicianId           String?
+  technician             TechnicianProfile?    @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+  customerId             String
+  customer               User                  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  status                 ServiceCallStatus     @default(UNASSIGNED)
   // Set the moment a technician claims the job; cleared again if they
   // decline it back into the pool.
-  assignedAt    DateTime?
-  startedAt     DateTime?
-  completedAt   DateTime?
-  cancelledAt   DateTime?
+  assignedAt             DateTime?
+  startedAt              DateTime?
+  completedAt            DateTime?
+  cancelledAt            DateTime?
   // Failed customer-PIN entries at the start/complete gates. Locks the
   // gate at PIN_MAX_ATTEMPTS until the owning vendor resets it — a fixed
   // 4-digit PIN is only 10k combinations, so this is what stops it being
   // brute-forced.
-  pinAttempts   Int                @default(0)
+  pinAttempts            Int                   @default(0)
   // Where the technician's device reported itself at each gate, recorded
   // even when the check passes (and even while GEOFENCE_ENFORCED is off —
   // during the warn-only rollout these columns ARE the experiment, the
   // evidence for whether 150m is achievable in the field). Keeping the fix
   // alongside the computed distance also makes a spoofed position
   // reviewable after the fact rather than invisible.
-  startLatitude        Float?
-  startLongitude       Float?
-  startAccuracyM       Float?
-  startDistanceM       Float?
-  completeLatitude     Float?
-  completeLongitude    Float?
-  completeAccuracyM    Float?
-  completeDistanceM    Float?
+  startLatitude          Float?
+  startLongitude         Float?
+  startAccuracyM         Float?
+  startDistanceM         Float?
+  completeLatitude       Float?
+  completeLongitude      Float?
+  completeAccuracyM      Float?
+  completeDistanceM      Float?
   // Per-job escape hatch for a technician the fence wrongly blocks —
   // typically an order whose address geocoded to a city centroid, where the
   // required distance is unachievable by construction. Vendor (own job) or
   // admin may set it.
-  geofenceBypass       Boolean   @default(false)
-  geofenceBypassBy     String?
-  geofenceBypassReason String?
-  geofenceBypassAt     DateTime?
+  geofenceBypass         Boolean               @default(false)
+  geofenceBypassBy       String?
+  geofenceBypassReason   String?
+  geofenceBypassAt       DateTime?
   // A single overwritable "in transit" slot, not a list — set by
   // declineJobAction and reassignServiceCallAction's freelancer branch (the
   // two paths that null out technicianId while a predecessor existed), and
@@ -660,17 +718,17 @@ model ServiceCall {
   // claimServiceCallAction — the only path that sets technicianId from
   // null. Correctly collapses across multi-hop decline/reassign chains
   // since it's only ever overwritten, never appended, until consumed.
-  previousTechnicianId     String?
-  previousTechnicianName   String?
-  previousHandoverReason   String?
-  handovers     ServiceCallHandover[]
-  photos        JobPhoto[]
-  signature     JobSignature?
-  report        ServiceReport?
-  review        Review?
-  messages      ChatMessage[]
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  previousTechnicianId   String?
+  previousTechnicianName String?
+  previousHandoverReason String?
+  handovers              ServiceCallHandover[]
+  photos                 JobPhoto[]
+  signature              JobSignature?
+  report                 ServiceReport?
+  review                 Review?
+  messages               ChatMessage[]
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
 
   @@index([vendorId])
   @@index([technicianId])
@@ -744,6 +802,43 @@ model JobSignature {
   signedAt      DateTime    @default(now())
 }
 
+enum KycDocumentType {
+  AADHAR
+  PAN
+  GST
+  PHOTO
+  SIGNATURE
+  OTHER
+}
+
+// One shared table for technician and vendor KYC uploads rather than two
+// near-identical models. Exactly one of technicianId/vendorId is set per
+// row; enforced at the action/route layer, not the schema — same posture
+// the rest of this codebase takes on "which owner" checks. AADHAR/PAN/GST/
+// PHOTO are singletons per owner (re-upload replaces the row: delete old
+// storage object, delete old row, insert new); OTHER allows multiple rows
+// per owner for the open-ended "more documentation" case, so no @@unique
+// on (ownerId, documentType) — that would also cap OTHER at one row.
+model KycDocument {
+  id           String             @id @default(cuid())
+  documentType KycDocumentType
+  technicianId String?
+  technician   TechnicianProfile? @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  vendorId     String?
+  vendor       VendorProfile?     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  url          String
+  storageKey   String
+  contentType  String
+  sizeBytes    Int
+  /// Free-form label, only meaningful for OTHER — null for the four fixed
+  /// types, whose label is derived from documentType itself.
+  label        String?
+  uploadedAt   DateTime           @default(now())
+
+  @@index([technicianId])
+  @@index([vendorId])
+}
+
 // The technician's closing paperwork, submitted alongside the completion
 // PIN. One per job.
 model ServiceReport {
@@ -763,11 +858,11 @@ model ServiceReport {
 // did the work, and the job itself — kept separate so a good technician
 // isn't dragged down by a service they didn't design.
 model Review {
-  id                String      @id @default(cuid())
-  serviceCallId     String      @unique
-  serviceCall       ServiceCall @relation(fields: [serviceCallId], references: [id], onDelete: Cascade)
+  id                String             @id @default(cuid())
+  serviceCallId     String             @unique
+  serviceCall       ServiceCall        @relation(fields: [serviceCallId], references: [id], onDelete: Cascade)
   customerId        String
-  customer          User        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer          User               @relation(fields: [customerId], references: [id], onDelete: Cascade)
   // Null if the technician was later removed — the review still counts
   // toward the service.
   technicianId      String?
@@ -780,7 +875,7 @@ model Review {
   // Every Service this job covered, so per-service aggregates can be
   // recomputed without walking items -> package -> service each time.
   serviceIds        String[]
-  createdAt         DateTime    @default(now())
+  createdAt         DateTime           @default(now())
 
   @@index([technicianId])
   @@index([vendorId])
@@ -846,18 +941,18 @@ model SupportContact {
 // ticket's metadata, mirroring how ServiceCall/ChatMessage split job
 // metadata from its conversation.
 model SupportTicket {
-  id                   String                @id @default(cuid())
+  id                   String                 @id @default(cuid())
   vendorId             String
-  vendor               VendorProfile         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  vendor               VendorProfile          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   category             SupportTicketCategory
   subject              String
   requestedPincode     String?
   requestedRadiusKm    Float?
   requestedCategoryIds String[]
-  status               SupportTicketStatus   @default(OPEN)
+  status               SupportTicketStatus    @default(OPEN)
   messages             SupportTicketMessage[]
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
   resolvedAt           DateTime?
 
   @@index([vendorId, status])
@@ -884,19 +979,19 @@ model SupportTicketMessage {
 // lazily swept to EXPIRED whenever queried (same idiom as LiveCall.expiresAt
 // — no cron/background job exists in this stack).
 model ServiceCallOffer {
-  id           String                  @id @default(cuid())
-  liveCallId   String
-  liveCall     LiveCall                @relation(fields: [liveCallId], references: [id], onDelete: Cascade)
-  vendorId     String
-  vendor       VendorProfile           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  technicianId String
-  technician   TechnicianProfile       @relation(fields: [technicianId], references: [id], onDelete: Cascade)
-  status       ServiceCallOfferStatus  @default(PENDING)
+  id            String                 @id @default(cuid())
+  liveCallId    String
+  liveCall      LiveCall               @relation(fields: [liveCallId], references: [id], onDelete: Cascade)
+  vendorId      String
+  vendor        VendorProfile          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  technicianId  String
+  technician    TechnicianProfile      @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  status        ServiceCallOfferStatus @default(PENDING)
   // Why the technician turned it down — surfaced to the vendor so they can
   // see whether it's a coverage problem or a job problem.
   declineReason String?
-  createdAt    DateTime                @default(now())
-  respondedAt  DateTime?
+  createdAt     DateTime               @default(now())
+  respondedAt   DateTime?
 
   @@unique([liveCallId, technicianId])
   @@index([technicianId, status])
@@ -981,56 +1076,56 @@ enum WalletTransactionStatus {
 }
 
 model VendorWallet {
-  id           String                     @id @default(cuid())
-  vendorId     String                     @unique
-  vendor       VendorProfile              @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  balance      Float                      @default(0)
+  id           String                    @id @default(cuid())
+  vendorId     String                    @unique
+  vendor       VendorProfile             @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  balance      Float                     @default(0)
   transactions VendorWalletTransaction[]
-  updatedAt    DateTime                   @updatedAt
+  updatedAt    DateTime                  @updatedAt
 }
 
 model VendorWalletTransaction {
-  id       String                   @id @default(cuid())
-  walletId String
-  wallet   VendorWallet             @relation(fields: [walletId], references: [id], onDelete: Cascade)
-  type     WalletTransactionType
-  status   WalletTransactionStatus @default(COMPLETED)
-  amount   Float
+  id                String                  @id @default(cuid())
+  walletId          String
+  wallet            VendorWallet            @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  type              WalletTransactionType
+  status            WalletTransactionStatus @default(COMPLETED)
+  amount            Float
   // Set only for DEPOSIT — the idempotency key the client-return call and
   // the Razorpay webhook both key off, same pattern as LiveCall.razorpayOrderId.
-  razorpayOrderId   String? @unique
+  razorpayOrderId   String?                 @unique
   razorpayPaymentId String?
   // Set only for DEBIT — which lead this spend bought.
-  liveCallId String?
+  liveCallId        String?
   // Both set only for an admin-initiated manual credit (recharging a
   // vendor's wallet directly, e.g. cash received outside the app) — adminName
   // is the specific admin's name (snapshotted, so it survives their own
   // later profile renames) and adminNote is their free-text reason.
-  adminName  String?
-  adminNote  String?
-  createdAt  DateTime @default(now())
+  adminName         String?
+  adminNote         String?
+  createdAt         DateTime                @default(now())
 
   @@index([walletId])
 }
 
 model CustomerWallet {
-  id           String                       @id @default(cuid())
-  userId       String                       @unique
-  user         User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  balance      Float                        @default(0)
+  id           String                      @id @default(cuid())
+  userId       String                      @unique
+  user         User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance      Float                       @default(0)
   transactions CustomerWalletTransaction[]
-  updatedAt    DateTime                     @updatedAt
+  updatedAt    DateTime                    @updatedAt
 }
 
 model CustomerWalletTransaction {
-  id       String   @id @default(cuid())
-  walletId String
-  wallet   CustomerWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
-  type     WalletTransactionType // REFUND | REDEEM
-  amount   Float
+  id         String                @id @default(cuid())
+  walletId   String
+  wallet     CustomerWallet        @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  type       WalletTransactionType // REFUND | REDEEM
+  amount     Float
   // The order this credit came from (REFUND) or was spent on (REDEEM).
   liveCallId String?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime              @default(now())
 
   @@index([walletId])
 }

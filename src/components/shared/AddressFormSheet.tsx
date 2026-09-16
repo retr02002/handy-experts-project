@@ -35,6 +35,7 @@ export function AddressFormSheet({ mode, initial, onSaved, onCancel }: Props) {
   const [city, setCity] = useState(initial?.city ?? "");
   const [state, setState] = useState(initial?.state ?? "");
   const [pincode, setPincode] = useState(initial?.pincode ?? "");
+  const [locality, setLocality] = useState<string | null>(initial?.locality ?? null);
   const [label, setLabel] = useState(initial?.label ?? "Home");
   const [isDefault, setIsDefault] = useState(initial?.isDefault ?? false);
 
@@ -83,6 +84,7 @@ export function AddressFormSheet({ mode, initial, onSaved, onCancel }: Props) {
         setAddressLine(result.data.displayName);
         if (result.data.rawCity) setCity(result.data.rawCity);
         if (result.data.rawState) setState(result.data.rawState);
+        setLocality(result.data.localArea || null);
         const cleanPincode = result.data.pincode.replace(/^,\s*/, "");
         if (cleanPincode) setPincode(cleanPincode);
         else setPincodeHint(true);
@@ -152,6 +154,7 @@ export function AddressFormSheet({ mode, initial, onSaved, onCancel }: Props) {
         pincode: pincode.trim(),
         latitude: position[0],
         longitude: position[1],
+        locality,
         isDefault,
       };
       const res =

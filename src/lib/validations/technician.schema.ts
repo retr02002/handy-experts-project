@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { usernameSchema } from "@/lib/validations/otp.schema";
+import { SERVICEABLE_CITIES } from "@/lib/cities";
 
 /**
  * One row of the modular "what they do" builder: a whole category (empty
@@ -21,6 +22,8 @@ export const createTechnicianSchema = z.object({
   phone: z.string().trim().regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit mobile number"),
   skillAssignments: z.array(skillAssignmentSchema).min(1, "Select at least one category or service"),
   experienceYears: z.coerce.number().int().min(0, "Can't be negative").max(60),
+  // Drives the technician's structured ID city code — see src/lib/structuredIds.ts.
+  city: z.enum(SERVICEABLE_CITIES, "Select a city"),
   // Courtesy display field only, no longer required — job matching is now
   // live-location-based, not pincode-based. Blank stays blank.
   servicePincode: z
@@ -37,5 +40,9 @@ export type CreateTechnicianInput = z.infer<typeof createTechnicianSchema>;
 
 export const updateTechnicianSchema = createTechnicianSchema.extend({
   id: z.string().min(1),
+  // City is set once at creation (issues the structured ID) and never
+  // edited through this form — optional here purely so the existing edit
+  // form, which doesn't collect it, keeps validating.
+  city: z.enum(SERVICEABLE_CITIES).optional(),
 });
 export type UpdateTechnicianInput = z.infer<typeof updateTechnicianSchema>;

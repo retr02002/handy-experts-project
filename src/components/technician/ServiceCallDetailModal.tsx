@@ -120,24 +120,10 @@ export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCall
             </>
           )}
 
+          {/* Only the final total, never the GST/subtotal breakdown or
+              per-line prices — the server never sends a technician session
+              anything else to render here. */}
           <div className="bg-slate-50 dark:bg-slate-900/60 rounded-xl p-3 flex flex-col gap-1.5 text-sm">
-            {!call.piiMasked && (
-              <>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Items</p>
-                {call.items.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between text-slate-700 dark:text-slate-300">
-                    <span>{item.packageName} {item.quantity > 1 ? `x${item.quantity}` : ""}</span>
-                    <span className="font-medium">₹{(item.unitPrice * item.quantity).toFixed(0)}</span>
-                  </div>
-                ))}
-                <div className="flex items-center justify-between text-slate-500 pt-1.5 border-t border-slate-200 dark:border-slate-700 text-xs">
-                  <span>Subtotal</span><span>₹{(call.subtotal ?? 0).toFixed(0)}</span>
-                </div>
-                <div className="flex items-center justify-between text-slate-500 text-xs">
-                  <span>GST</span><span>₹{(call.tax ?? 0).toFixed(0)}</span>
-                </div>
-              </>
-            )}
             <div className="flex items-center justify-between font-bold text-slate-900 dark:text-white pt-1">
               <span>Total</span><span>₹{call.total.toFixed(0)}</span>
             </div>

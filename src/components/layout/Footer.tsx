@@ -24,10 +24,10 @@ export function Footer({ categories = [] }: FooterProps) {
   return (
     <footer className="w-full bg-slate-50 dark:bg-[#020813] border-t border-slate-200 dark:border-slate-800/50 pt-12 pb-6 px-4 sm:px-6 lg:px-8 mt-auto">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 sm:gap-8">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-x-6 gap-y-10 sm:gap-8">
 
-          {/* Logo & Stats Column */}
-          <div className="col-span-1 sm:col-span-2 lg:col-span-2 flex flex-col pr-0 lg:pr-8">
+          {/* Logo & Stats Column — full width row on its own at every size */}
+          <div className="col-span-2 flex flex-col pr-0 lg:pr-8">
             <Link href="/" className="mb-4 inline-block">
               <Image
                 src="/logo-org.svg"
@@ -72,8 +72,13 @@ export function Footer({ categories = [] }: FooterProps) {
             </ul>
           </div>
 
-          {/* Connect With Us */}
-          <div className="col-span-1">
+          {/* Connect With Us — Contact Info stays nested inside this same
+              column, as it originally was. It's the lone odd item after
+              Our Services/Legal & Policies pair up, so it spans full width
+              on mobile (col-span-2) rather than sitting half-width with an
+              empty gap beside it; back to col-span-1 at lg where it's one
+              of 5 columns in a single row. */}
+          <div className="col-span-2 lg:col-span-1">
             <h4 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-6">
               <ClientIcon icon="ph:globe" className="w-5 h-5 text-slate-400 dark:text-[#00B4FF]/70" />
               Connect With Us

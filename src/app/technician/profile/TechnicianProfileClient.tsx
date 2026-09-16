@@ -5,10 +5,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { Modal } from "@/components/shared/Modal";
+import { TabShell } from "@/components/shared/TabShell";
 import { AccountSettingsCard } from "@/components/shared/AccountSettingsCard";
 import { TechnicianPhoneCard } from "@/components/technician/TechnicianPhoneCard";
+import { TechnicianDocumentsTab } from "@/components/technician/TechnicianDocumentsTab";
+import { TechnicianIdCardTab } from "@/components/technician/TechnicianIdCardTab";
 import { LogoutMenuItem } from "@/components/shared/LogoutMenuItem";
 import type { ProfileDetails } from "@/actions/profile.actions";
+import type { KycDocSummary } from "@/actions/kyc.actions";
+import type { IdCardPreviewData } from "@/components/technician/IdCardPreview";
+import { TECHNICIAN_KYC_FIELDS } from "@/lib/kycDocumentTypes";
 
 function DetailCard({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
@@ -24,13 +30,25 @@ function DetailCard({ icon, label, value }: { icon: string; label: string; value
   );
 }
 
-export function TechnicianProfileClient({ profile }: { profile: ProfileDetails }) {
+export function TechnicianProfileClient({
+  profile,
+  documents,
+  idCardData,
+}: {
+  profile: ProfileDetails;
+  documents: KycDocSummary[];
+  idCardData: IdCardPreviewData | null;
+}) {
   const [infoOpen, setInfoOpen] = useState(false);
   const userName = profile.name || "Technician";
   const technician = profile.technicianProfile;
 
-  return (
-    <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+  const pendingCount = TECHNICIAN_KYC_FIELDS.filter(
+    (f) => !documents.some((d) => d.documentType === f.type)
+  ).length;
+
+  const header = (
+    <>
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Your Profile</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Your professional details and account settings.</p>
@@ -97,7 +115,11 @@ export function TechnicianProfileClient({ profile }: { profile: ProfileDetails }
           </button>
         </div>
       </div>
+    </>
+  );
 
+  const overviewContent = (
+    <div className="flex flex-col gap-6">
       <TechnicianPhoneCard initialPhone={profile.phone} />
 
       <AccountSettingsCard
@@ -110,6 +132,30 @@ export function TechnicianProfileClient({ profile }: { profile: ProfileDetails }
       <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
         <LogoutMenuItem />
       </div>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+      <TabShell
+        header={header}
+        tabs={[
+          { id: "overview", label: "Overview", icon: "ph:user", content: overviewContent },
+          {
+            id: "documents",
+            label: "Documents",
+            icon: "ph:folder-lock",
+            badge: pendingCount > 0 ? pendingCount : undefined,
+            content: <TechnicianDocumentsTab initialDocuments={documents} />,
+          },
+          {
+            id: "id-card",
+            label: "ID Card",
+            icon: "ph:identification-card",
+            content: <TechnicianIdCardTab data={idCardData} />,
+          },
+        ]}
+      />
 
       {infoOpen && technician && (
         <Modal title="Professional Details" onClose={() => setInfoOpen(false)}>

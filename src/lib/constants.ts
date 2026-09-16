@@ -71,3 +71,9 @@ export const JOB_PHOTO_MAX_BYTES = 8 * 1024 * 1024;
 
 /** Ceiling on photos embedded into a generated PDF, to bound render time and file size. */
 export const PDF_MAX_EMBEDDED_PHOTOS = 8;
+
+/** KYC documents (Aadhar/PAN/GST) can be a scanned PDF, not just a photo — hence the higher cap than JOB_PHOTO_MAX_BYTES. */
+export const KYC_DOC_MAX_BYTES = 8 * 1024 * 1024;
+
+/** Vendor logo — a small branding asset embedded into PDFs, kept well under KYC_DOC_MAX_BYTES. */
+export const VENDOR_LOGO_MAX_BYTES = 2 * 1024 * 1024;

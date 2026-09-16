@@ -4,13 +4,23 @@ import Link from "next/link";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { BackButton } from "@/components/ui/BackButton";
 import { CartContainer } from "@/components/cart/CartContainer";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Checkout - Handyzo",
   description: "Review and manage your selected services before checkout.",
 };
 
-export default function CartPage() {
+export default async function CartPage() {
+  const session = await getServerSession(authOptions);
+  const role = session?.user?.role;
+  
+  if (role === "VENDOR" || role === "TECHNICIAN" || role === "SUPER_ADMIN") {
+    redirect("/");
+  }
+
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#0A0F1C] pt-28 pb-32 lg:pb-16 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto flex flex-col gap-6">

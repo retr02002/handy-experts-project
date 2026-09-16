@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { skillAssignmentSchema } from "@/lib/validations/technician.schema";
+import { SERVICEABLE_CITIES } from "@/lib/cities";
 
 export const COMPANY_TYPES = [
   "Private Limited",
@@ -77,5 +78,7 @@ export const technicianOnboardingSchema = z.object({
   // Courtesy display field only — no longer required; matching is live-
   // location-based now, not pincode-based.
   servicePincode: pincodeSchema.optional().or(z.literal("")),
+  // Drives the technician's structured ID city code — see src/lib/structuredIds.ts.
+  city: z.enum(SERVICEABLE_CITIES, "Select a city"),
 });
 export type TechnicianOnboardingInput = z.infer<typeof technicianOnboardingSchema>;

@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { signOut, useSession } from "next-auth/react";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { logoutPathForRole } from "@/lib/onboarding";
 
 export function UserDropdown() {
   const { data: session } = useSession();
@@ -99,7 +100,7 @@ export function UserDropdown() {
             <button 
               onClick={() => {
                 setIsProfileOpen(false);
-                signOut({ callbackUrl: "/sign-in" });
+                signOut({ callbackUrl: logoutPathForRole(session.user?.role) });
               }}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors"
             >

@@ -4,19 +4,22 @@ import { ClientIcon } from "@/components/ui/ClientIcon";
 import type { TabDef } from "@/components/shared/TabShell";
 import { getAdminTechnicianByIdAction } from "@/actions/technician.actions";
 import { getReviewsForTechnicianAction } from "@/actions/review.actions";
+import { getTechnicianDocumentsForAdminOrVendorAction } from "@/actions/kyc.actions";
 import { AdminTechnicianDetailTabs } from "@/components/admin/technician-detail/AdminTechnicianDetailTabs";
 
 export default async function AdminTechnicianDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const [technicianRes, reviewsRes] = await Promise.all([
+  const [technicianRes, reviewsRes, documentsRes] = await Promise.all([
     getAdminTechnicianByIdAction(id),
     getReviewsForTechnicianAction(id),
+    getTechnicianDocumentsForAdminOrVendorAction(id),
   ]);
 
   if (!technicianRes.success || !technicianRes.data) notFound();
   const technician = technicianRes.data;
   const reviews = reviewsRes.success ? reviewsRes.data ?? [] : [];
+  const documents = documentsRes.success ? documentsRes.data ?? [] : [];
 
   const header = (
     <div className="bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-6 flex flex-col gap-4">
@@ -57,11 +60,12 @@ export default async function AdminTechnicianDetailPage({ params }: { params: Pr
     { id: "info", label: "Info", icon: "ph:identification-card-bold" },
     { id: "reviews", label: "Reviews", icon: "ph:star-bold", badge: technician.ratingCount > 0 ? technician.ratingCount : undefined },
     { id: "tracking", label: "Tracking", icon: "ph:map-trifold-bold" },
+    { id: "documents", label: "Documents", icon: "ph:folder-lock" },
   ];
 
   return (
     <div className="flex flex-col gap-6 w-full">
-      <AdminTechnicianDetailTabs header={header} tabDefs={tabs} technician={technician} reviews={reviews} />
+      <AdminTechnicianDetailTabs header={header} tabDefs={tabs} technician={technician} reviews={reviews} documents={documents} />
     </div>
   );
 }

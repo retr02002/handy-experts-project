@@ -19,6 +19,10 @@ export interface CustomerDetails {
   // address rather than blocking checkout outright.
   latitude: number | null;
   longitude: number | null;
+  // Neighbourhood/suburb text carried from the picked/current-location
+  // address — used server-side only to derive the order's structured-ID
+  // area code (see LiveCall.locality); null for a manually-typed address.
+  locality: string | null;
 }
 
 export const EMPTY_CUSTOMER_DETAILS: CustomerDetails = {
@@ -33,6 +37,7 @@ export const EMPTY_CUSTOMER_DETAILS: CustomerDetails = {
   pincode: "",
   latitude: null,
   longitude: null,
+  locality: null,
 };
 
 export type PaymentMethod = "ONLINE" | "COD";

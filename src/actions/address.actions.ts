@@ -25,6 +25,7 @@ export interface AddressSummary {
   pincode: string;
   latitude: number;
   longitude: number;
+  locality: string | null;
   isDefault: boolean;
 }
 
@@ -89,6 +90,7 @@ export async function createAddressAction(input: AddressInput): Promise<ActionRe
           pincode: data.pincode,
           latitude: data.latitude,
           longitude: data.longitude,
+          locality: data.locality ?? null,
           isDefault: makeDefault,
         },
       });
@@ -130,6 +132,7 @@ export async function updateAddressAction(id: string, input: AddressInput): Prom
           pincode: data.pincode,
           latitude: data.latitude,
           longitude: data.longitude,
+          locality: data.locality ?? null,
           isDefault: data.isDefault || existing.isDefault,
         },
       });

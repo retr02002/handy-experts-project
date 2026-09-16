@@ -17,6 +17,8 @@ import { computeOrderTotal } from "@/lib/pricing";
 import { generatePinPair } from "@/lib/pins";
 import { notifyAllAdmins, notifyUser } from "@/actions/notification.actions";
 import { parseUploadedWorkbook } from "@/lib/adminLiveCallExcel";
+import { getCityCode } from "@/lib/locationCodes";
+import { nextSequence } from "@/lib/sequenceCounter";
 
 /** Same admin-only gate as requireAdmin(), but also hands back the admin's
  *  own profile name — whatever they've set it to, the same field shown
@@ -139,14 +141,31 @@ async function createOneAdminLiveCall(
     },
   };
 
+  // No locality field on the admin order form — orders created here always
+  // fall back to repeating the city code as the area code (see
+  // formatTicketNumber's graceful degradation), same as any other order
+  // with no locality on file.
+  const orderCityCode = getCityCode(data.city);
+  const orderSeq = await nextSequence(`ORDER:${orderCityCode}`);
+
   if (!assignedVendor) {
-    const liveCall = await prisma.liveCall.create({ data: { ...baseData, status: "BROADCASTING" } });
+    const liveCall = await prisma.liveCall.create({
+      data: { ...baseData, orderCityCode, orderLocalityCode: orderCityCode, orderSeq, status: "BROADCASTING" },
+    });
     notifyAllAdmins("NEW_LIVE_CALL", "New live call", `${adminName} created an order in ${data.city} — ₹${total}.`, liveCall.id);
     return { ok: true, data: { liveCallId: liveCall.id, serviceCallId: null } };
   }
 
   const liveCall = await prisma.liveCall.create({
-    data: { ...baseData, status: "CONVERTED", acceptedByVendorId: assignedVendor.id, acceptedAt: new Date() },
+    data: {
+      ...baseData,
+      orderCityCode,
+      orderLocalityCode: orderCityCode,
+      orderSeq,
+      status: "CONVERTED",
+      acceptedByVendorId: assignedVendor.id,
+      acceptedAt: new Date(),
+    },
   });
   const serviceCall = await prisma.serviceCall.create({
     data: { liveCallId: liveCall.id, vendorId: assignedVendor.id, customerId, status: "UNASSIGNED" },

@@ -47,6 +47,26 @@ export function isSafeKey(key: string): boolean {
   return /^[A-Za-z0-9/._-]+$/.test(key);
 }
 
+/**
+ * Human-browsable bucket folder for a technician/vendor — a slugified name
+ * with a short id suffix only to disambiguate two people who share a name,
+ * e.g. "mohammed-razzaq-70nk" instead of the bare 25-character id. The
+ * file-serving route (/api/files/docs/[...key]) never parses this string
+ * back apart — it resolves the real owner by looking up the exact storage
+ * key in the database instead — so this suffix only has to be short and
+ * visually distinct, not machine-decodable.
+ */
+export function ownerFolderName(name: string, id: string): string {
+  const slug = name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+  const shortId = id.slice(-6);
+  return slug ? `${slug}-${shortId}` : id;
+}
+
 export async function putObject(input: {
   folder: StorageFolder;
   extension: string;

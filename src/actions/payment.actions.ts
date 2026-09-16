@@ -11,6 +11,8 @@ import { createRazorpayOrder, verifyPaymentSignature } from "@/lib/razorpay";
 import { notifyAllAdmins } from "@/actions/notification.actions";
 import { requireCustomerId, resolveCoordinates, ensureServicePins } from "@/actions/livecall.actions";
 import { LIVE_CALL_EXPIRY_MINUTES } from "@/lib/constants";
+import { getCityCode, getAreaCode } from "@/lib/locationCodes";
+import { nextSequence } from "@/lib/sequenceCounter";
 
 export interface RazorpayOrderResult {
   liveCallId: string;
@@ -97,6 +99,9 @@ export async function createRazorpayOrderAction(input: unknown): Promise<ActionR
 
     await ensureServicePins(userId);
 
+    const orderCityCode = getCityCode(data.city);
+    const orderLocalityCode = getAreaCode(data.locality, orderCityCode);
+
     const baseLiveCallData = {
       customerId: userId,
       customerName: data.customerName,
@@ -110,6 +115,9 @@ export async function createRazorpayOrderAction(input: unknown): Promise<ActionR
       pincode: data.pincode,
       latitude: coords.latitude,
       longitude: coords.longitude,
+      locality: data.locality,
+      orderCityCode,
+      orderLocalityCode,
       scheduledFor: data.scheduledFor,
       subtotal,
       tax,
@@ -137,8 +145,9 @@ export async function createRazorpayOrderAction(input: unknown): Promise<ActionR
         });
         if (debited.count === 0) throw new Error("WALLET_BALANCE_CHANGED");
 
+        const orderSeq = await nextSequence(`ORDER:${orderCityCode}`, tx);
         const created = await tx.liveCall.create({
-          data: { ...baseLiveCallData, paymentMode: "WALLET", paymentStatus: "PAID", status: "BROADCASTING" },
+          data: { ...baseLiveCallData, orderSeq, paymentMode: "WALLET", paymentStatus: "PAID", status: "BROADCASTING" },
         });
 
         if (walletApplied > 0) {
@@ -188,9 +197,11 @@ export async function createRazorpayOrderAction(input: unknown): Promise<ActionR
         if (debited.count === 0) throw new Error("WALLET_BALANCE_CHANGED");
       }
 
+      const orderSeq = await nextSequence(`ORDER:${orderCityCode}`, tx);
       const created = await tx.liveCall.create({
         data: {
           ...baseLiveCallData,
+          orderSeq,
           paymentMode: "ONLINE",
           paymentStatus: "PENDING",
           razorpayOrderId: order.razorpayOrderId,

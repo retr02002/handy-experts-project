@@ -14,6 +14,7 @@ import {
 } from "@/lib/validations/onboarding.schema";
 import { forwardGeocodePincode } from "@/lib/geocode";
 import { applySkillAssignments, deriveLegacySkillLabel } from "@/lib/technicianSkills";
+import { issueTechnicianId, issueVendorId } from "@/lib/structuredIds";
 
 /**
  * Phone is globally unique across every role (OTP login depends on this).
@@ -168,6 +169,10 @@ export async function completeVendorOnboarding(input: VendorOnboardingInput): Pr
       } else {
         console.error(`Could not auto-seed a service area for new vendor ${vendorProfile.id} (pincode ${pincode})`);
       }
+
+      await prisma.$transaction(async (tx) => {
+        await issueVendorId(tx, vendorProfile.id, city);
+      });
     }
 
     return { success: true };
@@ -186,7 +191,7 @@ export async function completeTechnicianOnboarding(input: TechnicianOnboardingIn
     return { success: false, error: "Invalid input data", errors: validated.error.flatten().fieldErrors };
   }
 
-  const { name, phone, skillAssignments, experienceYears, aadhaarNumber, servicePincode } = validated.data;
+  const { name, phone, skillAssignments, experienceYears, aadhaarNumber, servicePincode, city } = validated.data;
 
   try {
     const phoneConflict = await checkPhoneAvailable(phone, userId);
@@ -217,6 +222,7 @@ export async function completeTechnicianOnboarding(input: TechnicianOnboardingIn
         },
       });
       await applySkillAssignments(tx, technicianProfile.id, skillAssignments);
+      await issueTechnicianId(tx, technicianProfile.id, city);
     });
 
     return { success: true };

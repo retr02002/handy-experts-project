@@ -22,7 +22,8 @@ export function ServicePackageCard({ service, pkg, idx, catIdx }: ServicePackage
   const { items, addToCart, updateQuantity } = useCart();
   const [mounted, setMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { status } = useSession();
+  const { data: session, status } = useSession();
+  const role = session?.user?.role;
   const router = useRouter();
 
   useEffect(() => {
@@ -44,6 +45,10 @@ export function ServicePackageCard({ service, pkg, idx, catIdx }: ServicePackage
     if (status === "unauthenticated") {
       toast.error("Please sign in first to add items to your cart");
       router.push("/sign-in");
+      return;
+    }
+    if (role === "VENDOR" || role === "TECHNICIAN" || role === "SUPER_ADMIN") {
+      toast.error(`You cannot book services using a ${role.toLowerCase()} account.`);
       return;
     }
     addToCart(service, pkg);

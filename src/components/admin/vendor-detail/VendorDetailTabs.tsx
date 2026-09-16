@@ -16,6 +16,9 @@ import { VendorOrdersTab } from "./VendorOrdersTab";
 import { VendorReviewsTab } from "./VendorReviewsTab";
 import { VendorPerformanceTab } from "./VendorPerformanceTab";
 import { VendorCoverageTab } from "./VendorCoverageTab";
+import { KycDocumentsReadOnlyTab } from "@/components/shared/kyc/KycDocumentsReadOnlyTab";
+import { VENDOR_KYC_FIELDS } from "@/lib/kycDocumentTypes";
+import type { KycDocSummary } from "@/actions/kyc.actions";
 
 interface Props {
   header: React.ReactNode;
@@ -29,6 +32,8 @@ interface Props {
   categories: CategoryWithServiceOptions[];
   assignedCategoryIds: string[];
   areas: VendorServiceAreaSummary[];
+  documents: KycDocSummary[];
+  logoUrl: string | null;
 }
 
 /**
@@ -49,6 +54,8 @@ export function VendorDetailTabs({
   categories,
   assignedCategoryIds,
   areas,
+  documents,
+  logoUrl,
 }: Props) {
   const router = useRouter();
   const [isActive, setIsActive] = useState(vendor.isActive);
@@ -82,6 +89,8 @@ export function VendorDetailTabs({
             <VendorCoverageTab vendorId={vendor.id} categories={categories} assignedCategoryIds={assignedCategoryIds} areas={areas} />
           ),
         };
+      case "documents":
+        return { ...t, content: <KycDocumentsReadOnlyTab documents={documents} fields={VENDOR_KYC_FIELDS} logoUrl={logoUrl} /> };
       default:
         return { ...t, content: null };
     }

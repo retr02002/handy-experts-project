@@ -133,6 +133,10 @@ export function CreateVendorModal({ onClose, onCreated }: CreateVendorModalProps
             </div>
             <div className="bg-slate-50 dark:bg-slate-900/60 rounded-xl p-4 flex flex-col gap-3 border border-slate-200 dark:border-slate-800">
               <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Vendor ID</p>
+                <p className="text-sm font-mono font-bold text-slate-900 dark:text-white break-all">{credentials.vendorNumber}</p>
+              </div>
+              <div>
                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Email</p>
                 <p className="text-sm font-semibold text-slate-900 dark:text-white break-all">{credentials.email}</p>
               </div>

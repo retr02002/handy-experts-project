@@ -18,6 +18,7 @@ import { sendTextMessage } from "@/lib/apitxt";
 import { STALE_POSITION_AFTER_SECONDS } from "@/lib/constants";
 import { haversineKm } from "@/lib/geo";
 import { applySkillAssignments, deriveLegacySkillLabel } from "@/lib/technicianSkills";
+import { issueTechnicianId, formatTechnicianId } from "@/lib/structuredIds";
 
 /** Slugified name + random suffix, retried on collision. @unique on User.username is the hard backstop. */
 async function generateUsername(name: string): Promise<string> {
@@ -55,6 +56,7 @@ export interface CreatedTechnicianCredentials {
   username: string;
   tempPassword: string;
   smsDelivered: boolean;
+  technicianNumber: string;
 }
 
 /**
@@ -74,7 +76,7 @@ export async function createTechnicianAction(
   if (!validated.success) {
     return { success: false, error: "Invalid input data", errors: validated.error.flatten().fieldErrors };
   }
-  const { name, email, phone, skillAssignments, experienceYears, servicePincode } = validated.data;
+  const { name, email, phone, skillAssignments, experienceYears, servicePincode, city } = validated.data;
   const requestedUsername = validated.data.username?.trim().toLowerCase() || null;
 
   try {
@@ -103,7 +105,7 @@ export async function createTechnicianAction(
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
     const skillCategory = await deriveLegacySkillLabel(prisma, skillAssignments);
 
-    await prisma.$transaction(async (tx) => {
+    const { technicianId, idParts } = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: { email, name, phone, username, password: hashedPassword, role: "TECHNICIAN" },
       });
@@ -118,6 +120,8 @@ export async function createTechnicianAction(
         },
       });
       await applySkillAssignments(tx, technician.id, skillAssignments);
+      const idParts = await issueTechnicianId(tx, technician.id, city);
+      return { technicianId: technician.id, idParts };
     });
 
     const sendResult = await sendTextMessage({
@@ -127,7 +131,16 @@ export async function createTechnicianAction(
     });
 
     revalidatePath("/vendor/technicians");
-    return { success: true, data: { email, username, tempPassword, smsDelivered: sendResult.ok } };
+    return {
+      success: true,
+      data: {
+        email,
+        username,
+        tempPassword,
+        smsDelivered: sendResult.ok,
+        technicianNumber: formatTechnicianId(name, idParts.idCityCode, idParts.idSeq, technicianId),
+      },
+    };
   } catch (err) {
     console.error("Create technician error:", err);
     return { success: false, error: "Failed to create technician" };

@@ -24,3 +24,24 @@ export function dashboardPathForRole(role: OnboardingStatus["role"]): string {
       return "/onboarding";
   }
 }
+
+/**
+ * Where logging out should land each role. Vendor/technician land back on
+ * their own role's sign-up/sign-in step (already logged-out-safe —
+ * OnboardingFlow branches on an unauthenticated session for these roles)
+ * rather than the generic customer sign-in page. Admin lands on /admin,
+ * which already renders its own dedicated login form (AdminLoginGate) for
+ * any non-SUPER_ADMIN session, including none at all.
+ */
+export function logoutPathForRole(role: string | null | undefined): string {
+  switch (role) {
+    case "VENDOR":
+      return "/onboarding?role=VENDOR";
+    case "TECHNICIAN":
+      return "/onboarding?role=TECHNICIAN";
+    case "SUPER_ADMIN":
+      return "/admin";
+    default:
+      return "/sign-in";
+  }
+}

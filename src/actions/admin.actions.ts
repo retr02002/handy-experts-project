@@ -15,11 +15,13 @@ import {
 import { getAllServiceCallsAction, type AdminServiceCallSummary } from "@/actions/servicecall.actions";
 import { sendTextMessage } from "@/lib/apitxt";
 import { forwardGeocodePincode } from "@/lib/geocode";
+import { issueVendorId, formatVendorId } from "@/lib/structuredIds";
 
 export interface CreatedVendorCredentials {
   email: string;
   tempPassword: string;
   smsDelivered: boolean;
+  vendorNumber: string;
 }
 
 /** Admin-initiated vendor creation — same one-time-shown temp-password UX as createTechnicianAction. */
@@ -67,7 +69,7 @@ export async function createVendorAction(input: CreateVendorInput): Promise<Acti
     const tempPassword = crypto.randomBytes(9).toString("base64url");
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-    const vendorId = await prisma.$transaction(async (tx) => {
+    const { vendorId, idParts } = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: { email, name, phone, password: hashedPassword, role: "VENDOR" },
       });
@@ -88,7 +90,8 @@ export async function createVendorAction(input: CreateVendorInput): Promise<Acti
           incorporationDate: new Date(incorporationDate),
         },
       });
-      return vendor.id;
+      const idParts = await issueVendorId(tx, vendor.id, city);
+      return { vendorId: vendor.id, idParts };
     });
 
     // Best-effort so a brand-new vendor isn't stuck at zero live-call
@@ -112,7 +115,15 @@ export async function createVendorAction(input: CreateVendorInput): Promise<Acti
     });
 
     revalidatePath("/admin/vendors");
-    return { success: true, data: { email, tempPassword, smsDelivered: sendResult.ok } };
+    return {
+      success: true,
+      data: {
+        email,
+        tempPassword,
+        smsDelivered: sendResult.ok,
+        vendorNumber: formatVendorId(companyName, idParts.idCityCode, idParts.idSeq, vendorId),
+      },
+    };
   } catch (err) {
     console.error("Create vendor error:", err);
     return { success: false, error: "Failed to create vendor" };

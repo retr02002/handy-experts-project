@@ -113,6 +113,9 @@ export async function buildJobDocumentData(
       liveCall: {
         select: {
           ticketSeq: true,
+          orderCityCode: true,
+          orderLocalityCode: true,
+          orderSeq: true,
           customerName: true,
           customerPhone: true,
           customerEmail: true,
@@ -135,7 +138,7 @@ export async function buildJobDocumentData(
   if (!call) return null;
 
   const lc = call.liveCall;
-  const ticketNumber = formatTicketNumber(lc.ticketSeq);
+  const ticketNumber = formatTicketNumber(lc);
 
   const biller: BillerIdentity =
     audience === "customer"

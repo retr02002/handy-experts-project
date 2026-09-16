@@ -497,7 +497,7 @@ function mapServiceCallRow(r: ServiceCallRow): ServiceCallSummary {
   return {
     id: r.id,
     liveCallId: r.liveCallId,
-    ticketNumber: formatTicketNumber(r.liveCall.ticketSeq),
+    ticketNumber: formatTicketNumber(r.liveCall),
     status: r.status,
     customerName: r.liveCall.customerName,
     customerPhone: r.liveCall.customerPhone,
@@ -538,38 +538,44 @@ function mapServiceCallRow(r: ServiceCallRow): ServiceCallSummary {
 }
 
 /**
- * Applied only in getMyServiceCallsForTechnicianAction, only once a job is
- * COMPLETED — the technician keeps full detail for every active job (they
- * still need the real address/phone to do the work) but loses customer
- * contact info and the price breakdown the moment it's done, leaving only
- * the final total. itemSummary (job description, no prices) stays visible
- * so the job still reads sensibly in the technician's own history — the
- * per-line prices in `items` are what's actually "the receipt."
+ * Applied to every row in getMyServiceCallsForTechnicianAction, regardless
+ * of status. The price breakdown (subtotal/tax/items) is stripped
+ * unconditionally — a technician only ever sees the final total, before
+ * starting, after starting, and after completing; there's no stage where
+ * they need the GST split or per-line prices. itemSummary (job
+ * description, no prices) stays visible so the job still reads sensibly.
+ *
+ * Customer PII is a separate concern with a different lifetime: the
+ * technician keeps full contact/address detail for every ACTIVE job (they
+ * still need it to do the work) and only loses it once the job is
+ * COMPLETED, when there's no longer an ongoing reason to hold it. Vendor
+ * contact fields deliberately stay — that's the technician's own
+ * escalation path, not the customer's data.
+ *
  * getMyServiceCallsForVendorAction and every admin path never call this.
  */
-function maskCompletedJobForTechnician(s: ServiceCallSummary): ServiceCallSummary {
+function maskServiceCallForTechnician(s: ServiceCallSummary): ServiceCallSummary {
+  const completed = s.status === "COMPLETED";
   return {
     ...s,
-    // The customer's identity goes too, not just their contact details — a
-    // name alone is still personal data once the technician has no ongoing
-    // reason to hold it. Vendor contact fields deliberately stay: that's
-    // the technician's own escalation path, not the customer's data.
-    customerName: MASKED_CUSTOMER_LABEL,
-    customerPhone: null,
-    customerEmail: null,
-    siteContactName: null,
-    siteContactPhone: null,
-    address: null,
-    pincode: null,
-    latitude: null,
-    longitude: null,
     subtotal: null,
     tax: null,
     items: [],
-    upiRef: null,
-    paymentScreenshotUrl: null,
-    createdByAdminName: null,
-    piiMasked: true,
+    ...(completed && {
+      customerName: MASKED_CUSTOMER_LABEL,
+      customerPhone: null,
+      customerEmail: null,
+      siteContactName: null,
+      siteContactPhone: null,
+      address: null,
+      pincode: null,
+      latitude: null,
+      longitude: null,
+      upiRef: null,
+      paymentScreenshotUrl: null,
+      createdByAdminName: null,
+    }),
+    piiMasked: completed,
   };
 }
 
@@ -604,7 +610,7 @@ export async function getMyServiceCallsForTechnicianAction(): Promise<ActionResp
     });
     return {
       success: true,
-      data: rows.map(mapServiceCallRow).map((s) => (s.status === "COMPLETED" ? maskCompletedJobForTechnician(s) : s)),
+      data: rows.map(mapServiceCallRow).map(maskServiceCallForTechnician),
     };
   } catch (err) {
     console.error("Get my service calls for technician error:", err);
@@ -1474,7 +1480,7 @@ export async function getMyHandoverContextAction(serviceCallId: string): Promise
   try {
     const call = await prisma.serviceCall.findUnique({
       where: { id: serviceCallId },
-      select: { technicianId: true, liveCall: { select: { ticketSeq: true } } },
+      select: { technicianId: true, liveCall: { select: { ticketSeq: true, orderCityCode: true, orderLocalityCode: true, orderSeq: true } } },
     });
     if (!call || call.technicianId !== technicianId) return { success: false, error: "Job not found" };
 
@@ -1487,7 +1493,7 @@ export async function getMyHandoverContextAction(serviceCallId: string): Promise
     return {
       success: true,
       data: {
-        ticketNumber: formatTicketNumber(call.liveCall.ticketSeq),
+        ticketNumber: formatTicketNumber(call.liveCall),
         previous: handover
           ? { technicianName: handover.fromTechnicianName, reason: handover.reason, createdAt: handover.createdAt.toISOString() }
           : null,

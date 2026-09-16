@@ -58,6 +58,7 @@ export function DetailsStep({ details, onChange }: Props) {
           next.pincode = defaultAddress.pincode;
           next.latitude = defaultAddress.latitude;
           next.longitude = defaultAddress.longitude;
+          next.locality = defaultAddress.locality;
           changed = true;
         }
         return changed ? next : prev;
@@ -78,6 +79,7 @@ export function DetailsStep({ details, onChange }: Props) {
       pincode: addr.pincode,
       latitude: addr.latitude,
       longitude: addr.longitude,
+      locality: addr.locality,
     });
     setPickerOpen(false);
   };

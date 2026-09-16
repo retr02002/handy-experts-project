@@ -8,6 +8,7 @@ export const addressSchema = z.object({
   pincode: z.string().trim().regex(/^\d{6}$/, "Enter a valid 6-digit pincode"),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
+  locality: z.string().trim().max(200).nullable().optional(),
   isDefault: z.boolean().optional(),
 });
 export type AddressInput = z.infer<typeof addressSchema>;

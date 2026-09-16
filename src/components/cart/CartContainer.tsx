@@ -99,6 +99,7 @@ export function CartContainer() {
     pincode: customerDetails.pincode,
     latitude: customerDetails.latitude,
     longitude: customerDetails.longitude,
+    locality: customerDetails.locality,
     scheduledFor: slotDetails.isInstant ? null : slotDetails.scheduledFor,
     walletAmountRequested: walletApplied,
     couponCode: appliedCoupon?.code,

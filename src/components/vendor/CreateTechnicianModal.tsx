@@ -7,6 +7,7 @@ import { createTechnicianAction, type CreatedTechnicianCredentials } from "@/act
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { SkillAssignmentBuilder } from "@/components/shared/SkillAssignmentBuilder";
 import type { SkillAssignmentInput } from "@/lib/validations/technician.schema";
+import { SERVICEABLE_CITIES, type ServiceableCity } from "@/lib/cities";
 
 const EMPTY_FORM = {
   name: "",
@@ -15,6 +16,7 @@ const EMPTY_FORM = {
   experienceYears: "",
   servicePincode: "",
   username: "",
+  city: "",
 };
 
 interface CreateTechnicianModalProps {
@@ -40,6 +42,7 @@ export function CreateTechnicianModal({ onClose, onCreated }: CreateTechnicianMo
     try {
       const res = await createTechnicianAction({
         ...form,
+        city: form.city as ServiceableCity,
         skillAssignments,
         experienceYears: Number(form.experienceYears),
       });
@@ -97,6 +100,10 @@ export function CreateTechnicianModal({ onClose, onCreated }: CreateTechnicianMo
               </p>
             </div>
             <div className="bg-slate-50 dark:bg-slate-900/60 rounded-xl p-4 flex flex-col gap-3 border border-slate-200 dark:border-slate-800">
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Technician ID</p>
+                <p className="text-sm font-mono font-bold text-slate-900 dark:text-white break-all">{credentials.technicianNumber}</p>
+              </div>
               <div>
                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Username</p>
                 <p className="text-sm font-semibold text-slate-900 dark:text-white break-all">{credentials.username}</p>
@@ -160,6 +167,25 @@ export function CreateTechnicianModal({ onClose, onCreated }: CreateTechnicianMo
             />
 
             <SkillAssignmentBuilder value={skillAssignments} onChange={setSkillAssignments} error={errors.skillAssignments} />
+
+            <div>
+              <label className="text-[13px] font-bold text-slate-700 dark:text-slate-300 mb-1.5 block">City</label>
+              <select
+                value={form.city}
+                onChange={(e) => set("city", e.target.value)}
+                className="w-full h-11 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
+              >
+                <option value="" disabled>
+                  Select a city
+                </option>
+                {SERVICEABLE_CITIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              {errors.city && <p className="text-xs text-red-500 mt-1">{errors.city}</p>}
+            </div>
 
             <div>
               <Field

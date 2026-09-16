@@ -4,19 +4,22 @@ import { ClientIcon } from "@/components/ui/ClientIcon";
 import type { TabDef } from "@/components/shared/TabShell";
 import { getVendorTechnicianByIdAction } from "@/actions/technician.actions";
 import { getReviewsForTechnicianAction } from "@/actions/review.actions";
+import { getTechnicianDocumentsForAdminOrVendorAction } from "@/actions/kyc.actions";
 import { TechnicianDetailTabs } from "@/components/vendor/technician-detail/TechnicianDetailTabs";
 
 export default async function VendorTechnicianDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const [technicianRes, reviewsRes] = await Promise.all([
+  const [technicianRes, reviewsRes, documentsRes] = await Promise.all([
     getVendorTechnicianByIdAction(id),
     getReviewsForTechnicianAction(id),
+    getTechnicianDocumentsForAdminOrVendorAction(id),
   ]);
 
   if (!technicianRes.success || !technicianRes.data) notFound();
   const technician = technicianRes.data;
   const reviews = reviewsRes.success ? reviewsRes.data ?? [] : [];
+  const documents = documentsRes.success ? documentsRes.data ?? [] : [];
 
   const header = (
     <div className="flex items-start gap-3">
@@ -50,11 +53,12 @@ export default async function VendorTechnicianDetailPage({ params }: { params: P
     { id: "info", label: "Info", icon: "ph:identification-card-bold" },
     { id: "reviews", label: "Reviews", icon: "ph:star-bold", badge: technician.ratingCount > 0 ? technician.ratingCount : undefined },
     { id: "tracking", label: "Tracking", icon: "ph:map-trifold-bold" },
+    { id: "documents", label: "Documents", icon: "ph:folder-lock" },
   ];
 
   return (
     <div className="flex flex-col gap-6 w-full">
-      <TechnicianDetailTabs header={header} tabDefs={tabs} technician={technician} reviews={reviews} />
+      <TechnicianDetailTabs header={header} tabDefs={tabs} technician={technician} reviews={reviews} documents={documents} />
     </div>
   );
 }

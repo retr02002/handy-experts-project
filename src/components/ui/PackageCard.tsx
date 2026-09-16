@@ -18,13 +18,18 @@ interface PackageCardProps {
 export function PackageCard({ parentService, pkg }: PackageCardProps) {
   const { addToCart, updateQuantity, items } = useCart();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { status } = useSession();
+  const { data: session, status } = useSession();
+  const role = session?.user?.role;
   const router = useRouter();
   
   const handleAddToCart = () => {
     if (status === "unauthenticated") {
       toast.error("Please sign in first to add items to your cart");
       router.push("/sign-in");
+      return;
+    }
+    if (role === "VENDOR" || role === "TECHNICIAN" || role === "SUPER_ADMIN") {
+      toast.error(`You cannot book services using a ${role.toLowerCase()} account.`);
       return;
     }
     addToCart(parentService, pkg);

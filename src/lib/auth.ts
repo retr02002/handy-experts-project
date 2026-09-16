@@ -135,14 +135,18 @@ export const authOptions: NextAuthOptions = {
       // The JWT is only re-derived from `user` at sign-in, so a role/name
       // change mid-session (e.g. completing onboarding) needs an explicit
       // refresh — triggered client-side via useSession().update().
+      // Also picks up a freshly uploaded technician photo / vendor logo —
+      // both sync to User.image on upload and call useSession().update()
+      // client-side, so the navbar avatar updates without a logout/login.
       if (trigger === "update" && token.id) {
         const freshUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { role: true, name: true },
+          select: { role: true, name: true, image: true },
         });
         if (freshUser) {
           token.role = freshUser.role;
           token.name = freshUser.name;
+          token.picture = freshUser.image;
         }
       }
       return token;
@@ -152,6 +156,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.role = token.role;
         session.user.name = token.name as string | null;
+        session.user.image = (token.picture as string | null) ?? null;
       }
       return session;
     }

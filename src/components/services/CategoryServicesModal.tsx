@@ -73,57 +73,37 @@ export function CategoryServicesModal({ isOpen, onClose, category }: Props) {
               <p className="text-sm text-slate-500 dark:text-slate-400">No services in this category yet. Check back soon.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
-              {category.services.map((service) => (
-                <Link
-                  key={service.id}
-                  href={`/services/${service.slug}`}
-                  onClick={onClose}
-                  className="group flex flex-col p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0E172B] hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
-                >
-                  <div
-                    className="w-full aspect-[4/3] rounded-xl bg-slate-200 dark:bg-slate-800 bg-cover bg-center mb-2.5 shrink-0"
-                    style={{ backgroundImage: `url(${service.image})` }}
-                  />
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-1.5 mb-1">
-                      <h3 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-2 group-hover:text-[#00B4FF] transition-colors leading-tight">
-                        {service.title}
-                      </h3>
-                    </div>
-                    
-                    <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 font-medium mb-1.5">
-                      {resolveServiceRating(service).score && (
-                        <span className="flex items-center gap-0.5">
-                          <ClientIcon icon="ph:star-fill" className="w-2.5 h-2.5 text-amber-400" />
-                          {resolveServiceRating(service).score}
-                        </span>
-                      )}
-                      {service.time && (
-                        <>
-                          <span className="w-0.5 h-0.5 rounded-full bg-slate-300 dark:bg-slate-600" />
-                          <span className="truncate">{service.time}</span>
-                        </>
+            <div className="grid grid-cols-4 gap-2.5">
+              {category.services.map((service) => {
+                const rating = resolveServiceRating(service);
+                return (
+                  <Link
+                    key={service.id}
+                    href={`/services/${service.slug}`}
+                    onClick={onClose}
+                    className="group flex flex-col items-center text-center cursor-pointer"
+                  >
+                    <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-800 shadow-sm group-hover:shadow-md transition-all duration-300 group-hover:-translate-y-1 mb-1.5 border border-slate-200/50 dark:border-slate-700/50">
+                      <div
+                        className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-500 ease-out"
+                        style={{ backgroundImage: `url(${service.image})` }}
+                      />
+                      <div className="absolute inset-0 bg-black/10 transition-colors duration-300 group-hover:bg-black/5" />
+
+                      {rating.score && (
+                        <div className="absolute bottom-1 right-1 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-md px-1 py-0.5 shadow-sm flex items-center gap-0.5 border border-white/20">
+                          <ClientIcon icon="ph:star-fill" className="text-amber-400 w-2 h-2" />
+                          <span className="text-[8px] font-bold text-slate-800 dark:text-slate-200 leading-none">{rating.score}</span>
+                        </div>
                       )}
                     </div>
 
-                    <div className="mt-auto flex items-end justify-between">
-                      {service.fromPrice !== null ? (
-                        <p className="text-xs font-black text-slate-900 dark:text-white">
-                          ₹{service.fromPrice}
-                        </p>
-                      ) : (
-                        <div />
-                      )}
-                      {service.badge && (
-                        <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                          {service.badge}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                    <h3 className="text-[10px] sm:text-[11px] font-bold text-slate-700 dark:text-slate-200 group-hover:text-[#00B4FF] transition-colors leading-snug line-clamp-2 px-0.5">
+                      {service.title}
+                    </h3>
+                  </Link>
+                );
+              })}
             </div>
           )}
         </div>

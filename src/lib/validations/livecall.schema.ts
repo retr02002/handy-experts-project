@@ -22,6 +22,11 @@ export const checkoutDetailsSchema = z.object({
   // to forward-geocoding the address in that case rather than rejecting it.
   latitude: z.number().min(-90).max(90).nullable(),
   longitude: z.number().min(-180).max(180).nullable(),
+  // Neighbourhood/suburb text, present whenever the address came from "use
+  // current location" or a saved address that has one — used to derive the
+  // order's structured-ID area code. Null degrades gracefully (the area
+  // code falls back to repeating the city code) rather than blocking checkout.
+  locality: z.string().trim().max(200).nullable(),
   // Null means "as soon as possible" — the customer picked the Instant
   // option at checkout rather than a scheduled slot.
   scheduledFor: z.string().datetime().nullable(),

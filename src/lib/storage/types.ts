@@ -1,5 +1,5 @@
 /** Logical top-level folders inside the bucket. Keys are prefixed with these. */
-export type StorageFolder = "services" | "job" | "payments";
+export type StorageFolder = "services" | "job" | "payments" | "docs";
 
 export interface StorageProvider {
   put(key: string, body: Buffer, contentType: string): Promise<void>;

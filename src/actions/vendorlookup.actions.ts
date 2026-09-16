@@ -55,20 +55,33 @@ export async function lookupTicketForVendorAction(query: string): Promise<Action
   if (!trimmed) return { success: true, data: null };
 
   try {
-    const ticketSeq = parseTicketNumber(trimmed);
+    const parsed = parseTicketNumber(trimmed);
+    const ticketWhere =
+      parsed?.kind === "legacy"
+        ? { liveCall: { ticketSeq: parsed.ticketSeq } }
+        : parsed?.kind === "structured"
+          ? { liveCall: { orderCityCode: parsed.cityCode, orderSeq: parsed.orderSeq } }
+          : { OR: [{ id: trimmed }, { liveCallId: trimmed }] };
 
     const call = await prisma.serviceCall.findFirst({
-      where: {
-        vendorId,
-        ...(ticketSeq !== null ? { liveCall: { ticketSeq } } : { OR: [{ id: trimmed }, { liveCallId: trimmed }] }),
-      },
+      where: { vendorId, ...ticketWhere },
       select: {
         status: true,
         createdAt: true,
         completedAt: true,
         customerId: true,
         technician: { select: { user: { select: { name: true } } } },
-        liveCall: { select: { ticketSeq: true, city: true, total: true, items: { select: { packageName: true, quantity: true } } } },
+        liveCall: {
+          select: {
+            ticketSeq: true,
+            orderCityCode: true,
+            orderLocalityCode: true,
+            orderSeq: true,
+            city: true,
+            total: true,
+            items: { select: { packageName: true, quantity: true } },
+          },
+        },
       },
     });
     if (!call) return { success: true, data: null };
@@ -81,13 +94,18 @@ export async function lookupTicketForVendorAction(query: string): Promise<Action
       where: { vendorId, customerId: call.customerId, liveCall: { ticketSeq: { not: call.liveCall.ticketSeq } } },
       orderBy: { createdAt: "desc" },
       take: 20,
-      select: { status: true, createdAt: true, completedAt: true, liveCall: { select: { ticketSeq: true, total: true } } },
+      select: {
+        status: true,
+        createdAt: true,
+        completedAt: true,
+        liveCall: { select: { ticketSeq: true, orderCityCode: true, orderLocalityCode: true, orderSeq: true, total: true } },
+      },
     });
 
     return {
       success: true,
       data: {
-        ticketNumber: formatTicketNumber(call.liveCall.ticketSeq),
+        ticketNumber: formatTicketNumber(call.liveCall),
         status: call.status,
         createdAt: call.createdAt.toISOString(),
         completedAt: call.completedAt?.toISOString() ?? null,
@@ -96,7 +114,7 @@ export async function lookupTicketForVendorAction(query: string): Promise<Action
         technicianName: call.technician?.user.name ?? null,
         city: call.liveCall.city,
         history: priorCalls.map((p) => ({
-          ticketNumber: formatTicketNumber(p.liveCall.ticketSeq),
+          ticketNumber: formatTicketNumber(p.liveCall),
           status: p.status,
           total: p.liveCall.total,
           completedAt: p.completedAt?.toISOString() ?? null,
