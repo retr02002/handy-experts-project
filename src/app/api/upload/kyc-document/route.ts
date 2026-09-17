@@ -16,11 +16,11 @@ const ALLOWED_TYPES: Record<string, string> = {
 };
 
 const TECHNICIAN_DOC_TYPES = new Set<string>(["AADHAR", "PAN", "PHOTO", "SIGNATURE", "OTHER"]);
-const VENDOR_DOC_TYPES = new Set<string>(["GST", "AADHAR", "PAN", "OTHER"]);
-// AADHAR/PAN/GST/PHOTO/SIGNATURE are one-per-owner — a re-upload replaces
-// the previous row. OTHER is open-ended ("more documentation") and always
-// inserts a new row alongside any existing ones.
-const SINGLETON_TYPES = new Set<string>(["AADHAR", "PAN", "GST", "PHOTO", "SIGNATURE"]);
+const VENDOR_DOC_TYPES = new Set<string>(["GST", "AADHAR", "PAN", "AGREEMENT", "OTHER"]);
+// AADHAR/PAN/GST/PHOTO/SIGNATURE/AGREEMENT are one-per-owner — a re-upload
+// replaces the previous row. OTHER is open-ended ("more documentation") and
+// always inserts a new row alongside any existing ones.
+const SINGLETON_TYPES = new Set<string>(["AADHAR", "PAN", "GST", "PHOTO", "SIGNATURE", "AGREEMENT"]);
 
 const MAX_LABEL_LENGTH = 200;
 

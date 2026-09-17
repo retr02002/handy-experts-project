@@ -77,3 +77,6 @@ export const KYC_DOC_MAX_BYTES = 8 * 1024 * 1024;
 
 /** Vendor logo — a small branding asset embedded into PDFs, kept well under KYC_DOC_MAX_BYTES. */
 export const VENDOR_LOGO_MAX_BYTES = 2 * 1024 * 1024;
+
+/** Admin-managed global documents (e.g. the vendor agreement template) — a scanned legal PDF can run larger than a single KYC doc. */
+export const PLATFORM_DOCUMENT_MAX_BYTES = 15 * 1024 * 1024;

@@ -51,28 +51,30 @@ export function OtherDocumentsSection({ documents, readOnly, onAdded, onDeleted 
       {documents.map((doc) => (
         <div
           key={doc.id}
-          className="flex items-center gap-3 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/20"
+          className="flex flex-col sm:flex-row sm:items-center gap-3 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/20"
         >
-          <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
-            {doc.contentType === "application/pdf" ? (
-              <ClientIcon icon="ph:file-pdf-fill" className="w-5 h-5 text-rose-500" />
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={doc.url} alt="" className="w-full h-full object-cover" />
-            )}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
+              {doc.contentType === "application/pdf" ? (
+                <ClientIcon icon="ph:file-pdf-fill" className="w-5 h-5 text-rose-500" />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={doc.url} alt="" className="w-full h-full object-cover" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{doc.label ?? "Document"}</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Uploaded {new Date(doc.uploadedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+              </p>
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{doc.label ?? "Document"}</p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Uploaded {new Date(doc.uploadedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0 sm:ml-auto">
             <a
               href={doc.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="h-10 sm:h-9 px-3 flex-1 sm:flex-none rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
               View
             </a>
@@ -86,7 +88,7 @@ export function OtherDocumentsSection({ documents, readOnly, onAdded, onDeleted 
                   setDeletingId(null);
                 }}
                 aria-label="Remove"
-                className="h-9 w-9 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-rose-500 hover:border-rose-200 flex items-center justify-center cursor-pointer transition-colors disabled:opacity-50"
+                className="h-10 sm:h-9 w-11 sm:w-9 shrink-0 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-rose-500 hover:border-rose-200 flex items-center justify-center cursor-pointer transition-colors disabled:opacity-50"
               >
                 <ClientIcon icon="ph:trash" className="w-4 h-4" />
               </button>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getAllVendorsForAdminAction, type AdminVendor } from "@/actions/admin.actions";
 import { VendorsTable } from "@/components/admin/VendorsTable";
@@ -37,6 +38,13 @@ export default function VendorsPage() {
         </div>
         <div className="flex items-center gap-3">
           {vendors.length > 0 && <ViewToggle view={view} onChange={setView} />}
+          <Link
+            href="/admin/vendors/agreement-template"
+            className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-bold rounded-xl px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+          >
+            <ClientIcon icon="ph:file-text" className="w-4 h-4" />
+            Agreement Template
+          </Link>
           <button
             type="button"
             onClick={() => setModalOpen(true)}

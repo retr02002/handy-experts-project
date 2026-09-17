@@ -649,9 +649,9 @@ export interface LiveCallItemDetail {
   unitPrice: number;
 }
 
-/** First 6 digits shown, last 4 masked — e.g. "807623XXXX". */
+/** First 2 digits shown, rest masked — e.g. "80XXXXXXXX". */
 function maskPhone(phone: string): string {
-  return phone.length >= 10 ? `${phone.slice(0, 6)}XXXX` : "XXXXXXXXXX";
+  return phone.length >= 10 ? `${phone.slice(0, 2)}XXXXXXXX` : "XXXXXXXXXX";
 }
 
 function maskName(name: string): string {

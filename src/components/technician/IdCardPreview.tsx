@@ -10,7 +10,6 @@ export interface IdCardPreviewData {
   idNumber: string;
   photoDataUri: string | null;
   signatureDataUri: string | null;
-  qrDataUri: string | null;
   experienceLabel: string;
   ratingLabel: string;
   vendor: { name: string; logoDataUri: string | null } | null;
@@ -82,28 +81,17 @@ export const IdCardPreview = React.forwardRef<HTMLDivElement, { data: IdCardPrev
 
       <div className="mx-4 mt-1 border-t border-slate-100" />
 
-      <div className="mx-4 mt-3 flex items-end gap-4">
-        <div className="flex flex-col items-center">
-          {data.qrDataUri ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={data.qrDataUri} alt="" className="w-14 h-14" />
-          ) : (
-            <div className="w-14 h-14 bg-slate-100 rounded" />
-          )}
-          <p className="text-[9px] text-slate-400 mt-1">Scan to Verify</p>
-        </div>
-        <div className="flex-1 flex flex-col items-center">
-          {data.signatureDataUri ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={data.signatureDataUri} alt="" className="w-[90px] h-[34px] object-contain" />
-          ) : (
-            <div className="w-[90px] h-[34px] border border-dashed border-slate-200 flex items-center justify-center">
-              <span className="text-[10px] text-slate-400">Not signed</span>
-            </div>
-          )}
-          <div className="w-[90px] border-t border-slate-900 mt-0.5" />
-          <p className="text-[9px] text-slate-400 mt-1">Authorized Signature</p>
-        </div>
+      <div className="mx-4 mt-3 flex flex-col items-center">
+        {data.signatureDataUri ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={data.signatureDataUri} alt="" className="w-[120px] h-[40px] object-contain" />
+        ) : (
+          <div className="w-[120px] h-[40px] border border-dashed border-slate-200 flex items-center justify-center">
+            <span className="text-[10px] text-slate-400">Not signed</span>
+          </div>
+        )}
+        <div className="w-[120px] border-t border-slate-900 mt-0.5" />
+        <p className="text-[9px] text-slate-400 mt-1">Authorized Signature</p>
       </div>
 
       <p className="absolute bottom-3 left-4 right-4 text-[8px] text-slate-400 text-center">

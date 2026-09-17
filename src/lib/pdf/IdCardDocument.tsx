@@ -57,15 +57,12 @@ const s = StyleSheet.create({
   detailValueRow: { flexDirection: "row", alignItems: "center", gap: 4, maxWidth: 140 },
   vendorLogo: { width: 12, height: 12, objectFit: "contain" },
 
-  bottomRow: { flexDirection: "row", marginTop: 12, marginHorizontal: 16, gap: 12, alignItems: "flex-end" },
-  qrBlock: { alignItems: "center" },
-  qrImage: { width: 56, height: 56 },
-  qrCaption: { fontSize: 7.5, color: C.muted, marginTop: 3 },
-  sigBlock: { flex: 1, alignItems: "center" },
-  sigImage: { width: 90, height: 34, objectFit: "contain" },
-  sigPlaceholder: { width: 90, height: 34, borderWidth: 1, borderStyle: "dashed", borderColor: C.line, alignItems: "center", justifyContent: "center" },
+  bottomRow: { alignItems: "center", marginTop: 12, marginHorizontal: 16 },
+  sigBlock: { alignItems: "center" },
+  sigImage: { width: 120, height: 40, objectFit: "contain" },
+  sigPlaceholder: { width: 120, height: 40, borderWidth: 1, borderStyle: "dashed", borderColor: C.line, alignItems: "center", justifyContent: "center" },
   sigPlaceholderText: { fontSize: 8, color: C.muted },
-  sigRule: { borderBottomWidth: 1, borderBottomColor: C.ink, width: 90, marginTop: 2 },
+  sigRule: { borderBottomWidth: 1, borderBottomColor: C.ink, width: 120, marginTop: 2 },
   sigCaption: { fontSize: 7.5, color: C.muted, marginTop: 3 },
 
   footerAccent: { position: "absolute", bottom: 0, left: 0, right: 0, height: 8, backgroundColor: C.brand },
@@ -139,10 +136,6 @@ export function IdCardDocument({ data }: { data: TechnicianIdCardData }) {
         <View style={s.divider} />
 
         <View style={s.bottomRow}>
-          <View style={s.qrBlock}>
-            {data.qr && <Image src={data.qr.dataUri} style={s.qrImage} />}
-            <Text style={s.qrCaption}>Scan to Verify</Text>
-          </View>
           <View style={s.sigBlock}>
             {data.signature ? (
               <Image src={data.signature.dataUri} style={s.sigImage} />

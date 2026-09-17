@@ -12,4 +12,14 @@ export const VENDOR_KYC_FIELDS = [
   { type: "GST", label: "GST Certificate", icon: "ph:receipt", helperText: "Max 8MB · JPG, PNG or PDF" },
   { type: "AADHAR", label: "Aadhaar Card", icon: "ph:identification-card", helperText: "Max 8MB · JPG, PNG or PDF" },
   { type: "PAN", label: "PAN Card", icon: "ph:identification-badge", helperText: "Max 8MB · JPG, PNG or PDF" },
+  // captureAttr "environment" defaults the mobile picker to the back
+  // camera — better for photographing a printed, signed page than the
+  // front camera the browser would otherwise default to.
+  {
+    type: "AGREEMENT",
+    label: "Signed Agreement",
+    icon: "ph:file-text",
+    helperText: "Photo or scan of your signed copy",
+    captureAttr: "environment" as const,
+  },
 ] as const;

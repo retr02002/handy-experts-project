@@ -9,6 +9,7 @@ import { SetLocationBanner } from "@/components/vendor/SetLocationBanner";
 import { VendorDocumentsSection } from "@/components/vendor/VendorDocumentsSection";
 import { VendorLogoCard } from "@/components/vendor/VendorLogoCard";
 import { getMyVendorDocumentsAction } from "@/actions/kyc.actions";
+import { getVendorAgreementTemplateAction } from "@/actions/platformDocument.actions";
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
@@ -27,9 +28,13 @@ export default async function VendorProfilePage() {
   const avatarInitial = userName.charAt(0).toUpperCase() || "V";
   const vendor = profile.vendorProfile;
 
-  const docsResult = await getMyVendorDocumentsAction();
+  const [docsResult, templateResult] = await Promise.all([
+    getMyVendorDocumentsAction(),
+    getVendorAgreementTemplateAction(),
+  ]);
   const documents = docsResult.success ? (docsResult.data?.documents ?? []) : [];
   const logoUrl = docsResult.success ? (docsResult.data?.logoUrl ?? null) : null;
+  const agreementTemplate = templateResult.success ? (templateResult.data ?? null) : null;
 
   return (
     <div className="flex flex-col w-full h-full max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -117,7 +122,7 @@ export default async function VendorProfilePage() {
             </div>
           )}
 
-          <VendorDocumentsSection initialDocuments={documents} />
+          <VendorDocumentsSection initialDocuments={documents} agreementTemplate={agreementTemplate} />
 
           <VendorLogoCard initialLogoUrl={logoUrl} />
 

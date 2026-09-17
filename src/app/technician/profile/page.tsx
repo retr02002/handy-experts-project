@@ -34,7 +34,6 @@ export default async function TechnicianProfilePage() {
         idNumber: idCardData.idNumber,
         photoDataUri: idCardData.photo?.dataUri ?? null,
         signatureDataUri: idCardData.signature?.dataUri ?? null,
-        qrDataUri: idCardData.qr?.dataUri ?? null,
         experienceLabel: `${idCardData.experienceYears} yr${idCardData.experienceYears === 1 ? "" : "s"}`,
         ratingLabel: idCardData.rating ? `${idCardData.rating.avg.toFixed(1)} ★ (${idCardData.rating.count})` : "New",
         vendor: idCardData.vendor

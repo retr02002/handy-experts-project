@@ -1,25 +1,41 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { IdCardPreview, type IdCardPreviewData } from "./IdCardPreview";
 
+const CARD_WIDTH = 360;
+const CARD_HEIGHT = 580;
+
 export function TechnicianIdCardTab({ data }: { data: IdCardPreviewData | null }) {
-  const cardRef = useRef<HTMLDivElement>(null);
+  const captureRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width;
+      if (width) setScale(Math.min(1, width / CARD_WIDTH));
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   if (!data) {
     return <p className="text-sm text-slate-500 dark:text-slate-400 py-6 text-center">Your ID card isn&apos;t ready yet.</p>;
   }
 
   const downloadImage = async () => {
-    if (!cardRef.current) return;
+    if (!captureRef.current) return;
     setError(null);
     setDownloading(true);
     try {
-      const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true });
+      const dataUrl = await toPng(captureRef.current, { pixelRatio: 2, cacheBust: true });
       const a = document.createElement("a");
       a.href = dataUrl;
       a.download = "handyzo-id-card.png";
@@ -32,7 +48,7 @@ export function TechnicianIdCardTab({ data }: { data: IdCardPreviewData | null }
   };
 
   return (
-    <div className="flex flex-col items-center gap-5 py-2">
+    <div className="relative flex flex-col items-center gap-5 py-2">
       {(!data.photoDataUri || !data.signatureDataUri) && (
         <div className="w-full max-w-sm flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-semibold">
           <ClientIcon icon="ph:warning-circle-fill" className="w-4 h-4 shrink-0" />
@@ -44,8 +60,24 @@ export function TechnicianIdCardTab({ data }: { data: IdCardPreviewData | null }
         </div>
       )}
 
-      <div className="overflow-x-auto w-full flex justify-center py-1">
-        <IdCardPreview ref={cardRef} data={data} />
+      {/* Scaled-to-fit visible preview — the card is a fixed 360x580px
+          element (IdCardPreview's own size), so on a narrow phone it's
+          wrapped in a measured, CSS-scaled container rather than left to
+          overflow/scroll. Purely decorative: never what "Download as
+          Image" actually captures. */}
+      <div ref={containerRef} className="w-full max-w-sm flex justify-center">
+        <div style={{ width: CARD_WIDTH * scale, height: CARD_HEIGHT * scale }}>
+          <div style={{ width: CARD_WIDTH, height: CARD_HEIGHT, transform: `scale(${scale})`, transformOrigin: "top left" }}>
+            <IdCardPreview data={data} />
+          </div>
+        </div>
+      </div>
+
+      {/* Full-resolution, off-screen twin — always captured at the real
+          360x580px regardless of viewport width, so the downloaded PNG
+          never loses quality to the on-screen scaling above. */}
+      <div className="absolute -left-[9999px] top-0" aria-hidden="true">
+        <IdCardPreview ref={captureRef} data={data} />
       </div>
 
       <div className="flex gap-3 w-full max-w-sm">

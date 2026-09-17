@@ -646,6 +646,29 @@ model SequenceCounter {
   value Int    @default(0)
 }
 
+enum PlatformDocumentType {
+  VENDOR_AGREEMENT
+}
+
+// A single admin-managed global file per type — the blank agreement
+// template a SUPER_ADMIN uploads and can replace at any time, distinct from
+// a vendor's own filled-and-signed copy (that's a KycDocument with
+// documentType AGREEMENT, per-vendor). @unique on type makes this a true
+// singleton; a re-upload updates the row in place rather than deleting and
+// recreating it, since nothing else references it by id.
+model PlatformDocument {
+  id             String               @id @default(cuid())
+  type           PlatformDocumentType @unique
+  url            String
+  storageKey     String
+  contentType    String
+  sizeBytes      Int
+  // Snapshot, not a relation — same reasoning as LiveCall.createdByAdminName:
+  // stays accurate even if that admin later renames their own profile.
+  uploadedByName String
+  uploadedAt     DateTime             @default(now())
+}
+
 // Snapshot of a cart line item at the moment the LiveCall was created —
 // packageId is nullable/SetNull so a later ServicePackage deletion never
 // breaks historical order records.
@@ -808,6 +831,7 @@ enum KycDocumentType {
   GST
   PHOTO
   SIGNATURE
+  AGREEMENT
   OTHER
 }
 

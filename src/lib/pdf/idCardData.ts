@@ -1,6 +1,5 @@
 import { readFile } from "fs/promises";
 import path from "path";
-import QRCode from "qrcode";
 import { prisma } from "@/lib/prisma";
 import { PLATFORM_IDENTITY } from "@/lib/companyIdentity";
 import { formatTechnicianId, formatVendorId } from "@/lib/structuredIds";
@@ -18,7 +17,6 @@ export interface TechnicianIdCardData {
   technicianType: "FREELANCE" | "VENDOR_MANAGED";
   photo: EmbeddedImage | null;
   signature: EmbeddedImage | null;
-  qr: EmbeddedImage | null;
   idNumber: string;
   issuedDate: Date;
   experienceYears: number;
@@ -40,19 +38,6 @@ function getPlatformLogo(): Promise<EmbeddedImage | null> {
       .catch(() => null);
   }
   return cachedPlatformLogo;
-}
-
-/** Failure-absorbing, same shape as embedOne — one bad QR render must never break the whole card. */
-async function buildVerificationQr(technicianId: string): Promise<EmbeddedImage | null> {
-  try {
-    const base = process.env.NEXT_PUBLIC_APP_URL || "";
-    const url = `${base}/verify/technician/${technicianId}`;
-    const dataUri = await QRCode.toDataURL(url, { margin: 1, width: 240, color: { dark: "#0f172a", light: "#ffffff" } });
-    return { dataUri };
-  } catch (err) {
-    console.error("QR code generation failed:", err);
-    return null;
-  }
 }
 
 /**
@@ -92,14 +77,13 @@ export async function buildTechnicianIdCardData(technicianId: string): Promise<T
     }),
   ]);
 
-  const [photo, signature, vendorLogo, platformLogo, qr] = await Promise.all([
+  const [photo, signature, vendorLogo, platformLogo] = await Promise.all([
     embedOne(photoDoc ?? null),
     embedOne(signatureDoc ?? null),
     technician.vendor?.logoUrl && technician.vendor.logoStorageKey
       ? embedOne({ url: technician.vendor.logoUrl, storageKey: technician.vendor.logoStorageKey })
       : Promise.resolve(null),
     getPlatformLogo(),
-    buildVerificationQr(technicianId),
   ]);
 
   const name = technician.user.name ?? "Technician";
@@ -115,7 +99,6 @@ export async function buildTechnicianIdCardData(technicianId: string): Promise<T
     technicianType: technician.type,
     photo,
     signature,
-    qr,
     idNumber: formatTechnicianId(name, technician.idCityCode, technician.idSeq, technicianId),
     issuedDate,
     experienceYears: technician.experienceYears,

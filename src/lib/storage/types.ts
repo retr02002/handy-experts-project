@@ -1,5 +1,11 @@
-/** Logical top-level folders inside the bucket. Keys are prefixed with these. */
-export type StorageFolder = "services" | "job" | "payments" | "docs";
+/**
+ * Logical top-level folders inside the bucket. Keys are prefixed with these.
+ * "platform" is for admin-managed global files (e.g. the vendor agreement
+ * template) — deliberately not under "docs", since anything under docs/ is
+ * routed to the authenticated file-serving proxy, and a blank template has
+ * nothing sensitive in it; every vendor needs to fetch it to print.
+ */
+export type StorageFolder = "services" | "job" | "payments" | "docs" | "platform";
 
 export interface StorageProvider {
   put(key: string, body: Buffer, contentType: string): Promise<void>;

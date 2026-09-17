@@ -6,8 +6,14 @@ import { KycDocumentRow } from "@/components/shared/kyc/KycDocumentRow";
 import { OtherDocumentsSection } from "@/components/shared/kyc/OtherDocumentsSection";
 import { VENDOR_KYC_FIELDS } from "@/lib/kycDocumentTypes";
 import { deleteKycDocumentAction, type KycDocSummary } from "@/actions/kyc.actions";
+import type { PlatformDocumentSummary } from "@/actions/platformDocument.actions";
 
-export function VendorDocumentsSection({ initialDocuments }: { initialDocuments: KycDocSummary[] }) {
+interface Props {
+  initialDocuments: KycDocSummary[];
+  agreementTemplate: PlatformDocumentSummary | null;
+}
+
+export function VendorDocumentsSection({ initialDocuments, agreementTemplate }: Props) {
   const [documents, setDocuments] = useState(initialDocuments);
 
   const byType = (type: string) => documents.find((d) => d.documentType === type) ?? null;
@@ -34,6 +40,33 @@ export function VendorDocumentsSection({ initialDocuments }: { initialDocuments:
       <p className="text-xs text-slate-400 mb-5">
         Upload your GST, Aadhaar and PAN for verification — admins can view these on your account.
       </p>
+
+      <div className="mb-4 p-3.5 rounded-2xl border border-blue-100 dark:border-blue-500/20 bg-blue-50/50 dark:bg-blue-500/5 flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+            <ClientIcon icon="ph:file-arrow-down" className="w-4.5 h-4.5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-slate-900 dark:text-white">Vendor Agreement</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Download, print and sign it, then upload your signed copy below.
+            </p>
+          </div>
+        </div>
+        {agreementTemplate ? (
+          <a
+            href={agreementTemplate.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-10 sm:h-9 px-3 rounded-lg bg-blue-600 text-white text-xs font-bold flex items-center justify-center shrink-0 hover:opacity-90 transition-opacity sm:ml-auto"
+          >
+            Download
+          </a>
+        ) : (
+          <span className="text-[11px] text-slate-400 shrink-0">Not available yet</span>
+        )}
+      </div>
+
       <div className="flex flex-col gap-3">
         {VENDOR_KYC_FIELDS.map((f) => (
           <KycDocumentRow
@@ -45,6 +78,7 @@ export function VendorDocumentsSection({ initialDocuments }: { initialDocuments:
             helperText={f.helperText}
             onChange={upsert}
             onDelete={remove}
+            captureAttr={"captureAttr" in f ? f.captureAttr : undefined}
           />
         ))}
         <OtherDocumentsSection documents={others} onAdded={upsert} onDeleted={remove} />

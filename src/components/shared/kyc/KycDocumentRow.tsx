@@ -62,6 +62,8 @@ interface Props {
   onDelete?: (id: string) => Promise<void> | void;
   /** When set, Upload/Replace opens this instead of a file picker — used for the signature row's draw-pad modal. */
   onTriggerCapture?: () => void;
+  /** Forwarded to the file input's `capture` attribute — defaults the mobile picker to a camera (e.g. "environment" for photographing a printed page). Omitted rows behave exactly as before. */
+  captureAttr?: "user" | "environment";
 }
 
 export function KycDocumentRow({
@@ -74,6 +76,7 @@ export function KycDocumentRow({
   onChange,
   onDelete,
   onTriggerCapture,
+  captureAttr,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState<number | null>(null);
@@ -95,46 +98,53 @@ export function KycDocumentRow({
   const isPdf = document?.contentType === "application/pdf";
 
   return (
-    <div className="flex items-center gap-3 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/20">
-      <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
-        {document ? (
-          isPdf ? (
-            <ClientIcon icon="ph:file-pdf-fill" className="w-5 h-5 text-rose-500" />
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/20">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
+          {document ? (
+            isPdf ? (
+              <ClientIcon icon="ph:file-pdf-fill" className="w-5 h-5 text-rose-500" />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={document.url} alt="" className="w-full h-full object-cover" />
+            )
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={document.url} alt="" className="w-full h-full object-cover" />
-          )
-        ) : (
-          <ClientIcon icon={icon} className="w-5 h-5 text-slate-400" />
-        )}
+            <ClientIcon icon={icon} className="w-5 h-5 text-slate-400" />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{label}</p>
+          {document ? (
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Uploaded{" "}
+              {new Date(document.uploadedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+            </p>
+          ) : progress !== null ? (
+            <p className="text-[11px] text-[#00B4FF] font-semibold">Uploading… {progress}%</p>
+          ) : (
+            <span className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[10px] font-bold">
+              <ClientIcon icon="ph:warning-circle-fill" className="w-3 h-3" />
+              Pending
+            </span>
+          )}
+          {error && <p className="text-[11px] text-rose-500 mt-0.5">{error}</p>}
+          {helperText && !document && progress === null && <p className="text-[10px] text-slate-400 mt-0.5">{helperText}</p>}
+        </div>
       </div>
 
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{label}</p>
-        {document ? (
-          <p className="text-[11px] text-slate-500 dark:text-slate-400">
-            Uploaded{" "}
-            {new Date(document.uploadedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-          </p>
-        ) : progress !== null ? (
-          <p className="text-[11px] text-[#00B4FF] font-semibold">Uploading… {progress}%</p>
-        ) : (
-          <span className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[10px] font-bold">
-            <ClientIcon icon="ph:warning-circle-fill" className="w-3 h-3" />
-            Pending
-          </span>
-        )}
-        {error && <p className="text-[11px] text-rose-500 mt-0.5">{error}</p>}
-        {helperText && !document && progress === null && <p className="text-[10px] text-slate-400 mt-0.5">{helperText}</p>}
-      </div>
-
-      <div className="flex items-center gap-1.5 shrink-0">
+      {/* Own row on mobile, full-width evenly-split buttons — a squished
+          icon-only row here is what was truncating the label above it.
+          Skipped entirely when there's nothing to show (readOnly + no
+          document yet), so no empty row/gap is left behind. */}
+      {(document || !readOnly) && (
+      <div className="flex items-center gap-1.5 shrink-0 sm:ml-auto">
         {document && (
           <a
             href={document.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="h-10 sm:h-9 px-3 flex-1 sm:flex-none rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             View
           </a>
@@ -144,7 +154,7 @@ export function KycDocumentRow({
             type="button"
             onClick={() => (onTriggerCapture ? onTriggerCapture() : inputRef.current?.click())}
             disabled={progress !== null}
-            className="h-9 px-3 rounded-lg bg-[#00B4FF] text-white text-xs font-bold flex items-center disabled:opacity-50 cursor-pointer hover:opacity-90 transition-opacity"
+            className="h-10 sm:h-9 px-3 flex-1 sm:flex-none rounded-lg bg-[#00B4FF] text-white text-xs font-bold flex items-center justify-center disabled:opacity-50 cursor-pointer hover:opacity-90 transition-opacity"
           >
             {document ? "Replace" : "Upload"}
           </button>
@@ -159,18 +169,20 @@ export function KycDocumentRow({
               setDeleting(false);
             }}
             aria-label="Remove"
-            className="h-9 w-9 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-rose-500 hover:border-rose-200 flex items-center justify-center cursor-pointer transition-colors disabled:opacity-50"
+            className="h-10 sm:h-9 w-11 sm:w-9 shrink-0 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-rose-500 hover:border-rose-200 flex items-center justify-center cursor-pointer transition-colors disabled:opacity-50"
           >
             <ClientIcon icon="ph:trash" className="w-4 h-4" />
           </button>
         )}
       </div>
+      )}
 
       {!readOnly && (
         <input
           ref={inputRef}
           type="file"
           accept={ALLOWED_ACCEPT}
+          capture={captureAttr}
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
