@@ -64,13 +64,19 @@ export function mapPrismaService(service: PrismaServiceWithPackages): Service {
   };
 }
 
-export async function getAllServices(): Promise<Service[]> {
-  const rows = await prisma.service.findMany({
-    ...serviceWithPackages,
-    orderBy: { createdAt: "desc" },
-  });
-  return rows.map(mapPrismaService);
-}
+/** Cached — same reasoning as getAllCategories below; used by the homepage's
+ *  Popular Services section and the /services listing. */
+export const getAllServices = unstable_cache(
+  async (): Promise<Service[]> => {
+    const rows = await prisma.service.findMany({
+      ...serviceWithPackages,
+      orderBy: { createdAt: "desc" },
+    });
+    return rows.map(mapPrismaService);
+  },
+  ["services-all"],
+  { tags: ["services"], revalidate: 300 }
+);
 
 // cache() dedupes generateMetadata + the page body both calling this with the
 // same slug in one request — raw Prisma calls aren't deduped by Next's fetch

@@ -43,7 +43,7 @@ export function Modal({
       onClick={onClose}
     >
       <div
-        className={`relative bg-white dark:bg-[#0F172A] w-full ${maxWidthClass} rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92vh] overflow-hidden`}
+        className={`relative bg-white dark:bg-[#0F172A] w-full ${maxWidthClass} rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92dvh] overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 shrink-0">

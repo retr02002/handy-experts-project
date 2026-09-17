@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { putObject } from "@/lib/storage/objectStorage";
 import { JOB_PHOTO_MAX_PER_PHASE, JOB_PHOTO_MAX_BYTES } from "@/lib/constants";
+import { formatTicketNumber } from "@/lib/ticketNumber";
 
 export const runtime = "nodejs";
 
@@ -60,7 +61,11 @@ export async function POST(req: Request) {
 
     const call = await prisma.serviceCall.findUnique({
       where: { id: serviceCallId },
-      select: { technicianId: true, status: true },
+      select: {
+        technicianId: true,
+        status: true,
+        liveCall: { select: { ticketSeq: true, orderCityCode: true, orderLocalityCode: true, orderSeq: true } },
+      },
     });
     if (!call || call.technicianId !== technician.id) {
       return NextResponse.json({ error: "This job isn't assigned to you" }, { status: 403 });
@@ -90,10 +95,12 @@ export async function POST(req: Request) {
       );
     }
 
+    const ticketNumber = call.liveCall ? formatTicketNumber(call.liveCall) : serviceCallId;
+
     const buffer = Buffer.from(await file.arrayBuffer());
     const stored = await putObject({
       folder: "job",
-      prefix: `${serviceCallId}/${phase.toLowerCase()}`,
+      prefix: `${ticketNumber}/${phase.toLowerCase()}`,
       extension,
       body: buffer,
       contentType: file.type,

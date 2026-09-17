@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { toPng } from "html-to-image";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { IdCardPreview, type IdCardPreviewData } from "./IdCardPreview";
 
@@ -35,6 +34,7 @@ export function TechnicianIdCardTab({ data }: { data: IdCardPreviewData | null }
     setError(null);
     setDownloading(true);
     try {
+      const { toPng } = await import("html-to-image");
       const dataUrl = await toPng(captureRef.current, { pixelRatio: 2, cacheBust: true });
       const a = document.createElement("a");
       a.href = dataUrl;

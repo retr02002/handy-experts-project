@@ -32,11 +32,13 @@ export function AdminLiveCallsPanel() {
   const [serviceAreas, setServiceAreas] = useState<AdminVendorServiceArea[]>([]);
   const [loaded, setLoaded] = useState(false);
 
-  usePolling(async () => {
+  const refetchCalls = async () => {
     const res = await getAllLiveCallsAction();
     if (res.success && res.data) setCalls(res.data);
     setLoaded(true);
-  }, CALLS_POLL_INTERVAL_MS);
+  };
+
+  usePolling(refetchCalls, CALLS_POLL_INTERVAL_MS);
 
   usePolling(async () => {
     const res = await getAllTechniciansForAdminAction();
@@ -113,7 +115,7 @@ export function AdminLiveCallsPanel() {
               No live calls yet.
             </div>
           ) : (
-            calls.map((call) => <AdminLiveCallCard key={call.id} call={call} />)
+            calls.map((call) => <AdminLiveCallCard key={call.id} call={call} onChanged={refetchCalls} />)
           )}
         </div>
       </div>

@@ -88,7 +88,8 @@ export const PAYMENT_METHOD_OPTIONS: {
 export function isDetailsComplete(details: CustomerDetails): boolean {
   return (
     details.name.trim().length > 1 &&
-    /^\S+@\S+\.\S+$/.test(details.email.trim()) &&
+    // Optional — blank passes, but a value that's typed in still has to look like an email.
+    (details.email.trim() === "" || /^\S+@\S+\.\S+$/.test(details.email.trim())) &&
     /^\d{10}$/.test(details.phone.trim()) &&
     (details.siteContactPhone.trim() === "" || /^\d{10}$/.test(details.siteContactPhone.trim())) &&
     details.address.trim().length > 5 &&

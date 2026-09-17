@@ -34,17 +34,33 @@ export function TechnicianSignatureModal({ onClose, onSaved }: Props) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ratio = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * ratio;
-    canvas.height = rect.height * ratio;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.scale(ratio, ratio);
-    ctx.lineWidth = 2;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.strokeStyle = "#0f172a";
+
+    // A ResizeObserver (not a one-shot mount measurement) re-runs this
+    // whenever the canvas's actual rendered size changes, so the backing
+    // store can never drift out of sync with what pointFrom reads live
+    // from getBoundingClientRect() on every stroke.
+    const applySize = () => {
+      // Resizing the canvas element always clears its contents — once
+      // there's ink to lose, a late resize must not wipe it.
+      if (hasInk.current) return;
+      const ratio = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+      canvas.width = rect.width * ratio;
+      canvas.height = rect.height * ratio;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.scale(ratio, ratio);
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = "#0f172a";
+    };
+
+    applySize();
+    const observer = new ResizeObserver(applySize);
+    observer.observe(canvas);
+    return () => observer.disconnect();
   }, []);
 
   const pointFrom = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -118,14 +134,16 @@ export function TechnicianSignatureModal({ onClose, onSaved }: Props) {
           Sign with your finger — this appears as your &quot;Authorized Signature&quot; on your ID card.
         </p>
 
-        {/* touch-none stops the sheet scrolling while someone signs */}
+        {/* touch-none stops the sheet scrolling while someone signs;
+            overscroll-contain stops an iOS rubber-band bounce from the
+            Modal's scrollable body perturbing an in-progress stroke. */}
         <canvas
           ref={canvasRef}
           onPointerDown={start}
           onPointerMove={move}
           onPointerUp={end}
           onPointerLeave={end}
-          className="w-full h-48 rounded-xl border-2 border-dashed border-slate-300 bg-white touch-none"
+          className="w-full h-48 rounded-xl border-2 border-dashed border-slate-300 bg-white touch-none overscroll-contain"
         />
 
         <div className="grid grid-cols-2 gap-2">

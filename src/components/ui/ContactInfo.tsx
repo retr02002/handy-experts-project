@@ -5,14 +5,14 @@ export function ContactInfo() {
   const actions = [
     { id: 'call', icon: 'ph:phone-fill', title: 'Call Us', desc: '+91 9866716036', link: 'tel:+919866716036', color: 'bg-emerald-500', shadow: 'shadow-emerald-500/20' },
     { id: 'whatsapp', icon: 'ph:whatsapp-logo-fill', title: 'WhatsApp', desc: 'Message us', link: 'https://wa.me/919866716036', color: 'bg-[#25D366]', shadow: 'shadow-[#25D366]/20' },
-    { id: 'email', icon: 'ph:envelope-simple-fill', title: 'Email', desc: 'contact@handyzo.com', link: 'mailto:contact@handyzo.com', color: 'bg-[#00B4FF]', shadow: 'shadow-[#00B4FF]/20' },
+    { id: 'email', icon: 'ph:envelope-simple-fill', title: 'Email', desc: 'info@handyzo.com', link: 'mailto:info@handyzo.com', color: 'bg-[#00B4FF]', shadow: 'shadow-[#00B4FF]/20' },
     { id: 'visit', icon: 'ph:map-pin-fill', title: 'Visit', desc: 'Hyderabad HQ', link: 'https://maps.google.com/?q=Mf-2+p.s+nagar+masab+tank+Mehdipatnam+Hyderabad+500028', color: 'bg-purple-500', shadow: 'shadow-purple-500/20' },
   ];
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
       {actions.map((action) => (
-        <a 
+        <a
           key={action.id}
           href={action.link}
           target={action.id === 'visit' || action.id === 'whatsapp' ? '_blank' : undefined}
@@ -21,7 +21,7 @@ export function ContactInfo() {
         >
           {/* Subtle colored glow in the background */}
           <div className={`absolute -top-8 -right-8 w-24 h-24 ${action.color} opacity-5 blur-2xl rounded-full transition-all duration-500 group-hover:scale-150 group-hover:opacity-15`} />
-          
+
           <div className={`w-12 h-12 sm:w-14 sm:h-14 mb-3 sm:mb-4 rounded-[16px] sm:rounded-[20px] ${action.color} text-white flex items-center justify-center shadow-lg ${action.shadow} transition-all duration-300 group-hover:scale-110 group-hover:rotate-3`}>
             <ClientIcon icon={action.icon} className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>

@@ -19,8 +19,13 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const audienceParam = new URL(req.url).searchParams.get("audience");
+  const url = new URL(req.url);
+  const audienceParam = url.searchParams.get("audience");
   const audience: DocumentAudience = audienceParam === "vendor" ? "vendor" : "customer";
+  // "View" opens the PDF in a new tab (inline); "Download" forces a save
+  // (attachment, the default) — same route, same data, just the one header
+  // that decides how the browser handles the response.
+  const inline = url.searchParams.get("disposition") === "inline";
 
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -68,7 +73,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${filename}"`,
         "Cache-Control": "private, no-store",
       },
     });

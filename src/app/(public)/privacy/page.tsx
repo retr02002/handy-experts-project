@@ -113,7 +113,7 @@ export default function PrivacyPolicyPage() {
       description="Learn how Handyzo collects, uses, and protects your personal information."
       lastUpdated="January 15, 2026"
       sections={sections}
-      contactEmail="support@Handyzo.com"
+      contactEmail="support@handyzo.com"
     />
   );
 }

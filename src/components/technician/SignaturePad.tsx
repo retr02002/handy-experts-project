@@ -31,17 +31,35 @@ export function SignaturePad({ serviceCallId, defaultSignerName, onSaved }: Prop
 
     // Backing store is sized to the device pixel ratio so strokes aren't
     // blurry on a phone screen, then scaled back down for drawing coords.
-    const ratio = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * ratio;
-    canvas.height = rect.height * ratio;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.scale(ratio, ratio);
-    ctx.lineWidth = 2;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.strokeStyle = "#0f172a";
+    // A ResizeObserver (not a one-shot mount measurement) re-runs this
+    // whenever the canvas's actual rendered size changes — e.g. the sheet
+    // resizing as the on-screen keyboard opens/closes mid-flow — so the
+    // backing store can never drift out of sync with what pointFrom reads
+    // live from getBoundingClientRect() on every stroke.
+    const applySize = () => {
+      // Resizing the canvas element always clears its contents — once the
+      // customer has actually started signing, a late resize (e.g. the
+      // keyboard closing) must not wipe their in-progress signature, so
+      // re-sync stops the moment there's ink to lose.
+      if (hasInk.current) return;
+      const ratio = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+      canvas.width = rect.width * ratio;
+      canvas.height = rect.height * ratio;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.scale(ratio, ratio);
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = "#0f172a";
+    };
+
+    applySize();
+    const observer = new ResizeObserver(applySize);
+    observer.observe(canvas);
+    return () => observer.disconnect();
   }, []);
 
   const pointFrom = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -139,14 +157,16 @@ export function SignaturePad({ serviceCallId, defaultSignerName, onSaved }: Prop
         className="w-full h-11 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/40"
       />
 
-      {/* touch-none stops the browser scrolling the sheet while someone signs */}
+      {/* touch-none stops the browser scrolling the sheet while someone
+          signs; overscroll-contain stops an iOS rubber-band bounce from the
+          surrounding scrollable sheet perturbing an in-progress stroke. */}
       <canvas
         ref={canvasRef}
         onPointerDown={start}
         onPointerMove={move}
         onPointerUp={end}
         onPointerLeave={end}
-        className="w-full h-44 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 touch-none"
+        className="w-full h-44 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 touch-none overscroll-contain"
       />
 
       <div className="grid grid-cols-2 gap-2">

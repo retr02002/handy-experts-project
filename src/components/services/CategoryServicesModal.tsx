@@ -35,7 +35,7 @@ export function CategoryServicesModal({ isOpen, onClose, category }: Props) {
     <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 bg-slate-900/75 dark:bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
       <div className="absolute inset-0" onClick={onClose} />
 
-      <div className="relative bg-white dark:bg-[#0B1221] w-full sm:max-w-lg md:max-w-xl rounded-t-3xl sm:rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.5)] flex flex-col max-h-[92vh] sm:max-h-[88vh] animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-300 overflow-hidden border border-slate-200 dark:border-slate-800 z-10">
+      <div className="relative bg-white dark:bg-[#0B1221] w-full sm:max-w-lg md:max-w-xl rounded-t-3xl sm:rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.5)] flex flex-col max-h-[92dvh] sm:max-h-[88dvh] animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-300 overflow-hidden border border-slate-200 dark:border-slate-800 z-10">
         <button
           onClick={onClose}
           aria-label="Close modal"

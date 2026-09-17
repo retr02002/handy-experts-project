@@ -68,7 +68,7 @@ export default function CookieSettingsPage() {
       description="Information about our use of cookies and tracking technologies."
       lastUpdated="January 20, 2026"
       sections={sections}
-      contactEmail="support@Handyzo.com"
+      contactEmail="support@handyzo.com"
     />
   );
 }

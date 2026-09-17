@@ -13,9 +13,11 @@ import { requireCustomerId, resolveCoordinates, ensureServicePins } from "@/acti
 import { LIVE_CALL_EXPIRY_MINUTES } from "@/lib/constants";
 import { getCityCode, getAreaCode } from "@/lib/locationCodes";
 import { nextSequence } from "@/lib/sequenceCounter";
+import { formatTicketNumber } from "@/lib/ticketNumber";
 
 export interface RazorpayOrderResult {
   liveCallId: string;
+  ticketNumber: string;
   /** true when the wallet alone covered the whole order — no Razorpay
    *  fields are set, and the client should treat this like an already-placed
    *  order rather than opening the checkout modal. */
@@ -108,7 +110,7 @@ export async function createRazorpayOrderAction(input: unknown): Promise<ActionR
       customerPhone: data.customerPhone,
       siteContactName: data.siteContactName ?? null,
       siteContactPhone: data.siteContactPhone ?? null,
-      customerEmail: data.customerEmail,
+      customerEmail: data.customerEmail ?? "",
       address: data.address,
       city: data.city,
       state: data.state,
@@ -171,7 +173,15 @@ export async function createRazorpayOrderAction(input: unknown): Promise<ActionR
 
       return {
         success: true,
-        data: { liveCallId: liveCall.id, fullyCoveredByWallet: true, razorpayOrderId: null, amountPaise: 0, currency: "INR", keyId: null },
+        data: {
+          liveCallId: liveCall.id,
+          ticketNumber: formatTicketNumber(liveCall),
+          fullyCoveredByWallet: true,
+          razorpayOrderId: null,
+          amountPaise: 0,
+          currency: "INR",
+          keyId: null,
+        },
       };
     }
 
@@ -224,6 +234,7 @@ export async function createRazorpayOrderAction(input: unknown): Promise<ActionR
       success: true,
       data: {
         liveCallId: liveCall.id,
+        ticketNumber: formatTicketNumber(liveCall),
         fullyCoveredByWallet: false,
         razorpayOrderId: order.razorpayOrderId,
         amountPaise: order.amount,
@@ -253,7 +264,7 @@ export async function verifyRazorpayPaymentAction(input: {
   razorpayOrderId: string;
   razorpayPaymentId: string;
   razorpaySignature: string;
-}): Promise<ActionResponse<{ liveCallId: string }>> {
+}): Promise<ActionResponse<{ liveCallId: string; ticketNumber: string }>> {
   const { userId, error } = await requireCustomerId();
   if (!userId) return { success: false, error: error! };
 
@@ -274,8 +285,12 @@ export async function verifyRazorpayPaymentAction(input: {
       data: { status: "BROADCASTING", paymentStatus: "PAID", razorpayPaymentId },
     });
 
+    // Fetched either way (not just on a fresh claim) — the confirmation
+    // screen needs the ticket number regardless of whether this call won
+    // the claim or arrived after the webhook already had.
+    const liveCall = await prisma.liveCall.findUnique({ where: { id: liveCallId } });
+
     if (claim.count === 1) {
-      const liveCall = await prisma.liveCall.findUnique({ where: { id: liveCallId } });
       // Same transaction shape as createLiveCallAction's cart clear — best
       // done outside a transaction here since the claim above already
       // committed; a failure past this point just leaves stale cart rows,
@@ -294,7 +309,10 @@ export async function verifyRazorpayPaymentAction(input: {
     // claim.count === 0 means the webhook already confirmed this payment —
     // treated as success, not an error, per the same idempotency contract.
 
-    return { success: true, data: { liveCallId } };
+    return {
+      success: true,
+      data: { liveCallId, ticketNumber: liveCall ? formatTicketNumber(liveCall) : `HZ-${liveCallId.slice(-8).toUpperCase()}` },
+    };
   } catch (err) {
     console.error("Verify Razorpay payment error:", err);
     return { success: false, error: "Couldn't confirm your payment. Please contact support if money was deducted." };

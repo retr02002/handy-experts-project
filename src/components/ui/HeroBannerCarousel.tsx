@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
@@ -64,13 +65,16 @@ export function HeroBannerCarousel() {
         autoplay={{ delay: 3500, disableOnInteraction: false }}
         className="w-full h-20 sm:h-24 md:h-28 rounded-xl sm:rounded-2xl overflow-hidden shadow-sm"
       >
-        {banners.map((banner) => (
+        {banners.map((banner, index) => (
           <SwiperSlide key={banner.id} className="relative w-full h-full cursor-pointer" onClick={() => router.push(`/services?q=${banner.query}`)}>
             {/* Background Image */}
-            <img
+            <Image
               src={banner.image}
               alt={banner.title}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+              fill
+              sizes="100vw"
+              priority={index === 0}
+              className="object-cover transition-transform duration-700 hover:scale-105"
             />
             
             {/* Gradient Overlay */}

@@ -109,6 +109,7 @@ export function JobDocument({ data }: { data: JobDocumentData }) {
           <View style={s.col}>
             <Text style={s.sectionTitle}>Contact Information</Text>
             <Text style={{ ...s.value, color: C.accent, marginBottom: 2 }}>{customer.name}</Text>
+            <Text style={s.value}>Phone: {customer.phone}</Text>
             <Text style={s.value}>Technician: {data.technicianName ?? "—"}</Text>
             <Text style={s.value}>Status: {data.completionStatus ?? data.status}</Text>
           </View>

@@ -955,6 +955,38 @@ model SupportContact {
   @@index([isActive, sortOrder])
 }
 
+enum ContactQueryReason {
+  GENERAL
+  SUPPORT
+  SALES
+  PARTNER
+}
+
+enum ContactQueryStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+// A visitor's submission from the public /contact page — unauthenticated,
+// so there's no User relation, just a snapshot of what they typed.
+model ContactQuery {
+  id         String             @id @default(cuid())
+  firstName  String
+  lastName   String
+  email      String
+  reason     ContactQueryReason @default(GENERAL)
+  message    String
+  status     ContactQueryStatus @default(NEW)
+  adminNote  String?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  resolvedAt DateTime?
+
+  @@index([status, createdAt])
+}
+
 // A vendor's request to the platform — most concretely, "give me this
 // service area" or "give me access to this category" now that both are
 // admin-managed rather than vendor-self-service. The two actionable

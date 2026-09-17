@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { putObject, deleteObject } from "@/lib/storage/objectStorage";
+import { formatTicketNumber } from "@/lib/ticketNumber";
 
 export const runtime = "nodejs";
 
@@ -47,7 +48,11 @@ export async function POST(req: Request) {
 
     const call = await prisma.serviceCall.findUnique({
       where: { id: serviceCallId },
-      select: { technicianId: true, status: true },
+      select: {
+        technicianId: true,
+        status: true,
+        liveCall: { select: { ticketSeq: true, orderCityCode: true, orderLocalityCode: true, orderSeq: true } },
+      },
     });
     if (!call || call.technicianId !== technician.id) {
       return NextResponse.json({ error: "This job isn't assigned to you" }, { status: 403 });
@@ -56,10 +61,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "A signature can only be taken while the job is in progress." }, { status: 409 });
     }
 
+    const ticketNumber = call.liveCall ? formatTicketNumber(call.liveCall) : serviceCallId;
+
     const buffer = Buffer.from(await file.arrayBuffer());
     const stored = await putObject({
       folder: "job",
-      prefix: `${serviceCallId}/signature`,
+      prefix: `${ticketNumber}/signature`,
       extension: "png",
       body: buffer,
       contentType: "image/png",

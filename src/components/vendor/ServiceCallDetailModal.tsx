@@ -61,12 +61,15 @@ interface ServiceCallDetailModalProps {
   call: ServiceCallSummary;
   onClose: () => void;
   onChanged: () => void;
+  /** Opens straight into the assign-a-technician view — used by the
+   *  "Assign Technician" deep link from the vendor's Awaiting Technician list. */
+  autoOpenAssign?: boolean;
 }
 
-export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCallDetailModalProps) {
+export function ServiceCallDetailModal({ call, onClose, onChanged, autoOpenAssign = false }: ServiceCallDetailModalProps) {
   const [candidates, setCandidates] = useState<ReassignCandidate[]>([]);
   const [report, setReport] = useState<ServiceReportSummary | null>(null);
-  const [reassignMode, setReassignMode] = useState(false);
+  const [reassignMode, setReassignMode] = useState(autoOpenAssign);
   const [editingItems, setEditingItems] = useState(false);
   const [selectedTechId, setSelectedTechId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -172,7 +175,7 @@ export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCall
       onClick={onClose}
     >
       <div
-        className="relative bg-white dark:bg-[#0F172A] rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
+        className="relative bg-white dark:bg-[#0F172A] rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 max-h-[90dvh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -183,7 +186,17 @@ export function ServiceCallDetailModal({ call, onClose, onChanged }: ServiceCall
         </button>
 
         <h3 className="text-lg font-bold text-slate-900 dark:text-white pr-8">{call.itemSummary}</h3>
-        <TicketBadge ticketNumber={call.ticketNumber} className="mt-1.5" />
+        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+          <TicketBadge ticketNumber={call.ticketNumber} />
+          {call.status === "COMPLETED" && (
+            <a
+              href={`/api/service-calls/${call.id}/document?audience=vendor`}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            >
+              <ClientIcon icon="ph:download-simple-bold" className="w-3 h-3" /> Invoice
+            </a>
+          )}
+        </div>
 
         <div className="flex flex-col gap-3 mt-4">
           <div className="grid grid-cols-2 gap-3 text-sm">

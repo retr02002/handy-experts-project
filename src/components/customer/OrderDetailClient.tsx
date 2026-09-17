@@ -333,6 +333,38 @@ export function OrderDetailClient({ orderId, initialOrder }: { orderId: string; 
           </div>
         )}
 
+        {/* Invoice — only reachable once the job is actually completed; the
+            document route itself 409s on anything earlier. */}
+        {order.status === "COMPLETED" && serviceCallId && (
+          <div className="bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-11 h-11 rounded-full bg-blue-100 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                <ClientIcon icon="ph:receipt" className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-slate-900 dark:text-white">Invoice</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">View or download a copy for your records.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 sm:ml-auto">
+              <a
+                href={`/api/service-calls/${serviceCallId}/document?audience=customer&disposition=inline`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-10 px-4 flex-1 sm:flex-none rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 hover:border-blue-400 transition-colors"
+              >
+                <ClientIcon icon="ph:eye-bold" className="w-3.5 h-3.5" /> View
+              </a>
+              <a
+                href={`/api/service-calls/${serviceCallId}/document?audience=customer`}
+                className="h-10 px-4 flex-1 sm:flex-none rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity"
+              >
+                <ClientIcon icon="ph:download-simple-bold" className="w-3.5 h-3.5" /> Download
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* Rate the job */}
         {order.status === "COMPLETED" && serviceCallId && !order.hasReview && (
           <div className="bg-white dark:bg-[#0F172A] rounded-2xl border border-amber-300/60 dark:border-amber-500/30 shadow-sm p-5">

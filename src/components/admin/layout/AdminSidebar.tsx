@@ -25,6 +25,7 @@ const navItems = [
   { label: "Bills & Mgmt", href: "/admin/bills", icon: "ph:receipt" },
   { label: "Feedback", href: "/admin/feedback", icon: "ph:star" },
   { label: "Support", href: "/admin/support", icon: "ph:headset" },
+  { label: "Contact Queries", href: "/admin/contact-queries", icon: "ph:chat-circle-text" },
   { label: "Notifications", href: "/admin/notifications", icon: "ph:bell" },
   { label: "Profile", href: "/admin/profile", icon: "ph:user" },
   { label: "Wallet", href: "/admin/wallet", icon: "ph:wallet" },

@@ -49,7 +49,10 @@ export function Input({
         <div className="relative">
           <select
             className={`${finalClassName} appearance-none cursor-pointer`}
-            defaultValue=""
+            // Only default-uncontrolled when the caller isn't controlling
+            // this select's value — a select can't have both defaultValue
+            // and value without React warning about it being both at once.
+            {...(props.value === undefined ? { defaultValue: "" } : {})}
             {...(props as React.SelectHTMLAttributes<HTMLSelectElement>)}
           >
             {/* If placeholder is passed and handled natively via first empty option */}

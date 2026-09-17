@@ -34,7 +34,7 @@ export function ServicePreviewModal({ isOpen, onClose, service }: Props) {
   const content = (
     <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/75 backdrop-blur-md animate-in fade-in duration-200">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative bg-white dark:bg-[#0B1221] w-full sm:max-w-xl rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden border border-slate-200 dark:border-slate-800 z-10 animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-300">
+      <div className="relative bg-white dark:bg-[#0B1221] w-full sm:max-w-xl rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-hidden border border-slate-200 dark:border-slate-800 z-10 animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-300">
         <div className="relative w-full h-40 shrink-0 bg-slate-900">
           <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${data.image})` }} />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent" />

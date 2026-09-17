@@ -1,4 +1,3 @@
-export const dynamic = "force-dynamic";
 import { ScrollHero } from "@/components/ui/ScrollHero";
 import { CategoryGrid } from "@/components/ui/CategoryGrid";
 import { FeaturedServices } from "@/components/ui/FeaturedServices";

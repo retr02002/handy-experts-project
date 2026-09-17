@@ -46,9 +46,25 @@ async function verifyJobPin(
   pin: string,
   expectedStatus: "EN_ROUTE" | "IN_PROGRESS"
 ): Promise<
-  | { ok: true; call: { id: string; liveCallId: string; vendorUserId: string; customerId: string } }
+  | {
+      ok: true;
+      call: {
+        id: string;
+        liveCallId: string;
+        vendorUserId: string;
+        customerId: string;
+        geofenceBypass: boolean;
+        latitude: number;
+        longitude: number;
+      };
+    }
   | { ok: false; error: string }
 > {
+  // Also carries geofenceBypass (a plain scalar, already included via
+  // `include` below) and liveCall.latitude/longitude — fetched here so
+  // evaluateJobGeofence never has to re-fetch the same ServiceCall row a
+  // second time; that redundant round trip was the single biggest
+  // contributor to start/complete feeling slow.
   const call = await prisma.serviceCall.findUnique({
     where: { id: serviceCallId },
     include: {
@@ -58,6 +74,8 @@ async function verifyJobPin(
           customerId: true,
           startPin: true,
           completionPin: true,
+          latitude: true,
+          longitude: true,
           customer: { select: { startPin: true, completionPin: true } },
         },
       },
@@ -110,6 +128,9 @@ async function verifyJobPin(
       liveCallId: call.liveCallId,
       vendorUserId: call.vendor.userId,
       customerId: call.liveCall.customerId,
+      geofenceBypass: call.geofenceBypass,
+      latitude: call.liveCall.latitude,
+      longitude: call.liveCall.longitude,
     },
   };
 }
@@ -126,18 +147,17 @@ interface GateGeoOutcome {
  * rollout (GEOFENCE_ENFORCED=false) that recording IS the point.
  *
  * Deliberately called only AFTER the PIN has verified, so being out of
- * range never burns one of the five PIN attempts.
+ * range never burns one of the five PIN attempts. Takes the customer
+ * coordinates and bypass flag as plain arguments (verifyJobPin already
+ * fetched them off the same ServiceCall row) rather than re-fetching —
+ * this used to be a second, redundant findUnique on every single call.
  */
-async function evaluateJobGeofence(
+function evaluateJobGeofence(
   serviceCallId: string,
+  customer: { latitude: number; longitude: number; geofenceBypass: boolean },
   fix: GeoFixInput | null,
   phase: "start" | "complete"
-): Promise<GateGeoOutcome> {
-  const call = await prisma.serviceCall.findUnique({
-    where: { id: serviceCallId },
-    select: { geofenceBypass: true, liveCall: { select: { latitude: true, longitude: true } } },
-  });
-
+): GateGeoOutcome {
   const prefix = phase === "start" ? "start" : "complete";
   const blank: Record<string, number | null> = {
     [`${prefix}Latitude`]: fix?.latitude ?? null,
@@ -145,15 +165,14 @@ async function evaluateJobGeofence(
     [`${prefix}AccuracyM`]: fix?.accuracyM ?? null,
     [`${prefix}DistanceM`]: null,
   };
-  if (!call) return { fields: blank, error: null };
 
   const result = evaluateGeofence(
-    { latitude: call.liveCall.latitude, longitude: call.liveCall.longitude },
+    { latitude: customer.latitude, longitude: customer.longitude },
     fix,
     {
       radiusM: JOB_GEOFENCE_RADIUS_METERS,
       accuracyGraceM: GEOFENCE_ACCURACY_GRACE_METERS,
-      bypass: call.geofenceBypass,
+      bypass: customer.geofenceBypass,
     }
   );
 
@@ -195,24 +214,26 @@ export async function startJobAction(
     const verified = await verifyJobPin(serviceCallId, technicianId, pin, "EN_ROUTE");
     if (!verified.ok) return { success: false, error: verified.error };
 
-    const geo = await evaluateJobGeofence(serviceCallId, usableFix, "start");
+    const geo = evaluateJobGeofence(serviceCallId, verified.call, usableFix, "start");
     if (geo.error) return { success: false, error: geo.error };
 
     await prisma.$transaction(async (tx) => {
-      await tx.serviceCall.update({
-        where: { id: serviceCallId },
-        data: { status: "IN_PROGRESS", startedAt: new Date(), pinAttempts: 0, ...geo.fields },
-      });
-      await tx.notification.create({
-        data: {
-          userId: verified.call.customerId,
-          type: "CALL_STATUS_UPDATE",
-          title: "Work has started",
-          message: "Your technician has started the job.",
-          liveCallId: verified.call.liveCallId,
-          serviceCallId,
-        },
-      });
+      await Promise.all([
+        tx.serviceCall.update({
+          where: { id: serviceCallId },
+          data: { status: "IN_PROGRESS", startedAt: new Date(), pinAttempts: 0, ...geo.fields },
+        }),
+        tx.notification.create({
+          data: {
+            userId: verified.call.customerId,
+            type: "CALL_STATUS_UPDATE",
+            title: "Work has started",
+            message: "Your technician has started the job.",
+            liveCallId: verified.call.liveCallId,
+            serviceCallId,
+          },
+        }),
+      ]);
     });
 
     revalidatePath("/technician/service-calls");
@@ -247,50 +268,56 @@ export async function completeJobAction(
     const verified = await verifyJobPin(serviceCallId, technicianId, pin, "IN_PROGRESS");
     if (!verified.ok) return { success: false, error: verified.error };
 
-    const geo = await evaluateJobGeofence(serviceCallId, usableFix, "complete");
+    const geo = evaluateJobGeofence(serviceCallId, verified.call, usableFix, "complete");
     if (geo.error) return { success: false, error: geo.error };
 
+    // None of these three writes depends on another's return value — all
+    // three inputs (geo.fields, the report data, the notification
+    // recipients) are already known before the transaction starts, so they
+    // run concurrently instead of one round trip at a time.
     await prisma.$transaction(async (tx) => {
-      await tx.serviceCall.update({
-        where: { id: serviceCallId },
-        data: { status: "COMPLETED", completedAt: new Date(), pinAttempts: 0, ...geo.fields },
-      });
-      await tx.serviceReport.upsert({
-        where: { serviceCallId },
-        create: {
-          serviceCallId,
-          completionStatus: data.completionStatus,
-          holdReason: data.holdReason ?? null,
-          newVisitAt: data.newVisitAt ? new Date(data.newVisitAt) : null,
-          remarks: data.remarks,
-        },
-        update: {
-          completionStatus: data.completionStatus,
-          holdReason: data.holdReason ?? null,
-          newVisitAt: data.newVisitAt ? new Date(data.newVisitAt) : null,
-          remarks: data.remarks,
-        },
-      });
-      await tx.notification.createMany({
-        data: [
-          {
-            userId: verified.call.customerId,
-            type: "CALL_STATUS_UPDATE" as const,
-            title: "Job completed",
-            message: "Your technician has marked the job complete.",
-            liveCallId: verified.call.liveCallId,
+      await Promise.all([
+        tx.serviceCall.update({
+          where: { id: serviceCallId },
+          data: { status: "COMPLETED", completedAt: new Date(), pinAttempts: 0, ...geo.fields },
+        }),
+        tx.serviceReport.upsert({
+          where: { serviceCallId },
+          create: {
             serviceCallId,
+            completionStatus: data.completionStatus,
+            holdReason: data.holdReason ?? null,
+            newVisitAt: data.newVisitAt ? new Date(data.newVisitAt) : null,
+            remarks: data.remarks,
           },
-          {
-            userId: verified.call.vendorUserId,
-            type: "CALL_STATUS_UPDATE" as const,
-            title: "Job completed",
-            message: "A technician submitted their completion report.",
-            liveCallId: verified.call.liveCallId,
-            serviceCallId,
+          update: {
+            completionStatus: data.completionStatus,
+            holdReason: data.holdReason ?? null,
+            newVisitAt: data.newVisitAt ? new Date(data.newVisitAt) : null,
+            remarks: data.remarks,
           },
-        ],
-      });
+        }),
+        tx.notification.createMany({
+          data: [
+            {
+              userId: verified.call.customerId,
+              type: "CALL_STATUS_UPDATE" as const,
+              title: "Job completed",
+              message: "Your technician has marked the job complete.",
+              liveCallId: verified.call.liveCallId,
+              serviceCallId,
+            },
+            {
+              userId: verified.call.vendorUserId,
+              type: "CALL_STATUS_UPDATE" as const,
+              title: "Job completed",
+              message: "A technician submitted their completion report.",
+              liveCallId: verified.call.liveCallId,
+              serviceCallId,
+            },
+          ],
+        }),
+      ]);
     });
 
     revalidatePath("/technician/service-calls");

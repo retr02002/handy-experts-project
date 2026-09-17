@@ -18,9 +18,11 @@ import { requireAdmin } from "@/lib/require-admin";
 import { notifyAllAdmins } from "@/actions/notification.actions";
 import { getPackageServiceCategoryMap } from "@/lib/technicianSkills";
 import { computeOrderTotal, computeLeadPrice } from "@/lib/pricing";
+import { isOrderOverdue } from "@/lib/overdue";
 import { resolveCouponDiscount } from "@/lib/coupons";
 import { getCityCode, getAreaCode } from "@/lib/locationCodes";
 import { nextSequence } from "@/lib/sequenceCounter";
+import { formatTicketNumber } from "@/lib/ticketNumber";
 
 export async function requireCustomerId(): Promise<{ userId: string | null; error: string | null }> {
   const session = await getServerSession(authOptions);
@@ -153,7 +155,9 @@ async function sweepExpiredAwaitingPayment(): Promise<void> {
   });
 }
 
-export async function createLiveCallAction(input: CreateLiveCallInput): Promise<ActionResponse<{ liveCallId: string }>> {
+export async function createLiveCallAction(
+  input: CreateLiveCallInput
+): Promise<ActionResponse<{ liveCallId: string; ticketNumber: string }>> {
   const { userId, error } = await requireCustomerId();
   if (!userId) return { success: false, error: error! };
 
@@ -240,7 +244,7 @@ export async function createLiveCallAction(input: CreateLiveCallInput): Promise<
           customerPhone: data.customerPhone,
           siteContactName: data.siteContactName ?? null,
           siteContactPhone: data.siteContactPhone ?? null,
-          customerEmail: data.customerEmail,
+          customerEmail: data.customerEmail ?? "",
           address: data.address,
           city: data.city,
           state: data.state,
@@ -301,7 +305,7 @@ export async function createLiveCallAction(input: CreateLiveCallInput): Promise<
       `${data.customerName} placed an order in ${data.city} — ₹${total}.`,
       liveCall.id
     );
-    return { success: true, data: { liveCallId: liveCall.id } };
+    return { success: true, data: { liveCallId: liveCall.id, ticketNumber: formatTicketNumber(liveCall) } };
   } catch (err) {
     if (err instanceof Error && err.message === "WALLET_BALANCE_CHANGED") {
       return { success: false, error: "Your wallet balance changed — please review your order and try again." };
@@ -339,6 +343,8 @@ function deriveOrderStatus(liveCallStatus: string, serviceCallStatus: string | u
 
 export interface CustomerOrderSummary {
   id: string;
+  ticketNumber: string;
+  serviceCallId: string | null;
   itemSummary: string;
   itemCount: number;
   total: number;
@@ -359,7 +365,7 @@ export async function getMyOrdersAction(): Promise<ActionResponse<CustomerOrderS
     // the expiry sweep if abandoned.
     const rows = await prisma.liveCall.findMany({
       where: { customerId: userId, status: { not: "AWAITING_PAYMENT" } },
-      include: { items: true, serviceCall: { select: { status: true } } },
+      include: { items: true, serviceCall: { select: { id: true, status: true } } },
       orderBy: { createdAt: "desc" },
       take: 100,
     });
@@ -368,6 +374,8 @@ export async function getMyOrdersAction(): Promise<ActionResponse<CustomerOrderS
       success: true,
       data: rows.map((r) => ({
         id: r.id,
+        ticketNumber: formatTicketNumber(r),
+        serviceCallId: r.serviceCall?.id ?? null,
         itemSummary: r.items.map((i) => i.packageName).join(", "),
         itemCount: r.items.reduce((sum, i) => sum + i.quantity, 0),
         total: r.total,
@@ -777,11 +785,14 @@ export interface AdminLiveCall {
   tax: number;
   total: number;
   createdAt: string;
+  scheduledFor: string | null;
   expiresAt: string | null;
   acceptedByVendorName: string | null;
   cancelReason: string | null;
   cancelledAt: string | null;
   items: LiveCallItemDetail[];
+  /** BROADCASTING with nobody accepted within the overdue window — see src/lib/overdue.ts. */
+  isOverdue: boolean;
 }
 
 /** Admin sees every live call, unfiltered by proximity or status. */
@@ -823,11 +834,13 @@ export async function getAllLiveCallsAction(): Promise<ActionResponse<AdminLiveC
         tax: c.tax,
         total: c.total,
         createdAt: c.createdAt.toISOString(),
+        scheduledFor: c.scheduledFor?.toISOString() ?? null,
         expiresAt: c.expiresAt?.toISOString() ?? null,
         acceptedByVendorName: c.acceptedByVendor?.companyName ?? null,
         cancelReason: c.cancelReason,
         cancelledAt: c.cancelledAt?.toISOString() ?? null,
         items: c.items.map((i) => ({ packageName: i.packageName, quantity: i.quantity, unitPrice: i.unitPrice })),
+        isOverdue: c.status === "BROADCASTING" && isOrderOverdue(c.scheduledFor, c.createdAt),
       })),
     };
   } catch (err) {

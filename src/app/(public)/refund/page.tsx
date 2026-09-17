@@ -41,7 +41,7 @@ export default function RefundPolicyPage() {
       content: (
         <>
           <p>
-            To request a refund, please contact our support team at support@Handyzo.com with your booking reference and evidence (e.g., photos) of the issue. We will review your claim and respond within 3-5 business days. Approved refunds will be credited back to your original payment method within 5-10 business days.
+            To request a refund, please contact our support team at support@handyzo.com with your booking reference and evidence (e.g., photos) of the issue. We will review your claim and respond within 3-5 business days. Approved refunds will be credited back to your original payment method within 5-10 business days.
           </p>
         </>
       ),
@@ -69,7 +69,7 @@ export default function RefundPolicyPage() {
       description="Our guidelines for refunds and service satisfaction guarantees."
       lastUpdated="March 1, 2026"
       sections={sections}
-      contactEmail="support@Handyzo.com"
+      contactEmail="support@handyzo.com"
     />
   );
 }

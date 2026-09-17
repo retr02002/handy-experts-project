@@ -102,8 +102,8 @@ export function Footer({ categories = [] }: FooterProps) {
               <ClientIcon icon="ph:envelope-simple" className="w-4 h-4 text-slate-400 dark:text-[#00B4FF]/70" />
               Contact Info
             </h5>
-            <a href="mailto:hello@Handyzo.com" className="text-sm text-slate-600 dark:text-slate-400 hover:text-[#00B4FF] transition-colors font-medium">
-              hello@Handyzo.com
+            <a href="mailto:info@handyzo.com" className="text-sm text-slate-600 dark:text-slate-400 hover:text-[#00B4FF] transition-colors font-medium">
+              info@handyzo.com
             </a>
           </div>
 

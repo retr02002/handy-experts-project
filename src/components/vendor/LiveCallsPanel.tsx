@@ -19,6 +19,7 @@ import dynamic from "next/dynamic";
 import { LiveCallCard } from "./LiveCallCard";
 import { BuyLeadModal } from "./BuyLeadModal";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { OverdueBadge } from "@/components/shared/OverdueBadge";
 
 // maplibre-gl is ~800KB — kept out of the first-load bundle and
 // fetched when the panel actually renders a map.
@@ -221,7 +222,8 @@ export function LiveCallsPanel({ vendorLatitude, vendorLongitude }: LiveCallsPan
                   <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                     {call.address}, {call.city}
                   </p>
-                  <div className="flex items-center gap-2 text-xs">
+                  <div className="flex items-center gap-2 text-xs flex-wrap">
+                    {call.isOverdue && <OverdueBadge />}
                     {call.pendingCount > 0 && (
                       <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold">
                         <ClientIcon icon="ph:hourglass-medium" className="w-3.5 h-3.5" />
@@ -233,16 +235,25 @@ export function LiveCallsPanel({ vendorLatitude, vendorLongitude }: LiveCallsPan
                     )}
                     {call.expiredCount > 0 && <span className="text-slate-400">{call.expiredCount} expired</span>}
                   </div>
-                  {allNonResponsive && (
-                    <button
-                      type="button"
-                      onClick={() => handleRebroadcast(call.liveCallId)}
-                      disabled={rebroadcastingId === call.liveCallId}
-                      className="mt-1 w-full h-9 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer"
+                  <div className="flex items-center gap-2 mt-1">
+                    {allNonResponsive && (
+                      <button
+                        type="button"
+                        onClick={() => handleRebroadcast(call.liveCallId)}
+                        disabled={rebroadcastingId === call.liveCallId}
+                        className="flex-1 h-9 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        {rebroadcastingId === call.liveCallId ? "Notifying..." : "Notify Again"}
+                      </button>
+                    )}
+                    <Link
+                      href={`/vendor/service-calls?assign=${call.serviceCallId}`}
+                      className="flex-1 h-9 rounded-lg bg-[#00B4FF] hover:bg-[#0096fa] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
                     >
-                      {rebroadcastingId === call.liveCallId ? "Notifying..." : "Notify Again"}
-                    </button>
-                  )}
+                      <ClientIcon icon="ph:arrow-bend-up-right-bold" className="w-3.5 h-3.5" />
+                      Assign Technician
+                    </Link>
+                  </div>
                 </div>
               );
             })}

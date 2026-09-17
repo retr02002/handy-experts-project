@@ -12,13 +12,14 @@ import {
   type AdminCreateLiveCallInput,
 } from "@/lib/validations/adminlivecall.schema";
 import { resolveCoordinates, ensureServicePins } from "@/actions/livecall.actions";
-import { findEligibleTechnicians } from "@/actions/servicecall.actions";
+import { finalizeVendorAcceptance } from "@/actions/servicecall.actions";
 import { computeOrderTotal } from "@/lib/pricing";
 import { generatePinPair } from "@/lib/pins";
 import { notifyAllAdmins, notifyUser } from "@/actions/notification.actions";
 import { parseUploadedWorkbook } from "@/lib/adminLiveCallExcel";
 import { getCityCode } from "@/lib/locationCodes";
 import { nextSequence } from "@/lib/sequenceCounter";
+import { getPackageServiceCategoryMap } from "@/lib/technicianSkills";
 
 /** Same admin-only gate as requireAdmin(), but also hands back the admin's
  *  own profile name — whatever they've set it to, the same field shown
@@ -167,27 +168,14 @@ async function createOneAdminLiveCall(
       acceptedAt: new Date(),
     },
   });
-  const serviceCall = await prisma.serviceCall.create({
-    data: { liveCallId: liveCall.id, vendorId: assignedVendor.id, customerId, status: "UNASSIGNED" },
+  const { serviceCallId } = await finalizeVendorAcceptance({
+    liveCallId: liveCall.id,
+    vendorId: assignedVendor.id,
+    customerId,
+    address: data.address,
+    city: data.city,
+    total,
   });
-
-  const eligible = await findEligibleTechnicians(assignedVendor.id, liveCall.id);
-  if (eligible.length > 0) {
-    await prisma.serviceCallOffer.createMany({
-      data: eligible.map((t) => ({ liveCallId: liveCall.id, vendorId: assignedVendor.id, technicianId: t.id })),
-      skipDuplicates: true,
-    });
-    await prisma.notification.createMany({
-      data: eligible.map((t) => ({
-        userId: t.userId,
-        type: "JOB_OFFER" as const,
-        title: "New job offer",
-        message: `A job is available at ${data.address}, ${data.city} — ₹${total}.`,
-        liveCallId: liveCall.id,
-        serviceCallId: serviceCall.id,
-      })),
-    });
-  }
 
   notifyUser(
     assignedVendor.userId,
@@ -195,10 +183,10 @@ async function createOneAdminLiveCall(
     "New job assigned to you",
     `${adminName} assigned you a job at ${data.address}, ${data.city} — ₹${total}.`,
     liveCall.id,
-    serviceCall.id
+    serviceCallId
   );
 
-  return { ok: true, data: { liveCallId: liveCall.id, serviceCallId: serviceCall.id } };
+  return { ok: true, data: { liveCallId: liveCall.id, serviceCallId } };
 }
 
 export async function adminCreateLiveCallAction(input: unknown): Promise<ActionResponse<CoreResult>> {
@@ -494,6 +482,121 @@ export async function getVendorsForAssignmentAction(): Promise<ActionResponse<Ad
   } catch (err) {
     console.error("Get vendors for assignment error:", err);
     return { success: false, error: "Failed to load vendors" };
+  }
+}
+
+export interface CategoryMatchedVendorOption extends AdminOrderVendorOption {
+  isCategoryMatch: boolean;
+}
+
+/**
+ * Same vendor list as getVendorsForAssignmentAction, but with vendors whose
+ * VendorCategory covers at least one of this call's item categories flagged
+ * and sorted first — the same category-gate logic
+ * getNearbyLiveCallsForVendorAction already applies to decide which vendors
+ * see a lead, reused here to *suggest* rather than filter, since an admin
+ * override should never be blocked by a data-entry gap in category mapping.
+ */
+export async function getCategoryMatchedVendorsForLiveCallAction(
+  liveCallId: string
+): Promise<ActionResponse<CategoryMatchedVendorOption[]>> {
+  const isAdmin = await requireAdmin();
+  if (!isAdmin) return { success: false, error: "Not authorized" };
+
+  try {
+    const items = await prisma.liveCallItem.findMany({ where: { liveCallId }, select: { packageId: true } });
+    const packageIds = items.map((i) => i.packageId).filter((id): id is string => !!id);
+    const packageCategoryMap = await getPackageServiceCategoryMap(packageIds);
+    const callCategoryIds = new Set(
+      [...packageCategoryMap.values()].map((v) => v.categoryId).filter((id): id is string => !!id)
+    );
+
+    const [vendors, categoryLinks] = await Promise.all([
+      prisma.vendorProfile.findMany({
+        select: { id: true, companyName: true, isActive: true },
+        orderBy: { companyName: "asc" },
+      }),
+      prisma.vendorCategory.findMany({ select: { vendorId: true, categoryId: true } }),
+    ]);
+
+    const vendorCategoryMap = new Map<string, Set<string>>();
+    for (const link of categoryLinks) {
+      if (!vendorCategoryMap.has(link.vendorId)) vendorCategoryMap.set(link.vendorId, new Set());
+      vendorCategoryMap.get(link.vendorId)!.add(link.categoryId);
+    }
+
+    const withMatch = vendors.map((v) => ({
+      ...v,
+      isCategoryMatch: [...(vendorCategoryMap.get(v.id) ?? [])].some((c) => callCategoryIds.has(c)),
+    }));
+    withMatch.sort((a, b) => Number(b.isCategoryMatch) - Number(a.isCategoryMatch));
+
+    return { success: true, data: withMatch };
+  } catch (err) {
+    console.error("Get category-matched vendors error:", err);
+    return { success: false, error: "Failed to load vendors" };
+  }
+}
+
+/**
+ * Admin force-assigns a still-BROADCASTING LiveCall directly to a vendor,
+ * bypassing the normal buy-a-lead flow entirely — same "admin override is
+ * free" precedent as createOneAdminLiveCall's assignVendorId path (no
+ * wallet debit), just applied to a call that's already out in the wild
+ * rather than one being created fresh. Mainly for a lead that's gone
+ * overdue with no vendor picking it up, though not hard-gated on that —
+ * same reasoning as reassignServiceCallAction already being available to
+ * admins at any time, not just once something's stuck.
+ */
+export async function adminAssignLiveCallToVendorAction(
+  liveCallId: string,
+  vendorId: string
+): Promise<ActionResponse<{ serviceCallId: string }>> {
+  const adminAuth = await requireAdminWithName();
+  if ("error" in adminAuth) return { success: false, error: adminAuth.error };
+
+  try {
+    const vendor = await prisma.vendorProfile.findUnique({
+      where: { id: vendorId },
+      select: { id: true, userId: true, companyName: true, isActive: true },
+    });
+    if (!vendor) return { success: false, error: "Vendor not found" };
+    if (!vendor.isActive) return { success: false, error: `${vendor.companyName} is deactivated and can't be assigned new jobs` };
+
+    const liveCall = await prisma.liveCall.findUnique({ where: { id: liveCallId } });
+    if (!liveCall) return { success: false, error: "Live call not found" };
+
+    const claimed = await prisma.liveCall.updateMany({
+      where: { id: liveCallId, status: "BROADCASTING" },
+      data: { status: "CONVERTED", acceptedByVendorId: vendorId, acceptedAt: new Date() },
+    });
+    if (claimed.count === 0) {
+      return { success: false, error: "This lead was already accepted or is no longer available." };
+    }
+
+    const { serviceCallId } = await finalizeVendorAcceptance({
+      liveCallId,
+      vendorId,
+      customerId: liveCall.customerId,
+      address: liveCall.address,
+      city: liveCall.city,
+      total: liveCall.total,
+    });
+
+    notifyUser(
+      vendor.userId,
+      "CALL_ASSIGNED",
+      "New job assigned to you",
+      `${adminAuth.adminName} assigned you a job at ${liveCall.address}, ${liveCall.city} — ₹${liveCall.total}.`,
+      liveCallId,
+      serviceCallId
+    );
+
+    revalidatePath("/admin/live-calls");
+    return { success: true, data: { serviceCallId } };
+  } catch (err) {
+    console.error("Admin assign live call to vendor error:", err);
+    return { success: false, error: "Failed to assign this lead" };
   }
 }
 

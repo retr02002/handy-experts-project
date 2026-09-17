@@ -91,7 +91,7 @@ export function JobPinDialog({ call, gate, onClose, onDone }: Props) {
     <div className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center sm:p-6 bg-slate-900/70 backdrop-blur-sm">
       <form
         onSubmit={handleSubmit}
-        className="relative bg-white dark:bg-[#0F172A] w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92vh] overflow-hidden"
+        className="relative bg-white dark:bg-[#0F172A] w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92dvh] overflow-hidden"
       >
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 shrink-0 flex items-center justify-between gap-3">
           <div className="w-10 h-1 bg-slate-200 dark:bg-slate-700 rounded-full absolute left-1/2 -translate-x-1/2 top-2 sm:hidden" />

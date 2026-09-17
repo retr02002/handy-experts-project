@@ -14,6 +14,7 @@ import { haversineKm } from "@/lib/geo";
 import { canStartTravel, formatScheduledFor, TRAVEL_WINDOW_MINUTES } from "@/lib/jobSchedule";
 import { formatTicketNumber } from "@/lib/ticketNumber";
 import { MASKED_CUSTOMER_LABEL } from "@/lib/constants";
+import { isOrderOverdue } from "@/lib/overdue";
 import {
   getLiveCallServiceIds,
   getPackageServiceCategoryMap,
@@ -74,6 +75,48 @@ export async function findEligibleTechnicians(
       return !!offered && serviceIds.some((id) => offered.has(id));
     })
     .map((t) => ({ id: t.id, userId: t.userId }));
+}
+
+/**
+ * Shared tail of "a vendor now owns this lead": create the UNASSIGNED
+ * ServiceCall and ping every eligible on-duty technician. Used identically
+ * whether the vendor bought the lead themselves (buyLiveCallAction), an
+ * admin assigned it at order-creation time (createOneAdminLiveCall), or an
+ * admin force-assigns an already-broadcasting call directly to a vendor
+ * (adminAssignLiveCallToVendorAction) — the three previously duplicated this
+ * whole block independently.
+ */
+export async function finalizeVendorAcceptance(params: {
+  liveCallId: string;
+  vendorId: string;
+  customerId: string;
+  address: string;
+  city: string;
+  total: number;
+}): Promise<{ serviceCallId: string; offerCount: number }> {
+  const serviceCall = await prisma.serviceCall.create({
+    data: { liveCallId: params.liveCallId, vendorId: params.vendorId, customerId: params.customerId, status: "UNASSIGNED" },
+  });
+
+  const eligible = await findEligibleTechnicians(params.vendorId, params.liveCallId);
+  if (eligible.length > 0) {
+    await prisma.serviceCallOffer.createMany({
+      data: eligible.map((t) => ({ liveCallId: params.liveCallId, vendorId: params.vendorId, technicianId: t.id })),
+      skipDuplicates: true,
+    });
+    await prisma.notification.createMany({
+      data: eligible.map((t) => ({
+        userId: t.userId,
+        type: "JOB_OFFER" as const,
+        title: "New job offer",
+        message: `A job is available at ${params.address}, ${params.city} — ₹${params.total}.`,
+        liveCallId: params.liveCallId,
+        serviceCallId: serviceCall.id,
+      })),
+    });
+  }
+
+  return { serviceCallId: serviceCall.id, offerCount: eligible.length };
 }
 
 async function requireVendorId(): Promise<{ vendorId: string | null; error: string | null }> {
@@ -220,27 +263,14 @@ export async function buyLiveCallAction(
       throw txErr;
     }
 
-    const serviceCall = await prisma.serviceCall.create({
-      data: { liveCallId, vendorId, customerId: liveCall.customerId, status: "UNASSIGNED" },
+    const { serviceCallId, offerCount } = await finalizeVendorAcceptance({
+      liveCallId,
+      vendorId,
+      customerId: liveCall.customerId,
+      address: liveCall.address,
+      city: liveCall.city,
+      total: liveCall.total,
     });
-
-    const eligible = await findEligibleTechnicians(vendorId, liveCallId);
-    if (eligible.length > 0) {
-      await prisma.serviceCallOffer.createMany({
-        data: eligible.map((t) => ({ liveCallId, vendorId, technicianId: t.id })),
-        skipDuplicates: true,
-      });
-      await prisma.notification.createMany({
-        data: eligible.map((t) => ({
-          userId: t.userId,
-          type: "JOB_OFFER" as const,
-          title: "New job offer",
-          message: `A job is available at ${liveCall.address}, ${liveCall.city} — ₹${liveCall.total}.`,
-          liveCallId,
-          serviceCallId: serviceCall.id,
-        })),
-      });
-    }
 
     revalidatePath("/vendor/live-calls");
     revalidatePath("/vendor/service-calls");
@@ -249,17 +279,17 @@ export async function buyLiveCallAction(
       "CALL_ACCEPTED",
       "Live call bought",
       `${vendorProfile.companyName} bought a lead (₹${leadPrice}) at ${liveCall.address}, ${liveCall.city}${
-        eligible.length > 0 ? ` and notified ${eligible.length} technician(s).` : " — no technician on duty in range yet."
+        offerCount > 0 ? ` and notified ${offerCount} technician(s).` : " — no technician on duty in range yet."
       }`,
       liveCallId,
-      serviceCall.id
+      serviceCallId
     );
 
     return {
       success: true,
       data: {
-        serviceCallId: serviceCall.id,
-        offerCount: eligible.length,
+        serviceCallId,
+        offerCount,
         liveCall: {
           customerName: liveCall.customerName,
           customerPhone: liveCall.customerPhone,
@@ -344,6 +374,7 @@ export interface AwaitingJobSummary {
   pendingCount: number;
   declinedCount: number;
   expiredCount: number;
+  isOverdue: boolean;
 }
 
 /** The vendor's accepted-but-unclaimed jobs — the "awaiting technician" list. */
@@ -372,6 +403,7 @@ export async function getMyAwaitingCallsForVendorAction(): Promise<ActionRespons
         pendingCount: c.liveCall.offers.filter((o) => o.status === "PENDING").length,
         declinedCount: c.liveCall.offers.filter((o) => o.status === "DECLINED").length,
         expiredCount: c.liveCall.offers.filter((o) => o.status === "EXPIRED").length,
+        isOverdue: isOrderOverdue(c.liveCall.scheduledFor, c.liveCall.acceptedAt ?? c.createdAt),
       })),
     };
   } catch (err) {

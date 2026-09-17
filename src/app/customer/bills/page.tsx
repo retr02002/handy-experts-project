@@ -56,29 +56,62 @@ export default async function CustomerBillsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {orders.map((order) => (
-                  <tr key={order.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="p-4 text-sm font-medium text-slate-900 dark:text-white whitespace-nowrap">
-                      INV-{order.id.slice(-6).toUpperCase()}
-                    </td>
-                    <td className="p-4 text-sm text-slate-600 dark:text-slate-300 max-w-[220px] truncate">{order.itemSummary}</td>
-                    <td className="p-4 text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDate(order.createdAt)}</td>
-                    <td className="p-4 text-sm font-bold text-slate-900 dark:text-white whitespace-nowrap">₹{order.total.toFixed(2)}</td>
-                    <td className="p-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${STATUS_STYLES[order.status]}`}>
-                        {jobStatusLabel(order.status)}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right">
-                      <Link
-                        href={`/customer/orders/${order.id}`}
-                        className="inline-flex p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors bg-slate-50 dark:bg-slate-800 rounded-lg"
-                      >
-                        <ClientIcon icon="ph:arrow-square-out" className="w-4 h-4" />
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
+                {orders.map((order) => {
+                  const isCompleted = order.status === "COMPLETED";
+                  return (
+                    <tr key={order.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="p-4 text-sm font-medium text-slate-900 dark:text-white whitespace-nowrap font-mono">
+                        {order.ticketNumber}
+                      </td>
+                      <td className="p-4 text-sm text-slate-600 dark:text-slate-300 max-w-[220px] truncate">{order.itemSummary}</td>
+                      <td className="p-4 text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDate(order.createdAt)}</td>
+                      <td className="p-4 text-sm font-bold text-slate-900 dark:text-white whitespace-nowrap">₹{order.total.toFixed(2)}</td>
+                      <td className="p-4">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${STATUS_STYLES[order.status]}`}>
+                          {jobStatusLabel(order.status)}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {isCompleted && order.serviceCallId ? (
+                            <>
+                              <a
+                                href={`/api/service-calls/${order.serviceCallId}/document?audience=customer&disposition=inline`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="View invoice"
+                                className="inline-flex p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors bg-slate-50 dark:bg-slate-800 rounded-lg"
+                              >
+                                <ClientIcon icon="ph:eye-bold" className="w-4 h-4" />
+                              </a>
+                              <a
+                                href={`/api/service-calls/${order.serviceCallId}/document?audience=customer`}
+                                title="Download invoice"
+                                className="inline-flex p-2 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors bg-slate-50 dark:bg-slate-800 rounded-lg"
+                              >
+                                <ClientIcon icon="ph:download-simple-bold" className="w-4 h-4" />
+                              </a>
+                            </>
+                          ) : (
+                            <span
+                              title="Available once the job is completed"
+                              className="inline-flex p-2 text-slate-300 dark:text-slate-700 bg-slate-50 dark:bg-slate-800 rounded-lg"
+                            >
+                              <ClientIcon icon="ph:download-simple-bold" className="w-4 h-4" />
+                            </span>
+                          )}
+                          <Link
+                            href={`/customer/orders/${order.id}`}
+                            title="View order"
+                            className="inline-flex p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors bg-slate-50 dark:bg-slate-800 rounded-lg"
+                          >
+                            <ClientIcon icon="ph:arrow-square-out" className="w-4 h-4" />
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

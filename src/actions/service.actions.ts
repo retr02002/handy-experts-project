@@ -1,10 +1,29 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { serviceSchema, ServiceInput } from "@/lib/validations/service.schema";
 import type { ActionResponse } from "@/actions/auth.actions";
 import { requireAdmin } from "@/lib/require-admin";
+
+/**
+ * revalidatePath refreshes the RSC payload for these specific routes, but
+ * getAllServices/getCategoriesWithServices (services-data.ts) are
+ * unstable_cache-wrapped — that underlying cached query only invalidates via
+ * these tags, same reasoning as category.actions.ts's
+ * revalidateCategorySurfaces. getCategoriesWithServices embeds service data
+ * too, so a service edit has to bust both tags, not just "services".
+ */
+function revalidateServiceSurfaces(slugs: string[]) {
+  revalidateTag("services", { expire: 300 });
+  revalidateTag("categories", { expire: 300 });
+  revalidatePath("/admin/services");
+  // Per-category service counts on the categories manager go stale otherwise.
+  revalidatePath("/admin/categories");
+  revalidatePath("/services");
+  revalidatePath("/");
+  for (const slug of slugs) revalidatePath(`/services/${slug}`);
+}
 
 /**
  * P2003 = foreign key constraint failure. Happens when an admin submits a
@@ -37,12 +56,7 @@ export async function createService(input: ServiceInput): Promise<ActionResponse
       data: { ...rest, benefits, howItWorks, faqs },
     });
 
-    revalidatePath("/admin/services");
-    // Per-category service counts on the categories manager go stale otherwise.
-    revalidatePath("/admin/categories");
-    revalidatePath("/services");
-    revalidatePath("/");
-    revalidatePath(`/services/${service.slug}`);
+    revalidateServiceSurfaces([service.slug]);
     return { success: true, data: { id: service.id } };
   } catch (error) {
     console.error("Create service error:", error);
@@ -78,15 +92,8 @@ export async function updateService(id: string, input: ServiceInput): Promise<Ac
       data: { ...rest, benefits, howItWorks, faqs },
     });
 
-    revalidatePath("/admin/services");
-    // Per-category service counts on the categories manager go stale otherwise.
-    revalidatePath("/admin/categories");
-    revalidatePath("/services");
-    revalidatePath("/");
-    revalidatePath(`/services/${rest.slug}`);
-    if (current && current.slug !== rest.slug) {
-      revalidatePath(`/services/${current.slug}`);
-    }
+    const slugs = current && current.slug !== rest.slug ? [rest.slug, current.slug] : [rest.slug];
+    revalidateServiceSurfaces(slugs);
     return { success: true };
   } catch (error) {
     console.error("Update service error:", error);
@@ -104,12 +111,7 @@ export async function deleteService(id: string): Promise<ActionResponse> {
 
   try {
     const deleted = await prisma.service.delete({ where: { id } });
-    revalidatePath("/admin/services");
-    // Per-category service counts on the categories manager go stale otherwise.
-    revalidatePath("/admin/categories");
-    revalidatePath("/services");
-    revalidatePath("/");
-    revalidatePath(`/services/${deleted.slug}`);
+    revalidateServiceSurfaces([deleted.slug]);
     return { success: true };
   } catch (error) {
     console.error("Delete service error:", error);

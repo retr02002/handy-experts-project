@@ -114,7 +114,7 @@ export function DetailsStep({ details, onChange }: Props) {
       </div>
 
       <Field
-        label="Email"
+        label="Email (optional)"
         icon="ph:envelope-simple"
         value={details.email}
         onChange={(v) => setField("email", v)}

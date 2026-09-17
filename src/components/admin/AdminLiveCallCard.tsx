@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import type { AdminLiveCall } from "@/actions/livecall.actions";
+import { OverdueBadge } from "@/components/shared/OverdueBadge";
+import { AssignVendorModal } from "@/components/admin/live-calls/AssignVendorModal";
 
 const STATUS_COLORS: Record<string, string> = {
   BROADCASTING: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
@@ -36,14 +38,18 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-export function AdminLiveCallCard({ call }: { call: AdminLiveCall }) {
+export function AdminLiveCallCard({ call, onChanged }: { call: AdminLiveCall; onChanged: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-2 p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
       <div className="flex items-center justify-between gap-2">
-        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[call.status] ?? ""}`}>{call.status}</span>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[call.status] ?? ""}`}>{call.status}</span>
+          {call.isOverdue && <OverdueBadge />}
+        </div>
         <div className="flex items-center gap-2">
           <span className="text-sm font-bold text-slate-900 dark:text-white">₹{call.total}</span>
           <span className="text-xs text-slate-400">{timeAgo(call.createdAt)}</span>
@@ -54,6 +60,16 @@ export function AdminLiveCallCard({ call }: { call: AdminLiveCall }) {
       <p className="text-xs text-slate-500">{call.city}, {call.pincode}</p>
       {call.acceptedByVendorName && (
         <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Accepted by {call.acceptedByVendorName}</p>
+      )}
+      {call.status === "BROADCASTING" && (
+        <button
+          type="button"
+          onClick={() => setAssignOpen(true)}
+          className="mt-1 w-full h-9 rounded-lg bg-[#00B4FF] hover:bg-[#0096fa] text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+        >
+          <ClientIcon icon="ph:arrow-bend-up-right-bold" className="w-3.5 h-3.5" />
+          Assign to Vendor
+        </button>
       )}
       {call.status === "CANCELLED" && call.cancelReason && (
         <p className="text-xs text-red-600 dark:text-red-400">Cancelled: {call.cancelReason}</p>
@@ -141,6 +157,10 @@ export function AdminLiveCallCard({ call }: { call: AdminLiveCall }) {
             </div>
           </div>
         </div>
+      )}
+
+      {assignOpen && (
+        <AssignVendorModal liveCallId={call.id} onClose={() => setAssignOpen(false)} onAssigned={onChanged} />
       )}
     </div>
   );

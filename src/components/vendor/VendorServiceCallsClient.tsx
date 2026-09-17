@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { getMyServiceCallsForVendorAction, type ServiceCallSummary } from "@/actions/servicecall.actions";
 import { usePolling } from "@/hooks/usePolling";
 import { ServiceCallsTable } from "./ServiceCallsTable";
@@ -11,9 +12,22 @@ import { ViewToggle, type ViewMode } from "@/components/ui/ViewToggle";
 const CALLS_POLL_INTERVAL_MS = 15000;
 
 export function VendorServiceCallsClient({ initialCalls }: { initialCalls: ServiceCallSummary[] }) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  // Deep link from the "Awaiting Technician" list (LiveCallsPanel) — lands
+  // straight in the existing assign-a-technician flow instead of making the
+  // vendor find the call and click "Manage" themselves. Read once on mount,
+  // from the server-provided initialCalls, so opening the modal doesn't need
+  // a setState-in-effect round trip.
+  const assignId = searchParams.get("assign");
+
   const [calls, setCalls] = useState(initialCalls);
   const [view, setView] = useState<ViewMode>("cards");
-  const [detailCall, setDetailCall] = useState<ServiceCallSummary | null>(null);
+  const [detailCall, setDetailCall] = useState<ServiceCallSummary | null>(
+    () => initialCalls.find((c) => c.id === assignId) ?? null
+  );
+  const [autoOpenAssign, setAutoOpenAssign] = useState(() => initialCalls.some((c) => c.id === assignId));
 
   const load = useCallback(async () => {
     const res = await getMyServiceCallsForVendorAction();
@@ -21,6 +35,10 @@ export function VendorServiceCallsClient({ initialCalls }: { initialCalls: Servi
   }, []);
 
   usePolling(load, CALLS_POLL_INTERVAL_MS);
+
+  useEffect(() => {
+    if (assignId) router.replace(pathname);
+  }, [assignId, router, pathname]);
 
   const unassignedCount = calls.filter((c) => c.status === "UNASSIGNED").length;
 
@@ -49,7 +67,15 @@ export function VendorServiceCallsClient({ initialCalls }: { initialCalls: Servi
       )}
 
       {detailCall && (
-        <ServiceCallDetailModal call={detailCall} onClose={() => setDetailCall(null)} onChanged={load} />
+        <ServiceCallDetailModal
+          call={detailCall}
+          onClose={() => {
+            setDetailCall(null);
+            setAutoOpenAssign(false);
+          }}
+          onChanged={load}
+          autoOpenAssign={autoOpenAssign}
+        />
       )}
     </div>
   );

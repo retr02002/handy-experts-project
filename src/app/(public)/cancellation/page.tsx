@@ -54,7 +54,7 @@ export default function CancellationPolicyPage() {
       description="Rules for cancelling or rescheduling your Handyzo bookings."
       lastUpdated="March 5, 2026"
       sections={sections}
-      contactEmail="support@Handyzo.com"
+      contactEmail="support@handyzo.com"
     />
   );
 }

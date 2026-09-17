@@ -7,7 +7,6 @@ import { ClientIcon } from "./ClientIcon";
 export async function PopularServices() {
   const allServices = await getAllServices();
   const services = allServices.filter(s => s.isPopular);
-  console.log("POPULAR SERVICES FETCHED:", services.length);
 
   if (services.length === 0) return null;
 

@@ -4,9 +4,17 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
-export function OrderSuccess({ orderId, paymentMethod }: { orderId: string; paymentMethod: "ONLINE" | "COD" | "WALLET" }) {
+export function OrderSuccess({
+  orderId,
+  ticketNumber,
+  paymentMethod,
+}: {
+  orderId: string;
+  ticketNumber: string;
+  paymentMethod: "ONLINE" | "COD" | "WALLET";
+}) {
   const [copied, setCopied] = useState(false);
-  const displayId = orderId.toUpperCase();
+  const displayId = ticketNumber || orderId.toUpperCase();
   const subtext =
     paymentMethod === "WALLET"
       ? "Paid from your wallet. We're finding you a professional now."

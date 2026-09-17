@@ -77,7 +77,7 @@ export default function TermsOfServicePage() {
       description="The rules and guidelines for using the Handyzo platform."
       lastUpdated="February 10, 2026"
       sections={sections}
-      contactEmail="support@Handyzo.com"
+      contactEmail="support@handyzo.com"
     />
   );
 }

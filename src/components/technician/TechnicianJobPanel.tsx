@@ -211,7 +211,7 @@ export function TechnicianJobPanel({ call, onClose, onChanged, onGatedStep }: Pr
           onClick={onClose}
         >
       <div
-        className="relative bg-white dark:bg-[#0F172A] w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92vh] overflow-hidden"
+        className="relative bg-white dark:bg-[#0F172A] w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92dvh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

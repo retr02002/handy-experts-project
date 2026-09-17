@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import { ContactPageForm } from "@/components/ui/ContactPageForm";
 import { ContactInfo } from "@/components/ui/ContactInfo";
 
@@ -29,11 +30,12 @@ export function ContactPageSection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-center relative z-10">
           {/* Left Side: Image (Hidden on mobile) */}
           <div className="hidden lg:block w-full h-full min-h-[450px] lg:min-h-[500px] relative rounded-[32px] overflow-hidden shadow-2xl">
-            {/* We use an img tag with object-cover to act as the side hero image */}
-            <img 
-              src="https://images.unsplash.com/photo-1590402494587-44b71d7772f6?q=80&w=2070&auto=format&fit=crop" 
-              alt="Contact Support" 
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+            <Image
+              src="https://images.unsplash.com/photo-1590402494587-44b71d7772f6?q=80&w=2070&auto=format&fit=crop"
+              alt="Contact Support"
+              fill
+              sizes="(min-width: 1024px) 50vw, 0px"
+              className="object-cover transition-transform duration-700 hover:scale-105"
             />
             {/* Gradient overlay for better text readability */}
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />

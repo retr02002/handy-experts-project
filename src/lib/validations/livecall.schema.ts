@@ -6,7 +6,15 @@ import { z } from "zod";
 // each action sets paymentMode/paymentStatus itself rather than trusting it.
 export const checkoutDetailsSchema = z.object({
   customerName: z.string().trim().min(2, "Enter your full name").max(100),
-  customerEmail: z.string().trim().email("Enter a valid email"),
+  // Optional — an empty string from the client is treated as "not provided"
+  // rather than validated as an email; a non-empty value still has to be a
+  // real email address.
+  customerEmail: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v ? v : undefined))
+    .pipe(z.string().email("Enter a valid email").optional()),
   customerPhone: z.string().trim().regex(/^\d{10}$/, "Enter a valid 10-digit mobile number"),
   siteContactName: z.string().trim().max(100).optional().transform((v) => (v ? v : undefined)),
   // .optional() must be last — the client sends `undefined` (not "") when

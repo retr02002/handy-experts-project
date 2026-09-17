@@ -43,6 +43,7 @@ export function CartContainer() {
   const [slotDetails, setSlotDetails] = useState<SlotDetails>(EMPTY_SLOT_DETAILS);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails>(EMPTY_PAYMENT_DETAILS);
   const [orderId, setOrderId] = useState("");
+  const [ticketNumber, setTicketNumber] = useState("");
   const [finalPaymentMethod, setFinalPaymentMethod] = useState<"ONLINE" | "COD" | "WALLET">("COD");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
@@ -116,6 +117,7 @@ export function CartContainer() {
       return;
     }
     setOrderId(res.data.liveCallId);
+    setTicketNumber(res.data.ticketNumber);
     setFinalPaymentMethod(amountDue === 0 ? "WALLET" : "COD");
     clearCart();
     setCheckoutStep("success");
@@ -133,11 +135,12 @@ export function CartContainer() {
       setIsPlacingOrder(false);
       return;
     }
-    const { liveCallId, fullyCoveredByWallet, razorpayOrderId, amountPaise, currency, keyId } = res.data;
+    const { liveCallId, ticketNumber: newTicketNumber, fullyCoveredByWallet, razorpayOrderId, amountPaise, currency, keyId } = res.data;
 
     if (fullyCoveredByWallet || !razorpayOrderId || !keyId) {
       // Wallet balance covered the whole order — no Razorpay step needed.
       setOrderId(liveCallId);
+      setTicketNumber(newTicketNumber);
       setFinalPaymentMethod("WALLET");
       clearCart();
       setCheckoutStep("success");
@@ -171,7 +174,13 @@ export function CartContainer() {
             setIsPlacingOrder(false);
             return;
           }
+          if (!verifyRes.data) {
+            toast.error("We couldn't confirm your payment. Please contact support.");
+            setIsPlacingOrder(false);
+            return;
+          }
           setOrderId(liveCallId);
+          setTicketNumber(verifyRes.data.ticketNumber);
           setFinalPaymentMethod("ONLINE");
           clearCart();
           setCheckoutStep("success");
@@ -219,7 +228,7 @@ export function CartContainer() {
   };
 
   if (checkoutStep === "success") {
-    return <OrderSuccess orderId={orderId} paymentMethod={finalPaymentMethod} />;
+    return <OrderSuccess orderId={orderId} ticketNumber={ticketNumber} paymentMethod={finalPaymentMethod} />;
   }
 
   const displayItems = activeTab === "active" ? items : savedItems;
