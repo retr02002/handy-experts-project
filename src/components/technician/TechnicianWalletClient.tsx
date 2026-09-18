@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
 import { ClientIcon } from "@/components/ui/ClientIcon";
-import { createWalletTopupOrderAction, verifyWalletTopupAction, type WalletSummary } from "@/actions/wallet.actions";
+import { createTechnicianWalletTopupOrderAction, verifyTechnicianWalletTopupAction, type TechnicianWalletSummary } from "@/actions/technicianWallet.actions";
 import { openRazorpayCheckout, type RazorpaySuccessResponse } from "@/lib/loadRazorpayCheckout";
 
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000];
@@ -14,14 +14,15 @@ function formatDateTime(iso: string): string {
 
 const TRANSACTION_LABELS: Record<string, string> = {
   DEPOSIT: "Added money",
-  DEBIT: "Bought a call",
+  DEBIT: "Accepted a call",
+  REFUND: "Refund / Deduction",
 };
 
 function leadPriceLabel(type: string, value: number): string {
   return type === "PERCENTAGE" ? `${value}% of order value` : `₹${value} flat`;
 }
 
-export function VendorWalletClient({ initialWallet }: { initialWallet: WalletSummary }) {
+export function TechnicianWalletClient({ initialWallet }: { initialWallet: TechnicianWalletSummary }) {
   const [wallet, setWallet] = useState(initialWallet);
   const [amount, setAmount] = useState<number | "">(500);
   const [customAmount, setCustomAmount] = useState("");
@@ -36,7 +37,7 @@ export function VendorWalletClient({ initialWallet }: { initialWallet: WalletSum
     }
     setIsProcessing(true);
     try {
-      const res = await createWalletTopupOrderAction(chosenAmount);
+      const res = await createTechnicianWalletTopupOrderAction(chosenAmount);
       if (!res.success || !res.data) {
         toast.error((res.success ? undefined : res.error) || "Couldn't start the top-up. Please try again.");
         setIsProcessing(false);
@@ -53,7 +54,7 @@ export function VendorWalletClient({ initialWallet }: { initialWallet: WalletSum
         description: "Wallet top-up",
         theme: { color: "#00B4FF" },
         handler: async (response: RazorpaySuccessResponse) => {
-          const verifyRes = await verifyWalletTopupAction({
+          const verifyRes = await verifyTechnicianWalletTopupAction({
             razorpayOrderId: response.razorpay_order_id,
             razorpayPaymentId: response.razorpay_payment_id,
             razorpaySignature: response.razorpay_signature,
@@ -92,11 +93,11 @@ export function VendorWalletClient({ initialWallet }: { initialWallet: WalletSum
   };
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto">
+    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto pb-10">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Wallet</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Add money to buy live calls. Deposit only — funds can&apos;t be withdrawn.
+          Add money to accept live calls. Deposit only — funds can&apos;t be withdrawn.
         </p>
       </div>
 
@@ -109,7 +110,7 @@ export function VendorWalletClient({ initialWallet }: { initialWallet: WalletSum
         </div>
         <h2 className="relative z-10 text-4xl font-black">₹{wallet.balance.toFixed(0)}</h2>
         <p className="relative z-10 text-xs text-blue-100 mt-2">
-          Your calls cost {leadPriceLabel(wallet.leadPricingType, wallet.leadPricingValue)}
+          Your calls cost {leadPriceLabel(wallet.leadFeeType, wallet.leadFeeAmount)}
         </p>
       </div>
 

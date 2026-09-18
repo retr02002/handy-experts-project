@@ -82,6 +82,7 @@ async function verifyJobPin(
     },
   });
   if (!call) return { ok: false, error: "Job not found" };
+  if (!call.vendor) return { ok: false, error: "Job has no associated vendor." };
   if (call.technicianId !== technicianId) return { ok: false, error: "This job isn't assigned to you." };
   if (call.status !== expectedStatus) {
     return {
@@ -126,7 +127,7 @@ async function verifyJobPin(
     call: {
       id: call.id,
       liveCallId: call.liveCallId,
-      vendorUserId: call.vendor.userId,
+      vendorUserId: call.vendor!.userId,
       customerId: call.liveCall.customerId,
       geofenceBypass: call.geofenceBypass,
       latitude: call.liveCall.latitude,
@@ -218,23 +219,23 @@ export async function startJobAction(
     if (geo.error) return { success: false, error: geo.error };
 
     await prisma.$transaction(async (tx) => {
-      await Promise.all([
-        tx.serviceCall.update({
-          where: { id: serviceCallId },
-          data: { status: "IN_PROGRESS", startedAt: new Date(), pinAttempts: 0, ...geo.fields },
-        }),
-        tx.notification.create({
-          data: {
-            userId: verified.call.customerId,
-            type: "CALL_STATUS_UPDATE",
-            title: "Work has started",
-            message: "Your technician has started the job.",
-            liveCallId: verified.call.liveCallId,
-            serviceCallId,
-          },
-        }),
-      ]);
+      await tx.serviceCall.update({
+        where: { id: serviceCallId },
+        data: { status: "IN_PROGRESS", startedAt: new Date(), pinAttempts: 0, ...geo.fields },
+      });
     });
+
+    // Fire-and-forget notification to avoid blocking the client response
+    prisma.notification.create({
+      data: {
+        userId: verified.call.customerId,
+        type: "CALL_STATUS_UPDATE",
+        title: "Work has started",
+        message: "Your technician has started the job.",
+        liveCallId: verified.call.liveCallId,
+        serviceCallId,
+      },
+    }).catch(console.error);
 
     revalidatePath("/technician/service-calls");
     revalidatePath("/vendor/service-calls");
@@ -297,28 +298,30 @@ export async function completeJobAction(
             remarks: data.remarks,
           },
         }),
-        tx.notification.createMany({
-          data: [
-            {
-              userId: verified.call.customerId,
-              type: "CALL_STATUS_UPDATE" as const,
-              title: "Job completed",
-              message: "Your technician has marked the job complete.",
-              liveCallId: verified.call.liveCallId,
-              serviceCallId,
-            },
-            {
-              userId: verified.call.vendorUserId,
-              type: "CALL_STATUS_UPDATE" as const,
-              title: "Job completed",
-              message: "A technician submitted their completion report.",
-              liveCallId: verified.call.liveCallId,
-              serviceCallId,
-            },
-          ],
-        }),
       ]);
     });
+
+    // Fire-and-forget notifications
+    prisma.notification.createMany({
+      data: [
+        {
+          userId: verified.call.customerId,
+          type: "CALL_STATUS_UPDATE" as const,
+          title: "Job completed",
+          message: "Your technician has marked the job complete.",
+          liveCallId: verified.call.liveCallId,
+          serviceCallId,
+        },
+        {
+          userId: verified.call.vendorUserId,
+          type: "CALL_STATUS_UPDATE" as const,
+          title: "Job completed",
+          message: "A technician submitted their completion report.",
+          liveCallId: verified.call.liveCallId,
+          serviceCallId,
+        },
+      ],
+    }).catch(console.error);
 
     revalidatePath("/technician/service-calls");
     revalidatePath("/vendor/service-calls");
@@ -449,7 +452,7 @@ export async function getServiceReportAction(serviceCallId: string): Promise<Act
 
     const allowed =
       call.customerId === session.user.id ||
-      call.vendor.userId === session.user.id ||
+      call.vendor?.userId === session.user.id ||
       call.technician?.userId === session.user.id ||
       session.user.role === "SUPER_ADMIN";
     if (!allowed) return { success: false, error: "You don't have access to this report" };

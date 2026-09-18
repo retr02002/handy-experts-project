@@ -11,7 +11,7 @@ import { usePolling } from "@/hooks/usePolling";
 
 const NOTIFICATIONS_POLL_INTERVAL_MS = 30000;
 
-export function TechnicianNavbar() {
+export function TechnicianNavbar({ technicianType }: { technicianType?: string }) {
   const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -70,6 +70,13 @@ export function TechnicianNavbar() {
               <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 md:w-2 md:h-2 bg-rose-500 rounded-full ring-2 ring-white dark:ring-slate-800" />
             )}
           </Link>
+          
+          {/* Wallet */}
+          {technicianType === "FREELANCE" && (
+            <Link href="/technician/wallet" className="p-1.5 md:p-2 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white rounded-full transition-all hover:shadow-sm">
+              <ClientIcon icon="ph:wallet" className="w-4 h-4 md:w-5 md:h-5" />
+            </Link>
+          )}
         </div>
 
         <div className="hidden sm:block w-px h-6 bg-slate-200 dark:bg-slate-800 mx-2" />

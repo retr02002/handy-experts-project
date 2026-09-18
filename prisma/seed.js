@@ -856,9 +856,9 @@ async function main() {
       data: {
         ...serviceData,
         categoryId,
-        benefits: defaultBenefits,
-        howItWorks: defaultSteps,
-        faqs: defaultFaqs,
+        benefits: serviceData.benefits || defaultBenefits,
+        howItWorks: serviceData.howItWorks || defaultSteps,
+        faqs: serviceData.faqs || defaultFaqs,
         packages: { create: packages },
       },
     });

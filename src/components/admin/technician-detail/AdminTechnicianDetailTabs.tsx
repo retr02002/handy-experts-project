@@ -10,6 +10,9 @@ import { TechnicianTrackingTab } from "@/components/shared/technician-detail/Tec
 import { KycDocumentsReadOnlyTab } from "@/components/shared/kyc/KycDocumentsReadOnlyTab";
 import { TECHNICIAN_KYC_FIELDS } from "@/lib/kycDocumentTypes";
 import type { KycDocSummary } from "@/actions/kyc.actions";
+import type { TechnicianServiceAreaSummary } from "@/actions/technicianservicearea.actions";
+import type { TechnicianWalletData } from "@/actions/technicianWallet.actions";
+import { AdminTechnicianWalletTab } from "./AdminTechnicianWalletTab";
 
 interface Props {
   header: React.ReactNode;
@@ -17,13 +20,15 @@ interface Props {
   technician: VendorTechnician;
   reviews: ReviewItem[];
   documents: KycDocSummary[];
+  serviceAreas?: TechnicianServiceAreaSummary[];
+  wallet?: TechnicianWalletData;
 }
 
-export function AdminTechnicianDetailTabs({ header, tabDefs, technician, reviews, documents }: Props) {
+export function AdminTechnicianDetailTabs({ header, tabDefs, technician, reviews, documents, serviceAreas, wallet }: Props) {
   const tabs: TabDef[] = tabDefs.map((t) => {
     switch (t.id) {
       case "info":
-        return { ...t, content: <AdminTechnicianInfoTab technician={technician} /> };
+        return { ...t, content: <AdminTechnicianInfoTab technician={technician} serviceAreas={serviceAreas} /> };
       case "reviews":
         return { ...t, content: <TechnicianReviewsTab reviews={reviews} /> };
       case "tracking":
@@ -40,6 +45,8 @@ export function AdminTechnicianDetailTabs({ header, tabDefs, technician, reviews
         };
       case "documents":
         return { ...t, content: <KycDocumentsReadOnlyTab documents={documents} fields={TECHNICIAN_KYC_FIELDS} /> };
+      case "wallet":
+        return { ...t, content: <AdminTechnicianWalletTab technicianId={technician.id} wallet={wallet} /> };
       default:
         return { ...t, content: null };
     }

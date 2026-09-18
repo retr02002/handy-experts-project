@@ -12,6 +12,7 @@ import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
 import { deletePackage } from "@/actions/package.actions";
 import { packageToFormInput } from "./utils";
 import type { PackageWithService } from "./utils";
+import { BulkUploadModal } from "@/components/admin/catalog/BulkUploadModal";
 
 type Props = {
   packages: PackageWithService[];
@@ -25,6 +26,7 @@ export function PackagesManager({ packages, services, initialServiceId }: Props)
   const [serviceFilter, setServiceFilter] = useState(initialServiceId ?? "");
   const [cardSearch, setCardSearch] = useState("");
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
   const [editingPkg, setEditingPkg] = useState<PackageWithService | null>(null);
   const [previewPkg, setPreviewPkg] = useState<PackageWithService | null>(null);
   const [deletingPkg, setDeletingPkg] = useState<PackageWithService | null>(null);
@@ -58,15 +60,16 @@ export function PackagesManager({ packages, services, initialServiceId }: Props)
   };
 
   const filteredPackages = useMemo(() => {
-    if (!serviceFilter) return packages;
-    return packages.filter((p) => p.serviceId === serviceFilter);
-  }, [packages, serviceFilter]);
-
-  const filteredCardPackages = useMemo(() => {
+    let filtered = packages;
+    if (serviceFilter) {
+      filtered = filtered.filter((p) => p.serviceId === serviceFilter);
+    }
     const q = cardSearch.trim().toLowerCase();
-    if (!q) return filteredPackages;
-    return filteredPackages.filter((p) => p.name.toLowerCase().includes(q) || p.service.title.toLowerCase().includes(q));
-  }, [filteredPackages, cardSearch]);
+    if (q) {
+      filtered = filtered.filter((p) => p.name.toLowerCase().includes(q) || (p.tag && p.tag.toLowerCase().includes(q)) || (p.category && p.category.toLowerCase().includes(q)));
+    }
+    return filtered;
+  }, [packages, serviceFilter, cardSearch]);
 
   const columns: ColumnDef<PackageWithService>[] = [
     {
@@ -74,21 +77,10 @@ export function PackagesManager({ packages, services, initialServiceId }: Props)
       accessorKey: "name",
       sortable: true,
       cell: (item) => (
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-slate-200 dark:bg-slate-700 bg-cover bg-center shrink-0" style={{ backgroundImage: `url(${item.image || item.service.image})` }} />
+        <div className="flex flex-col">
           <span className="font-medium text-slate-900 dark:text-white">{item.name}</span>
+          <span className="text-xs text-slate-500">{item.service.title}</span>
         </div>
-      ),
-    },
-    {
-      header: "Service",
-      cell: (item) => (
-        <button
-          onClick={() => setServiceFilter(item.serviceId)}
-          className="text-xs font-bold px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors cursor-pointer"
-        >
-          {item.service.title}
-        </button>
       ),
     },
     {
@@ -96,7 +88,7 @@ export function PackagesManager({ packages, services, initialServiceId }: Props)
       accessorKey: "price",
       sortable: true,
       cell: (item) => (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col">
           <span className="font-bold text-slate-900 dark:text-white">₹{item.price}</span>
           {item.originalPrice > item.price && <span className="text-xs text-slate-400 line-through">₹{item.originalPrice}</span>}
         </div>
@@ -124,13 +116,22 @@ export function PackagesManager({ packages, services, initialServiceId }: Props)
             </Link>
           </p>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-colors shrink-0 cursor-pointer"
-        >
-          <ClientIcon icon="ph:plus-bold" className="w-4 h-4" />
-          Create Package
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setBulkUploadOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-bold transition-colors shrink-0 cursor-pointer"
+          >
+            <ClientIcon icon="ph:upload-simple-bold" className="w-4 h-4" />
+            Bulk Upload
+          </button>
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-colors shrink-0 cursor-pointer"
+          >
+            <ClientIcon icon="ph:plus-bold" className="w-4 h-4" />
+            Create Package
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -182,7 +183,7 @@ export function PackagesManager({ packages, services, initialServiceId }: Props)
             className="w-full sm:w-80 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredCardPackages.map((pkg) => (
+            {filteredPackages.map((pkg) => (
               <div key={pkg.id} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm flex flex-col">
                 <div className="h-28 bg-slate-200 dark:bg-slate-700 bg-cover bg-center" style={{ backgroundImage: `url(${pkg.image || pkg.service.image})` }} />
                 <div className="p-3.5 flex flex-col gap-2 flex-1">
@@ -200,19 +201,21 @@ export function PackagesManager({ packages, services, initialServiceId }: Props)
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-black text-slate-900 dark:text-white">₹{pkg.price}</span>
-                    {pkg.originalPrice > pkg.price && <span className="text-xs text-slate-400 line-through">₹{pkg.originalPrice}</span>}
+
+                  <div className="mt-2 flex items-baseline gap-2">
+                    <span className="text-xl font-black text-slate-900 dark:text-white">₹{pkg.price}</span>
+                    {pkg.originalPrice > pkg.price && <span className="text-sm font-semibold text-slate-400 line-through">₹{pkg.originalPrice}</span>}
+                    {pkg.time && <span className="text-xs font-semibold text-slate-500 ml-auto flex items-center gap-1"><ClientIcon icon="ph:clock-bold" className="w-3 h-3" />{pkg.time}</span>}
                   </div>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">{pkg.time || "Duration not set"}</span>
-                  <div className="mt-auto pt-2">
-                    <PackageActions onView={() => setPreviewPkg(pkg)} onEdit={() => openEdit(pkg)} onDelete={() => setDeletingPkg(pkg)} />
-                  </div>
+                </div>
+
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex items-center justify-end">
+                  <PackageActions onView={() => setPreviewPkg(pkg)} onEdit={() => openEdit(pkg)} onDelete={() => setDeletingPkg(pkg)} />
                 </div>
               </div>
             ))}
           </div>
-          {filteredCardPackages.length === 0 && <p className="text-sm text-slate-400 text-center py-8">No packages match your search.</p>}
+          {filteredPackages.length === 0 && <p className="text-sm text-slate-400 text-center py-8">No packages match your search.</p>}
         </div>
       )}
 
@@ -239,6 +242,16 @@ export function PackagesManager({ packages, services, initialServiceId }: Props)
         isDeleting={isDeleting}
         onCancel={() => setDeletingPkg(null)}
         onConfirm={handleDelete}
+      />
+
+      <BulkUploadModal
+        isOpen={bulkUploadOpen}
+        onClose={() => setBulkUploadOpen(false)}
+        type="packages"
+        onSuccess={() => {
+          setBulkUploadOpen(false);
+          router.refresh();
+        }}
       />
     </div>
   );

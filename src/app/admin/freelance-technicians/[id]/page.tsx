@@ -7,25 +7,32 @@ import { getReviewsForTechnicianAction } from "@/actions/review.actions";
 import { getTechnicianDocumentsForAdminOrVendorAction } from "@/actions/kyc.actions";
 import { AdminTechnicianDetailTabs } from "@/components/admin/technician-detail/AdminTechnicianDetailTabs";
 
+import { getTechnicianServiceAreasAction } from "@/actions/technicianservicearea.actions";
+import { getAdminTechnicianWalletAction } from "@/actions/technicianWallet.actions";
+
 export default async function AdminTechnicianDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const [technicianRes, reviewsRes, documentsRes] = await Promise.all([
+  const [technicianRes, reviewsRes, documentsRes, areasRes, walletRes] = await Promise.all([
     getAdminTechnicianByIdAction(id),
     getReviewsForTechnicianAction(id),
     getTechnicianDocumentsForAdminOrVendorAction(id),
+    getTechnicianServiceAreasAction(id),
+    getAdminTechnicianWalletAction(id),
   ]);
 
   if (!technicianRes.success || !technicianRes.data) notFound();
   const technician = technicianRes.data;
   const reviews = reviewsRes.success ? reviewsRes.data ?? [] : [];
   const documents = documentsRes.success ? documentsRes.data ?? [] : [];
+  const serviceAreas = areasRes.success ? areasRes.data ?? [] : [];
+  const wallet = walletRes.success ? walletRes.data : undefined;
 
   const header = (
     <div className="bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-6 flex flex-col gap-4">
       <div className="flex items-start gap-3">
         <Link
-          href="/admin/technicians"
+          href="/admin/freelance-technicians"
           className="w-9 h-9 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors shrink-0"
         >
           <ClientIcon icon="ph:arrow-left-bold" className="w-4 h-4" />
@@ -63,9 +70,13 @@ export default async function AdminTechnicianDetailPage({ params }: { params: Pr
     { id: "documents", label: "Documents", icon: "ph:folder-lock" },
   ];
 
+  if (technician.type === "FREELANCE") {
+    tabs.push({ id: "wallet", label: "Wallet", icon: "ph:wallet-bold" });
+  }
+
   return (
     <div className="flex flex-col gap-6 w-full">
-      <AdminTechnicianDetailTabs header={header} tabDefs={tabs} technician={technician} reviews={reviews} documents={documents} />
+      <AdminTechnicianDetailTabs header={header} tabDefs={tabs} technician={technician} reviews={reviews} documents={documents} serviceAreas={serviceAreas} wallet={wallet} />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
 import { deleteService } from "@/actions/service.actions";
 import { serviceToFormInput } from "./utils";
 import type { ServiceWithPackages } from "./utils";
+import { BulkUploadModal } from "@/components/admin/catalog/BulkUploadModal";
 
 type Props = {
   services: ServiceWithPackages[];
@@ -30,6 +31,7 @@ export function ServicesManager({ services, categories }: Props) {
   const [view, setView] = useState<"table" | "card">("card");
   const [cardSearch, setCardSearch] = useState("");
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
   const [editingService, setEditingService] = useState<ServiceWithPackages | null>(null);
   const [previewService, setPreviewService] = useState<ServiceWithPackages | null>(null);
   const [deletingService, setDeletingService] = useState<ServiceWithPackages | null>(null);
@@ -63,7 +65,11 @@ export function ServicesManager({ services, categories }: Props) {
   };
 
   const rows: ServiceRow[] = useMemo(
-    () => services.map((s) => ({ ...s, categoryName: s.category?.name ?? "" })),
+    () =>
+      services.map((s) => ({
+        ...s,
+        categoryName: s.category?.name || "Uncategorised",
+      })),
     [services]
   );
 
@@ -71,7 +77,10 @@ export function ServicesManager({ services, categories }: Props) {
     const q = cardSearch.trim().toLowerCase();
     if (!q) return services;
     return services.filter(
-      (s) => s.title.toLowerCase().includes(q) || (s.category?.name ?? "").toLowerCase().includes(q)
+      (s) =>
+        s.title.toLowerCase().includes(q) ||
+        (s.category?.name || "Uncategorised").toLowerCase().includes(q) ||
+        s.slug.toLowerCase().includes(q)
     );
   }, [services, cardSearch]);
 
@@ -90,28 +99,31 @@ export function ServicesManager({ services, categories }: Props) {
         </div>
       ),
     },
-    { header: "Category", accessorKey: "categoryName", sortable: true, cell: (item) => item.category?.name ?? "—" },
-    { header: "Rating", accessorKey: "rating", sortable: true, cell: (item) => item.rating || "—" },
+    { header: "Category", accessorKey: "categoryName", sortable: true },
     {
       header: "Packages",
       cell: (item) => (
-        <Link
-          href={`/admin/packages?serviceId=${item.id}`}
-          className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
-        >
-          {item.packages.length}
+        <Link href="/admin/packages" className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors">
+          {item.packages?.length ?? 0}
         </Link>
+      ),
+    },
+    {
+      header: "Status",
+      cell: (item) => (
+        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide ${item.isPopular ? "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"}`}>
+          {item.isPopular ? "Popular" : "Standard"}
+        </span>
       ),
     },
     {
       header: "Actions",
       cell: (item) => (
-        <ServiceActions
-          serviceId={item.id}
-          onView={() => setPreviewService(item)}
-          onEdit={() => openEdit(item)}
-          onDelete={() => setDeletingService(item)}
-        />
+        <div className="flex items-center gap-1">
+          <ActionButton icon="ph:eye-bold" label="Preview" onClick={() => setPreviewService(item)} />
+          <ActionButton icon="ph:pencil-simple-bold" label="Edit" onClick={() => openEdit(item)} />
+          <ActionButton icon="ph:trash-bold" label="Delete" onClick={() => setDeletingService(item)} variant="danger" />
+        </div>
       ),
     },
   ];
@@ -128,13 +140,22 @@ export function ServicesManager({ services, categories }: Props) {
             </Link>
           </p>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-colors shrink-0 cursor-pointer"
-        >
-          <ClientIcon icon="ph:plus-bold" className="w-4 h-4" />
-          Create Service
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setBulkUploadOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-bold transition-colors shrink-0 cursor-pointer"
+          >
+            <ClientIcon icon="ph:upload-simple-bold" className="w-4 h-4" />
+            Bulk Upload
+          </button>
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-colors shrink-0 cursor-pointer"
+          >
+            <ClientIcon icon="ph:plus-bold" className="w-4 h-4" />
+            Create Service
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -222,10 +243,26 @@ export function ServicesManager({ services, categories }: Props) {
       <ConfirmDeleteDialog
         isOpen={Boolean(deletingService)}
         title="Delete this service?"
-        description={`"${deletingService?.title}" and all ${deletingService?.packages.length ?? 0} of its packages will be permanently removed. This can't be undone.`}
+        description={
+          deletingService && deletingService.packages.length > 0
+            ? `"${deletingService.title}" still has ${deletingService.packages.length} package${
+                deletingService.packages.length === 1 ? "" : "s"
+              } attached. Reassign or delete them first.`
+            : `"${deletingService?.title}" will be permanently removed. This can't be undone.`
+        }
         isDeleting={isDeleting}
         onCancel={() => setDeletingService(null)}
         onConfirm={handleDelete}
+      />
+      
+      <BulkUploadModal
+        isOpen={bulkUploadOpen}
+        onClose={() => setBulkUploadOpen(false)}
+        type="services"
+        onSuccess={() => {
+          setBulkUploadOpen(false);
+          router.refresh();
+        }}
       />
     </div>
   );

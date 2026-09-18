@@ -71,7 +71,7 @@ export function GeofenceGate({ customerLat, customerLng, bypass, action, onChang
         setPhase("denied");
         applyFix(null);
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 30000 }
     );
     return () => navigator.geolocation.clearWatch(watchId);
   }, [applyFix, attempt]);

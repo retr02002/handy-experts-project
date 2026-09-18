@@ -3,17 +3,18 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { buyLiveCallAction, type PurchasedLiveCallDetail } from "@/actions/servicecall.actions";
+import { buyLiveCallAsFreelancerAction } from "@/actions/servicecall.actions";
 import type { NearbyLiveCall } from "@/actions/livecall.actions";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import type { PurchasedLiveCallDetail } from "@/actions/servicecall.actions";
 
-interface BuyLeadModalProps {
+interface FreelanceBuyCallModalProps {
   call: NearbyLiveCall;
   onClose: () => void;
   onBought: () => void;
 }
 
-export function BuyLeadModal({ call, onClose, onBought }: BuyLeadModalProps) {
+export function FreelanceBuyCallModal({ call, onClose, onBought }: FreelanceBuyCallModalProps) {
   const [isPending, startTransition] = React.useTransition();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [purchased, setPurchased] = useState<PurchasedLiveCallDetail | null>(null);
@@ -24,13 +25,13 @@ export function BuyLeadModal({ call, onClose, onBought }: BuyLeadModalProps) {
     setIsSubmitting(true);
     startTransition(async () => {
       try {
-        const res = await buyLiveCallAction(call.id);
+        const res = await buyLiveCallAsFreelancerAction(call.id);
         if (!res.success || !res.data) {
-          toast.error((res.success ? undefined : res.error) || "Failed to buy this lead");
+          toast.error((res.success ? undefined : res.error) || "Failed to accept this call");
           return;
         }
         setPurchased(res.data.liveCall);
-        toast.success(`Lead bought! ${res.data.offerCount} technician(s) notified.`);
+        toast.success("Call assigned to you!");
         onBought();
       } finally {
         setIsSubmitting(false);
@@ -60,10 +61,9 @@ export function BuyLeadModal({ call, onClose, onBought }: BuyLeadModalProps) {
               <ClientIcon icon="ph:lock-key-open-bold" className="w-6 h-6" />
             </div>
 
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white pr-8">Buy this call?</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white pr-8">Accept this job?</h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              ₹{call.leadPrice} will be deducted from your wallet. You&apos;ll see the customer&apos;s full name, phone,
-              and address, and every on-duty technician of yours in range gets notified.
+              ₹{call.leadPrice} will be deducted from your wallet. You&apos;ll be assigned to this job instantly and can see the customer&apos;s full name, phone, and address.
             </p>
 
             <div className="bg-slate-50 dark:bg-slate-900/60 rounded-xl p-3 mt-4 mb-5 border border-slate-200 dark:border-slate-800">
@@ -79,7 +79,7 @@ export function BuyLeadModal({ call, onClose, onBought }: BuyLeadModalProps) {
               disabled={isSubmitting || isPending}
               className="w-full h-11 rounded-xl bg-[#00B4FF] hover:bg-[#0096fa] disabled:opacity-50 text-white text-sm font-bold transition-colors cursor-pointer flex items-center justify-center gap-2"
             >
-              {isSubmitting || isPending ? "Buying..." : `Buy for ₹${call.leadPrice}`}
+              {isSubmitting || isPending ? "Accepting..." : `Accept & Pay ₹${call.leadPrice}`}
             </button>
           </>
         ) : (
@@ -87,7 +87,7 @@ export function BuyLeadModal({ call, onClose, onBought }: BuyLeadModalProps) {
             <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-3">
               <ClientIcon icon="ph:check-circle-bold" className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white pr-8">Call unlocked</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white pr-8">Job assigned to you</h3>
             <div className="flex flex-col gap-2 mt-3 text-sm text-slate-700 dark:text-slate-200">
               <div className="flex items-center gap-2">
                 <ClientIcon icon="ph:user-fill" className="w-4 h-4 text-slate-400 shrink-0" />

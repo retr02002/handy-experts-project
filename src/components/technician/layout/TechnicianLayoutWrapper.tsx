@@ -6,7 +6,7 @@ import { TechnicianNavbar } from "./TechnicianNavbar";
 import { TechnicianBottomNav } from "./TechnicianBottomNav";
 import { TechnicianOfferWatcher } from "../TechnicianOfferWatcher";
 
-export function TechnicianLayoutWrapper({ children }: { children: React.ReactNode }) {
+export function TechnicianLayoutWrapper({ children, technicianType = "VENDOR_MANAGED" }: { children: React.ReactNode; technicianType?: string }) {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -23,7 +23,7 @@ export function TechnicianLayoutWrapper({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#020617] text-slate-900 dark:text-white flex transition-colors pb-[104px] md:pb-0">
       {/* Sidebar (desktop only) */}
-      <TechnicianSidebar isCollapsed={isSidebarCollapsed} setCollapsed={setSidebarCollapsed} />
+      <TechnicianSidebar isCollapsed={isSidebarCollapsed} setCollapsed={setSidebarCollapsed} technicianType={technicianType} />
 
       {/* Main Content Area */}
       <div
@@ -31,14 +31,14 @@ export function TechnicianLayoutWrapper({ children }: { children: React.ReactNod
           isSidebarCollapsed ? "md:ml-16" : "md:ml-60"
         }`}
       >
-        <TechnicianNavbar />
+        <TechnicianNavbar technicianType={technicianType} />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="w-full max-w-7xl mx-auto flex flex-col">{children}</div>
         </main>
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <TechnicianBottomNav />
+      <TechnicianBottomNav technicianType={technicianType} />
 
       {/* Job pings, on every technician page */}
       <TechnicianOfferWatcher />

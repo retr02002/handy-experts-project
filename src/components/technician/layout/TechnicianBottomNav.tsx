@@ -7,22 +7,20 @@ import { ClientIcon } from "@/components/ui/ClientIcon";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { motion } from "framer-motion";
 
-// Wallet's old slot is filled with Ratings for now — swap it back to Wallet
-// (or add both) once the technician wallet returns in a future update.
-const BOTTOM_NAV_LINKS = [
-  { href: "/technician", label: "Home", icon: "ph:squares-four" },
-  { href: "/technician/service-calls", label: "Jobs", icon: "ph:wrench" },
-  { href: "theme", label: "Theme", icon: "theme" },
-  { href: "/technician/feedback", label: "Ratings", icon: "ph:star" },
-  { href: "/technician/profile", label: "Profile", icon: "ph:user" },
-];
-
-export function TechnicianBottomNav() {
+export function TechnicianBottomNav({ technicianType }: { technicianType?: string }) {
   const pathname = usePathname();
+
+  const navItems = [
+    { label: "Home", href: "/technician", icon: "ph:squares-four" },
+    ...(technicianType === "FREELANCE" ? [{ label: "Live Calls", href: "/technician/live-calls", icon: "ph:phone-call" }] : []),
+    { label: "Theme", href: "theme", icon: "theme" },
+    { label: "Jobs", href: "/technician/service-calls", icon: "ph:wrench" },
+    { label: "Profile", href: "/technician/profile", icon: "ph:user" },
+  ];
 
   return (
     <nav className="md:hidden fixed bottom-4 left-4 right-4 h-14 bg-white/90 dark:bg-[#0f172a]/90 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 rounded-full z-50 shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.4)] flex items-center justify-between px-2">
-      {BOTTOM_NAV_LINKS.map((link) => {
+      {navItems.map((link) => {
         if (link.href === "theme") {
           return (
             <div key="theme" className="relative z-50 flex items-center justify-center shrink-0 w-14">

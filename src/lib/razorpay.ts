@@ -9,6 +9,7 @@
 import crypto from "crypto";
 
 const RAZORPAY_ORDERS_URL = "https://api.razorpay.com/v1/orders";
+const RAZORPAY_PAYMENTS_URL = "https://api.razorpay.com/v1/payments";
 const REQUEST_TIMEOUT_MS = 10_000;
 
 function getCredentials(): { keyId: string; keySecret: string } | null {
@@ -75,6 +76,29 @@ export async function createRazorpayOrder({
     return { ok: false, error: "Couldn't start the payment — please try again" };
   } finally {
     clearTimeout(timeout);
+  }
+}
+
+export async function fetchRazorpayPayment(paymentId: string): Promise<{ ok: true; amount: number; status: string; currency: string } | { ok: false; error: string }> {
+  const creds = getCredentials();
+  if (!creds) return { ok: false, error: "Online payment isn't configured right now" };
+
+  try {
+    const res = await fetch(`${RAZORPAY_PAYMENTS_URL}/${paymentId}`, {
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${creds.keyId}:${creds.keySecret}`).toString("base64")}`,
+      },
+    });
+
+    const parsed = await res.json().catch(() => ({}));
+
+    if (!res.ok || !parsed?.id) {
+      return { ok: false, error: parsed?.error?.description || "Failed to fetch payment details" };
+    }
+
+    return { ok: true, amount: parsed.amount, status: parsed.status, currency: parsed.currency };
+  } catch (err) {
+    return { ok: false, error: "Couldn't fetch payment details" };
   }
 }
 

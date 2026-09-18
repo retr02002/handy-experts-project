@@ -5,7 +5,8 @@ import { StarRating } from "@/components/shared/StarRating";
 
 export default async function AdminTechniciansPage() {
   const res = await getAllTechniciansForAdminAction();
-  const technicians = res.success && res.data ? res.data : [];
+  const allTechnicians = res.success && res.data ? res.data : [];
+  const technicians = allTechnicians.filter((t) => t.type === "VENDOR_MANAGED");
 
   const onDuty = technicians.filter((t) => t.isOnDuty).length;
   const rated = technicians.filter((t) => t.ratingCount > 0);
@@ -15,9 +16,9 @@ export default async function AdminTechniciansPage() {
   return (
     <div className="flex flex-col gap-6 w-full">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Technicians</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Vendor Technicians</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Every technician on the platform, across all vendors.
+          Technicians managed by vendors.
         </p>
       </div>
 
@@ -69,7 +70,7 @@ export default async function AdminTechniciansPage() {
                 {technicians.map((t) => (
                   <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                     <td className="p-4 min-w-0">
-                      <Link href={`/admin/technicians/${t.id}`} className="block">
+                      <Link href={`/admin/vendor-technicians/${t.id}`} className="block">
                         <p className="text-sm font-bold text-slate-900 dark:text-white truncate hover:underline">{t.name}</p>
                         <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                           {t.username ?? "no username"} &middot; {t.phone}

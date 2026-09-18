@@ -11,6 +11,7 @@ import { CategoryFormModal } from "./CategoryFormModal";
 import { deleteCategory } from "@/actions/category.actions";
 import { categoryToFormInput } from "./utils";
 import type { CategoryWithCount } from "./utils";
+import { BulkUploadModal } from "@/components/admin/catalog/BulkUploadModal";
 
 type Props = {
   categories: CategoryWithCount[];
@@ -24,6 +25,7 @@ export function CategoriesManager({ categories }: Props) {
   const [view, setView] = useState<"table" | "card">("card");
   const [cardSearch, setCardSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
   const [editing, setEditing] = useState<CategoryWithCount | null>(null);
   const [deleting, setDeleting] = useState<CategoryWithCount | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -134,13 +136,22 @@ export function CategoriesManager({ categories }: Props) {
             </Link>
           </p>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-colors shrink-0 cursor-pointer"
-        >
-          <ClientIcon icon="ph:plus-bold" className="w-4 h-4" />
-          Create Category
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setBulkUploadOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-bold transition-colors shrink-0 cursor-pointer"
+          >
+            <ClientIcon icon="ph:upload-simple-bold" className="w-4 h-4" />
+            Bulk Upload
+          </button>
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-colors shrink-0 cursor-pointer"
+          >
+            <ClientIcon icon="ph:plus-bold" className="w-4 h-4" />
+            Create Category
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -231,6 +242,15 @@ export function CategoriesManager({ categories }: Props) {
         isDeleting={isDeleting}
         onCancel={() => setDeleting(null)}
         onConfirm={handleDelete}
+      />
+      <BulkUploadModal
+        isOpen={bulkUploadOpen}
+        onClose={() => setBulkUploadOpen(false)}
+        type="categories"
+        onSuccess={() => {
+          setBulkUploadOpen(false);
+          router.refresh();
+        }}
       />
     </div>
   );

@@ -5,13 +5,28 @@ import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { startJobAction, completeJobAction } from "@/actions/servicejob.actions";
-import { CompletionReportForm, type ReportDraft, emptyReportDraft, draftToInput } from "./CompletionReportForm";
+import type { ReportDraft } from "./CompletionReportForm";
+import { emptyReportDraft, draftToInput } from "./CompletionReportForm";
 import { GeofenceGate } from "./GeofenceGate";
-import { JobPhotoUploader } from "./JobPhotoUploader";
-import { SignaturePad } from "./SignaturePad";
 import type { ServiceCallSummary } from "@/actions/servicecall.actions";
 import type { GeoFix } from "@/lib/geo";
 import { GEOFENCE_POSITION_REQUIRED } from "@/lib/constants";
+import dynamic from "next/dynamic";
+
+const CompletionReportForm = dynamic(() => import("./CompletionReportForm").then((m) => m.CompletionReportForm), {
+  ssr: false,
+  loading: () => <div className="h-64 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl" />,
+});
+
+const JobPhotoUploader = dynamic(() => import("./JobPhotoUploader").then((m) => m.JobPhotoUploader), {
+  ssr: false,
+  loading: () => <div className="h-32 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl" />,
+});
+
+const SignaturePad = dynamic(() => import("./SignaturePad").then((m) => m.SignaturePad), {
+  ssr: false,
+  loading: () => <div className="h-40 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl" />,
+});
 
 interface Props {
   call: ServiceCallSummary;
@@ -26,14 +41,12 @@ interface Props {
  * this device, so there's nothing to read out of the client bundle.
  */
 export function JobPinDialog({ call, gate, onClose, onDone }: Props) {
-  const [mounted, setMounted] = useState(false);
+  const [isPending, startTransition] = React.useTransition();
   const [pin, setPin] = useState("");
   const [draft, setDraft] = useState<ReportDraft>(emptyReportDraft);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [fix, setFix] = useState<GeoFix | null>(null);
-
-  useEffect(() => setMounted(true), []);
 
   // Only the raw fix is kept — the evaluated result is already rendered by
   // GeofenceGate itself, and the server re-evaluates authoritatively.
@@ -50,42 +63,46 @@ export function JobPinDialog({ call, gate, onClose, onDone }: Props) {
     }
 
     setIsSubmitting(true);
-    try {
-      if (gate === "start") {
-        const res = await startJobAction(call.id, pin, fix);
-        if (!res.success) {
-          setError(
-            res.error === GEOFENCE_POSITION_REQUIRED
-              ? "We couldn't confirm where you are. Turn location on and try again."
-              : res.error || "Couldn't start the job"
-          );
-          return;
+    startTransition(async () => {
+      try {
+        if (gate === "start") {
+          const res = await startJobAction(call.id, pin, fix);
+          if (!res.success) {
+            setError(
+              res.error === GEOFENCE_POSITION_REQUIRED
+                ? "We couldn't confirm where you are. Turn location on and try again."
+                : res.error || "Couldn't start the job"
+            );
+            return;
+          }
+          toast.success("Job started");
+        } else {
+          const input = draftToInput(draft);
+          if (!input.ok) {
+            setError(input.error);
+            return;
+          }
+          const res = await completeJobAction(call.id, pin, input.value, fix);
+          if (!res.success) {
+            setError(
+              res.error === GEOFENCE_POSITION_REQUIRED
+                ? "We couldn't confirm where you are. Turn location on and try again."
+                : res.error || "Couldn't complete the job"
+            );
+            return;
+          }
+          toast.success("Job completed and report submitted");
         }
-        toast.success("Job started");
-      } else {
-        const input = draftToInput(draft);
-        if (!input.ok) {
-          setError(input.error);
-          return;
-        }
-        const res = await completeJobAction(call.id, pin, input.value, fix);
-        if (!res.success) {
-          setError(
-            res.error === GEOFENCE_POSITION_REQUIRED
-              ? "We couldn't confirm where you are. Turn location on and try again."
-              : res.error || "Couldn't complete the job"
-          );
-          return;
-        }
-        toast.success("Job completed and report submitted");
+        onDone();
+      } finally {
+        setIsSubmitting(false);
       }
-      onDone();
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   };
 
-  if (!mounted) return null;
+  // This component is only mounted on the client after a user click,
+  // so we can safely check for document without causing hydration mismatches.
+  if (typeof document === "undefined") return null;
 
   return createPortal(
     <div className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center sm:p-6 bg-slate-900/70 backdrop-blur-sm">
@@ -168,7 +185,7 @@ export function JobPinDialog({ call, gate, onClose, onDone }: Props) {
           <button
             type="button"
             onClick={onClose}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isPending}
             className="flex-1 h-11 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-bold disabled:opacity-50 cursor-pointer"
           >
             Cancel
@@ -183,10 +200,10 @@ export function JobPinDialog({ call, gate, onClose, onDone }: Props) {
               also what keeps the fence genuinely non-blocking. */}
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isPending}
             className="flex-1 h-11 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-white text-sm font-bold transition-colors cursor-pointer"
           >
-            {isSubmitting ? "Verifying..." : gate === "start" ? "Verify & Start" : "Verify & Complete"}
+            {isSubmitting || isPending ? "Verifying..." : gate === "start" ? "Verify & Start" : "Verify & Complete"}
           </button>
         </div>
       </form>

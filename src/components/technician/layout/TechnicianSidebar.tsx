@@ -8,19 +8,22 @@ import { ClientIcon } from "@/components/ui/ClientIcon";
 interface TechnicianSidebarProps {
   isCollapsed: boolean;
   setCollapsed: (val: boolean) => void;
+  technicianType?: string;
 }
 
-const navItems = [
-  { label: "Dashboard", href: "/technician", icon: "ph:squares-four" },
-  { label: "Service Calls", href: "/technician/service-calls", icon: "ph:wrench" },
-  { label: "Job History", href: "/technician/history", icon: "ph:clock-counter-clockwise" },
-  { label: "Feedback", href: "/technician/feedback", icon: "ph:star" },
-  { label: "Referral Code", href: "/technician/referral", icon: "ph:users-three" },
-  { label: "Profile", href: "/technician/profile", icon: "ph:user" },
-];
-
-export function TechnicianSidebar({ isCollapsed, setCollapsed }: TechnicianSidebarProps) {
+export function TechnicianSidebar({ isCollapsed, setCollapsed, technicianType }: TechnicianSidebarProps) {
   const pathname = usePathname();
+
+  const navItems = [
+    { label: "Dashboard", href: "/technician", icon: "ph:squares-four" },
+    ...(technicianType === "FREELANCE" ? [{ label: "Live Calls", href: "/technician/live-calls", icon: "ph:phone-call" }] : []),
+    { label: "Service Calls", href: "/technician/service-calls", icon: "ph:wrench" },
+    { label: "Job History", href: "/technician/history", icon: "ph:clock-counter-clockwise" },
+    ...(technicianType === "FREELANCE" ? [{ label: "Wallet", href: "/technician/wallet", icon: "ph:wallet" }] : []),
+    { label: "Feedback", href: "/technician/feedback", icon: "ph:star" },
+    { label: "Referral Code", href: "/technician/referral", icon: "ph:users-three" },
+    { label: "Profile", href: "/technician/profile", icon: "ph:user" },
+  ];
 
   return (
     <aside

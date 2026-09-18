@@ -215,6 +215,7 @@ export interface ProfileDetails {
     /** Courtesy display field only — no longer required or matching-relevant. */
     servicePincode: string | null;
     type: string;
+    location: { latitude: number; longitude: number } | null;
   } | null;
 }
 
@@ -249,7 +250,7 @@ export async function getProfileDetails(): Promise<ProfileDetails | null> {
         },
       },
       technicianProfile: {
-        select: { skillCategory: true, experienceYears: true, servicePincode: true, type: true },
+        select: { skillCategory: true, experienceYears: true, servicePincode: true, type: true, location: { select: { latitude: true, longitude: true } } },
       },
     },
   });

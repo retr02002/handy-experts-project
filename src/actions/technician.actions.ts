@@ -21,7 +21,7 @@ import { applySkillAssignments, deriveLegacySkillLabel } from "@/lib/technicianS
 import { issueTechnicianId, formatTechnicianId } from "@/lib/structuredIds";
 
 /** Slugified name + random suffix, retried on collision. @unique on User.username is the hard backstop. */
-async function generateUsername(name: string): Promise<string> {
+export async function generateUsername(name: string): Promise<string> {
   const slug = name.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 10) || "tech";
   for (let attempt = 0; attempt < 10; attempt++) {
     const candidate = `${slug}${crypto.randomInt(1000, 10000)}`;
@@ -286,6 +286,8 @@ export interface VendorTechnician {
   /** Courtesy display only — no longer collected or used for matching. */
   servicePincode: string | null;
   type: string;
+  leadFeeType: "FIXED" | "PERCENTAGE";
+  leadFeeAmount: number;
   isOnDuty: boolean;
   isWithinServiceArea: boolean;
   latitude: number | null;
@@ -390,6 +392,8 @@ export async function getMyTechniciansAction(): Promise<ActionResponse<VendorTec
         experienceYears: r.experienceYears,
         servicePincode: r.servicePincode,
         type: r.type,
+        leadFeeType: r.leadFeeType,
+        leadFeeAmount: r.leadFeeAmount,
         isOnDuty: r.location?.isOnDuty ?? false,
         isWithinServiceArea: r.location
           ? areas.some((a) => haversineKm(a.latitude, a.longitude, r.location!.latitude, r.location!.longitude) <= a.radiusKm)
@@ -471,6 +475,8 @@ export async function getVendorTechnicianByIdAction(technicianId: string): Promi
         experienceYears: r.experienceYears,
         servicePincode: r.servicePincode,
         type: r.type,
+        leadFeeType: r.leadFeeType,
+        leadFeeAmount: r.leadFeeAmount,
         isOnDuty: r.location?.isOnDuty ?? false,
         isWithinServiceArea: r.location
           ? areas.some((a) => haversineKm(a.latitude, a.longitude, r.location!.latitude, r.location!.longitude) <= a.radiusKm)
@@ -551,6 +557,8 @@ export async function getAdminTechnicianByIdAction(technicianId: string): Promis
         experienceYears: r.experienceYears,
         servicePincode: r.servicePincode,
         type: r.type,
+        leadFeeType: r.leadFeeType,
+        leadFeeAmount: r.leadFeeAmount,
         isOnDuty: r.location?.isOnDuty ?? false,
         isWithinServiceArea: r.location
           ? areas.some((a) => haversineKm(a.latitude, a.longitude, r.location!.latitude, r.location!.longitude) <= a.radiusKm)
@@ -576,6 +584,8 @@ export interface AdminTechnician {
   phone: string;
   skillCategory: string;
   vendorName: string;
+  leadFeeType: "FIXED" | "PERCENTAGE";
+  leadFeeAmount: number;
   isOnDuty: boolean;
   latitude: number | null;
   longitude: number | null;
@@ -606,6 +616,8 @@ export async function getAllTechniciansForAdminAction(): Promise<ActionResponse<
         phone: r.user.phone ?? "",
         skillCategory: r.skillCategory,
         vendorName: r.vendor?.companyName ?? "Freelance",
+        leadFeeType: r.leadFeeType,
+        leadFeeAmount: r.leadFeeAmount,
         isOnDuty: r.location?.isOnDuty ?? false,
         latitude: r.location?.latitude ?? null,
         longitude: r.location?.longitude ?? null,
@@ -943,5 +955,104 @@ export async function getTechnicianTimelineAction(
   } catch (err) {
     console.error("Get technician timeline error:", err);
     return { success: false, error: "Failed to load timeline" };
+  }
+}
+
+export async function updateAdminFreelanceTechnicianLeadFeeAction(
+  technicianId: string,
+  leadFeeType: "FIXED" | "PERCENTAGE",
+  leadFeeAmount: number
+): Promise<ActionResponse> {
+  const isAdmin = await requireAdmin();
+  if (!isAdmin) return { success: false, error: "Not authorized" };
+
+  try {
+    if (leadFeeAmount < 0) return { success: false, error: "Amount cannot be negative" };
+    if (leadFeeType === "PERCENTAGE" && leadFeeAmount > 100) {
+      return { success: false, error: "Percentage cannot be greater than 100" };
+    }
+
+    await prisma.technicianProfile.update({
+      where: { id: technicianId },
+      data: { leadFeeType, leadFeeAmount },
+    });
+
+    revalidatePath(`/admin/freelance-technicians/${technicianId}`);
+    return { success: true };
+  } catch (err) {
+    console.error("Update technician lead fee error:", err);
+    return { success: false, error: "Failed to update lead fee" };
+  }
+}
+
+export async function adminUpdateTechnicianStatusAction(
+  technicianId: string,
+  isOnDuty: boolean
+): Promise<ActionResponse> {
+  const isAdmin = await requireAdmin();
+  if (!isAdmin) return { success: false, error: "Not authorized" };
+  try {
+    const loc = await prisma.technicianLocation.findUnique({ where: { technicianId } });
+    if (!loc) {
+      await prisma.technicianLocation.create({
+        data: { technicianId, isOnDuty, latitude: 0, longitude: 0 },
+      });
+    } else {
+      await prisma.technicianLocation.update({
+        where: { technicianId },
+        data: { isOnDuty, updatedAt: new Date() },
+      });
+    }
+    revalidatePath(`/admin/freelance-technicians/${technicianId}`);
+    return { success: true };
+  } catch (err) {
+    console.error("Admin update technician status error:", err);
+    return { success: false, error: "Failed to update status" };
+  }
+}
+
+export async function adminResetTechnicianPasswordAction(
+  technicianId: string,
+  newPasswordPlain: string
+): Promise<ActionResponse> {
+  const isAdmin = await requireAdmin();
+  if (!isAdmin) return { success: false, error: "Not authorized" };
+  
+  if (!newPasswordPlain || newPasswordPlain.length < 6) {
+    return { success: false, error: "Password must be at least 6 characters" };
+  }
+
+  try {
+    const technician = await prisma.technicianProfile.findUnique({ where: { id: technicianId } });
+    if (!technician) return { success: false, error: "Technician not found" };
+
+    const hashedPassword = await bcrypt.hash(newPasswordPlain, 10);
+    await prisma.user.update({
+      where: { id: technician.userId },
+      data: { password: hashedPassword },
+    });
+
+    return { success: true };
+  } catch (err) {
+    console.error("Admin reset technician password error:", err);
+    return { success: false, error: "Failed to reset password" };
+  }
+}
+
+export async function getMyTechnicianTypeAction(): Promise<ActionResponse<{ type: string }>> {
+  const { technicianId, error } = await requireTechnicianId();
+  if (!technicianId) return { success: false, error: error! };
+
+  try {
+    const profile = await prisma.technicianProfile.findUnique({
+      where: { id: technicianId },
+      select: { type: true },
+    });
+    if (!profile) return { success: false, error: "Profile not found" };
+
+    return { success: true, data: { type: profile.type } };
+  } catch (err) {
+    console.error("Get my technician type error:", err);
+    return { success: false, error: "Failed to fetch technician type" };
   }
 }

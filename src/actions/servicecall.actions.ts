@@ -104,7 +104,7 @@ export async function finalizeVendorAcceptance(params: {
       data: eligible.map((t) => ({ liveCallId: params.liveCallId, vendorId: params.vendorId, technicianId: t.id })),
       skipDuplicates: true,
     });
-    await prisma.notification.createMany({
+    prisma.notification.createMany({
       data: eligible.map((t) => ({
         userId: t.userId,
         type: "JOB_OFFER" as const,
@@ -113,7 +113,7 @@ export async function finalizeVendorAcceptance(params: {
         liveCallId: params.liveCallId,
         serviceCallId: serviceCall.id,
       })),
-    });
+    }).catch(console.error);
   }
 
   return { serviceCallId: serviceCall.id, offerCount: eligible.length };
@@ -275,6 +275,7 @@ export async function buyLiveCallAction(
     revalidatePath("/vendor/live-calls");
     revalidatePath("/vendor/service-calls");
     revalidatePath("/vendor/wallet");
+    // notifyAllAdmins already runs asynchronously internally, but we don't await it here anyway.
     notifyAllAdmins(
       "CALL_ACCEPTED",
       "Live call bought",
@@ -499,7 +500,7 @@ export interface ServiceCallSummary {
   technicianId: string | null;
   technicianName: string | null;
   /** The technician's own escalation path when something's wrong on site. */
-  vendorName: string;
+  vendorName: string | null;
   vendorPhone: string | null;
   vendorEmail: string | null;
   scheduledFor: string | null;
@@ -553,9 +554,9 @@ function mapServiceCallRow(r: ServiceCallRow): ServiceCallSummary {
     items: r.liveCall.items.map((i) => ({ packageName: i.packageName, quantity: i.quantity, unitPrice: i.unitPrice })),
     technicianId: r.technicianId,
     technicianName: r.technician?.user.name ?? null,
-    vendorName: r.vendor.companyName,
-    vendorPhone: r.vendor.user.phone,
-    vendorEmail: r.vendor.user.email,
+    vendorName: r.vendor?.companyName ?? null,
+    vendorPhone: r.vendor?.user?.phone ?? null,
+    vendorEmail: r.vendor?.user?.email ?? null,
     scheduledFor: r.liveCall.scheduledFor?.toISOString() ?? null,
     assignedAt: r.assignedAt?.toISOString() ?? null,
     startedAt: r.startedAt?.toISOString() ?? null,
@@ -667,7 +668,7 @@ export async function getAllServiceCallsAction(): Promise<ActionResponse<AdminSe
     });
     return {
       success: true,
-      data: rows.map((r) => ({ ...mapServiceCallRow(r), vendorName: r.vendor.companyName })),
+      data: rows.map((r) => ({ ...mapServiceCallRow(r), vendorName: r.vendor?.companyName ?? "Unknown Vendor" })),
     };
   } catch (err) {
     console.error("Get all service calls error:", err);
@@ -691,7 +692,7 @@ export async function getServiceCallsForVendorAction(
     });
     return {
       success: true,
-      data: rows.map((r) => ({ ...mapServiceCallRow(r), vendorName: r.vendor.companyName })),
+      data: rows.map((r) => ({ ...mapServiceCallRow(r), vendorName: r.vendor?.companyName ?? "Unknown Vendor" })),
     };
   } catch (err) {
     console.error("Get service calls for vendor error:", err);
@@ -746,7 +747,7 @@ export async function getServiceCallFullDetailAction(
     return {
       success: true,
       data: {
-        summary: { ...mapServiceCallRow(call), vendorName: call.vendor.companyName },
+        summary: { ...mapServiceCallRow(call), vendorName: call.vendor?.companyName ?? "Unknown Vendor" },
         report: reportRes.success ? reportRes.data ?? null : null,
         review: reviewRes.success ? reviewRes.data ?? null : null,
         offerHistory: offers.map((o) => ({
@@ -793,7 +794,7 @@ export async function updateServiceCallStatusAction(
     });
     if (!call) return { success: false, error: "Service call not found" };
 
-    const isOwningVendor = call.vendor.userId === session.user.id;
+    const isOwningVendor = call.vendor?.userId === session.user.id;
     const isAssignedTechnician = call.technician?.userId === session.user.id;
     const isAdmin = session.user.role === "SUPER_ADMIN";
     if (!isOwningVendor && !isAssignedTechnician && !isAdmin) {
@@ -903,7 +904,7 @@ export async function getReassignCandidatesAction(
       include: { vendor: { select: { userId: true } }, liveCall: { select: { latitude: true, longitude: true } } },
     });
     if (!call) return { success: false, error: "Service call not found" };
-    if (!isAdmin && call.vendor.userId !== session.user.id) {
+    if (!isAdmin && call.vendor?.userId !== session.user.id) {
       return { success: false, error: "Service call not found" };
     }
     const vendorId = call.vendorId;
@@ -1014,10 +1015,13 @@ export async function reassignServiceCallAction(
       },
     });
     if (!call) return { success: false, error: "Service call not found" };
-    if (!isAdmin && call.vendor.userId !== session.user.id) {
+    if (!isAdmin && call.vendor?.userId !== session.user.id) {
       return { success: false, error: "Service call not found" };
     }
     const vendorId = call.vendorId;
+    if (!vendorId) {
+      return { success: false, error: "Service call has no associated vendor" };
+    }
 
     if (!PRE_START_STATUSES.includes(call.status)) {
       return { success: false, error: "This job has already started — it can't be reassigned now." };
@@ -1374,16 +1378,18 @@ export async function claimServiceCallAction(
         where: { liveCallId: call.liveCallId, technicianId: { not: technicianId }, status: "PENDING" },
         data: { status: "EXPIRED", respondedAt: new Date() },
       });
-      await tx.notification.create({
-        data: {
-          userId: call.vendor.userId,
-          type: "CALL_ASSIGNED",
-          title: "Technician accepted the job",
-          message: `A technician accepted your call at ${call.liveCall.address}, ${call.liveCall.city}.`,
-          liveCallId: call.liveCallId,
-          serviceCallId,
-        },
-      });
+      if (call.vendor) {
+        await tx.notification.create({
+          data: {
+            userId: call.vendor.userId,
+            type: "CALL_ASSIGNED",
+            title: "Technician accepted the job",
+            message: `A technician accepted your call at ${call.liveCall.address}, ${call.liveCall.city}.`,
+            liveCallId: call.liveCallId,
+            serviceCallId,
+          },
+        });
+      }
       await tx.notification.create({
         data: {
           userId: call.liveCall.customerId,
@@ -1439,13 +1445,17 @@ export async function declineJobAction(serviceCallId: string, reason: string): P
     if (!PRE_START_STATUSES.includes(call.status)) {
       return { success: false, error: "This job has already started and can't be declined." };
     }
+    const vendorId = call.vendorId;
+    if (!vendorId || !call.vendor) {
+      return { success: false, error: "Cannot decline a job without a vendor." };
+    }
 
     await prisma.$transaction(async (tx) => {
       await tx.serviceCallOffer.upsert({
         where: { liveCallId_technicianId: { liveCallId: call.liveCallId, technicianId } },
         create: {
           liveCallId: call.liveCallId,
-          vendorId: call.vendorId,
+          vendorId,
           technicianId,
           status: "DECLINED",
           respondedAt: new Date(),
@@ -1473,7 +1483,7 @@ export async function declineJobAction(serviceCallId: string, reason: string): P
         });
         await tx.notification.create({
           data: {
-            userId: call.vendor.userId,
+            userId: call.vendor!.userId,
             type: "JOB_UNASSIGNED",
             title: "Technician dropped a job",
             message: `A technician declined the job at ${call.liveCall.address}, ${call.liveCall.city} — "${trimmedReason}". It's waiting for someone else.`,
@@ -1596,7 +1606,7 @@ export async function updateJobItemsAction(
       },
     });
     if (!call) return { success: false, error: "Service call not found" };
-    if (!isAdmin && call.vendor.userId !== session.user.id) {
+    if (!isAdmin && call.vendor?.userId !== session.user.id) {
       return { success: false, error: "Service call not found" };
     }
     if (!PRE_START_STATUSES.includes(call.status)) {
@@ -1633,5 +1643,120 @@ export async function updateJobItemsAction(
   } catch (err) {
     console.error("Update job items error:", err);
     return { success: false, error: "Failed to update this job's services" };
+  }
+}
+
+export async function buyLiveCallAsFreelancerAction(
+  liveCallId: string
+): Promise<ActionResponse<{ serviceCallId: string; liveCall: PurchasedLiveCallDetail }>> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || session.user.role !== "TECHNICIAN") {
+    return { success: false, error: "Not signed in as a technician" };
+  }
+  const userId = session.user.id;
+
+  try {
+    const technician = await prisma.technicianProfile.findUnique({
+      where: { userId },
+      select: { id: true, type: true, leadFeeType: true, leadFeeAmount: true },
+    });
+    if (!technician) {
+      return { success: false, error: "Technician profile not found." };
+    }
+    if (technician.type !== "FREELANCE") {
+      return { success: false, error: "Only freelance technicians can buy leads directly." };
+    }
+
+    const liveCall = await prisma.liveCall.findUnique({ where: { id: liveCallId } });
+    if (!liveCall) return { success: false, error: "Live call not found" };
+    if (liveCall.status !== "BROADCASTING") {
+      return { success: false, error: "This lead was already bought or has expired." };
+    }
+
+    const leadPrice = computeLeadPrice(liveCall.total, technician.leadFeeType, technician.leadFeeAmount);
+
+    let createdServiceCallId = "";
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        let wallet = await tx.technicianWallet.findUnique({ where: { technicianId: technician.id } });
+        if (!wallet) {
+          wallet = await tx.technicianWallet.create({ data: { technicianId: technician.id, balance: 0 } });
+        }
+
+        const debited = await tx.technicianWallet.updateMany({
+          where: { id: wallet.id, balance: { gte: leadPrice } },
+          data: { balance: { decrement: leadPrice } },
+        });
+        if (debited.count === 0) {
+          throw new BuyLeadError(`Not enough balance — this lead costs ₹${leadPrice}. Add money to your wallet.`);
+        }
+
+        const claimed = await tx.liveCall.updateMany({
+          where: { id: liveCallId, status: "BROADCASTING" },
+          data: { status: "CONVERTED", acceptedByTechnicianId: technician.id, acceptedAt: new Date() },
+        });
+        if (claimed.count === 0) {
+          throw new BuyLeadError("This lead was already bought by someone else or has expired.");
+        }
+
+        await tx.technicianWalletTransaction.create({
+          data: { walletId: wallet.id, type: "DEBIT", status: "COMPLETED", amount: leadPrice, liveCallId },
+        });
+
+        const serviceCall = await tx.serviceCall.create({
+          data: {
+            customerId: liveCall.customerId,
+            technicianId: technician.id,
+            liveCallId,
+            status: "IN_PROGRESS",
+            assignedAt: new Date(),
+          },
+        });
+        createdServiceCallId = serviceCall.id;
+      });
+    } catch (txErr) {
+      if (txErr instanceof BuyLeadError) {
+        return { success: false, error: txErr.message };
+      }
+      throw txErr;
+    }
+
+    revalidatePath("/technician/live-calls");
+    revalidatePath("/technician/service-calls");
+    revalidatePath("/technician/wallet");
+
+    return {
+      success: true,
+      data: {
+        serviceCallId: createdServiceCallId,
+        liveCall: {
+          customerName: liveCall.customerName,
+          customerPhone: liveCall.customerPhone,
+          siteContactName: liveCall.siteContactName,
+          siteContactPhone: liveCall.siteContactPhone,
+          customerEmail: liveCall.customerEmail,
+          address: liveCall.address,
+          city: liveCall.city,
+          state: liveCall.state,
+          pincode: liveCall.pincode,
+          paymentMode: liveCall.paymentMode,
+          createdByAdminName: liveCall.createdByAdminName,
+          upiRef: liveCall.upiRef,
+          paymentScreenshotUrl: liveCall.paymentScreenshotUrl,
+          subtotal: liveCall.subtotal,
+          tax: liveCall.tax,
+          total: liveCall.total,
+          items: (await prisma.liveCallItem.findMany({ where: { liveCallId } })).map((i) => ({
+            packageName: i.packageName,
+            quantity: i.quantity,
+            unitPrice: i.unitPrice,
+          })),
+        },
+      },
+    };
+  } catch (err) {
+    console.error("Buy live call as freelancer error:", err);
+    return { success: false, error: "Failed to buy live call" };
   }
 }

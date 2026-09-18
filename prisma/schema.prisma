@@ -204,11 +204,20 @@ enum TechnicianType {
   VENDOR_MANAGED
 }
 
+enum LeadFeeType {
+  FIXED
+  PERCENTAGE
+}
+
 model TechnicianProfile {
   id                String                    @id @default(cuid())
   userId            String                    @unique
   user              User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   type              TechnicianType            @default(FREELANCE)
+  // For freelance technicians: how their wallet is charged for incoming leads
+  leadFeeType       LeadFeeType               @default(FIXED)
+  leadFeeAmount     Float                     @default(0)
+  wallet            TechnicianWallet?
   skillCategory     String
   experienceYears   Int
   aadhaarNumber     String?
@@ -231,6 +240,7 @@ model TechnicianProfile {
   vendor            VendorProfile?            @relation(fields: [vendorId], references: [id], onDelete: SetNull)
   serviceCalls      ServiceCall[]
   serviceCallOffers ServiceCallOffer[]
+  acceptedLiveCalls LiveCall[]
   location          TechnicianLocation?
   locationEvents    TechnicianLocationEvent[]
   // Broad ("I do everything in this category") and narrow ("I only do this
@@ -249,6 +259,7 @@ model TechnicianProfile {
   ratingCount       Int                       @default(0)
   createdAt         DateTime                  @default(now())
   updatedAt         DateTime                  @updatedAt
+  serviceAreas      TechnicianServiceArea[]
 
   @@unique([idCityCode, idSeq])
 }
@@ -342,6 +353,20 @@ model TechnicianService {
 
   @@unique([technicianId, serviceId])
   @@index([serviceId])
+}
+
+model TechnicianServiceArea {
+  id           String            @id @default(cuid())
+  technicianId String
+  technician   TechnicianProfile @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  pincode      String
+  latitude     Float
+  longitude    Float
+  radiusKm     Float             @default(5)
+  createdAt    DateTime          @default(now())
+
+  @@unique([technicianId, pincode])
+  @@index([technicianId])
 }
 
 // Which categories a vendor may serve — admin-assigned, not self-managed.
@@ -608,8 +633,10 @@ model LiveCall {
   // it. Null means the job has never been edited.
   originalTotal        Float?
   status               LiveCallStatus     @default(BROADCASTING)
-  acceptedByVendorId   String?
-  acceptedByVendor     VendorProfile?     @relation(fields: [acceptedByVendorId], references: [id], onDelete: SetNull)
+  acceptedByVendorId     String?
+  acceptedByVendor       VendorProfile?     @relation(fields: [acceptedByVendorId], references: [id], onDelete: SetNull)
+  acceptedByTechnicianId String?
+  acceptedByTechnician   TechnicianProfile? @relation(fields: [acceptedByTechnicianId], references: [id], onDelete: SetNull)
   acceptedAt           DateTime?
   // Set only by cancelMyOrderAction — the customer's self-service cancel
   // while the order is still unclaimed (BROADCASTING). Once a vendor has
@@ -691,8 +718,8 @@ model ServiceCall {
   id                     String                @id @default(cuid())
   liveCallId             String                @unique
   liveCall               LiveCall              @relation(fields: [liveCallId], references: [id], onDelete: Cascade)
-  vendorId               String
-  vendor                 VendorProfile         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  vendorId               String?
+  vendor                 VendorProfile?        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   // Null while UNASSIGNED. SetNull rather than Cascade so deleting a
   // technician orphans the job back to the vendor instead of destroying
   // the customer's order history along with it.
@@ -1157,6 +1184,32 @@ model VendorWalletTransaction {
   // vendor's wallet directly, e.g. cash received outside the app) — adminName
   // is the specific admin's name (snapshotted, so it survives their own
   // later profile renames) and adminNote is their free-text reason.
+  adminName         String?
+  adminNote         String?
+  createdAt         DateTime                @default(now())
+
+  @@index([walletId])
+}
+
+model TechnicianWallet {
+  id           String                        @id @default(cuid())
+  technicianId String                        @unique
+  technician   TechnicianProfile             @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  balance      Float                         @default(0)
+  transactions TechnicianWalletTransaction[]
+  updatedAt    DateTime                      @updatedAt
+}
+
+model TechnicianWalletTransaction {
+  id                String                  @id @default(cuid())
+  walletId          String
+  wallet            TechnicianWallet        @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  type              WalletTransactionType
+  status            WalletTransactionStatus @default(COMPLETED)
+  amount            Float
+  razorpayOrderId   String?                 @unique
+  razorpayPaymentId String?
+  liveCallId        String?
   adminName         String?
   adminNote         String?
   createdAt         DateTime                @default(now())

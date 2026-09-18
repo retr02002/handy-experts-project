@@ -690,6 +690,7 @@ export interface NearbyLiveCall {
   expiresAt: string | null;
   distanceKm: number;
   items: LiveCallItemDetail[];
+  insufficientBalance?: boolean;
 }
 
 export async function getNearbyLiveCallsForVendorAction(): Promise<ActionResponse<NearbyLiveCall[]>> {
@@ -845,6 +846,93 @@ export async function getAllLiveCallsAction(): Promise<ActionResponse<AdminLiveC
     };
   } catch (err) {
     console.error("Get all live calls error:", err);
+    return { success: false, error: "Failed to load live calls" };
+  }
+}
+
+export async function getNearbyLiveCallsForFreelancerAction(): Promise<ActionResponse<NearbyLiveCall[]>> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || session.user.role !== "TECHNICIAN") {
+    return { success: false, error: "Not signed in as a technician" };
+  }
+
+  try {
+    await sweepExpiredAwaitingPayment();
+
+    const technician = await prisma.technicianProfile.findUnique({
+      where: { userId: session.user.id },
+      include: { location: true },
+    });
+    if (!technician) return { success: false, error: "Technician profile not found" };
+    if (technician.type !== "FREELANCE") return { success: false, error: "Only freelance technicians can view live calls" };
+    if (!technician.location?.latitude || !technician.location?.longitude) {
+      return { success: false, error: LOCATION_NOT_SET };
+    }
+    if (!technician.location.isOnDuty) {
+      return { success: false, error: "You must be on duty to view live calls" };
+    }
+
+    const wallet = await prisma.technicianWallet.findUnique({ where: { technicianId: technician.id } });
+    const currentBalance = wallet?.balance ?? 0;
+
+    const [calls, areas, categoryLinks, serviceLinks] = await Promise.all([
+      prisma.liveCall.findMany({
+        where: { status: "BROADCASTING" },
+        include: { items: true },
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      }),
+      prisma.technicianServiceArea.findMany({
+        where: { technicianId: technician.id },
+        select: { latitude: true, longitude: true, radiusKm: true },
+      }),
+      prisma.technicianCategory.findMany({ where: { technicianId: technician.id }, select: { categoryId: true } }),
+      prisma.technicianService.findMany({ where: { technicianId: technician.id }, select: { serviceId: true } }),
+    ]);
+
+    const allowedCategoryIds = new Set(categoryLinks.map((c) => c.categoryId));
+    const allowedServiceIds = new Set(serviceLinks.map((s) => s.serviceId));
+
+    const packageIds = calls.flatMap((c) => c.items.map((i) => i.packageId).filter((id): id is string => !!id));
+    const packageCategoryMap = await getPackageServiceCategoryMap(packageIds);
+
+    const nearby = calls
+      .filter((call) =>
+        call.items.some((i) => {
+          if (!i.packageId) return false;
+          const mapped = packageCategoryMap.get(i.packageId);
+          if (!mapped) return false;
+          
+          if (mapped.serviceId && allowedServiceIds.has(mapped.serviceId)) return true;
+          if (allowedCategoryIds.has(mapped.categoryId)) return true;
+          return false;
+        })
+      )
+      .map((call) => {
+        const leadPrice = computeLeadPrice(call.total, technician.leadFeeType, technician.leadFeeAmount);
+        return {
+          id: call.id,
+          customerFirstName: maskName(call.customerName),
+          customerPhoneMasked: maskPhone(call.customerPhone),
+          city: call.city,
+          pincode: call.pincode,
+          latitude: call.latitude,
+          longitude: call.longitude,
+          total: call.total,
+          leadPrice,
+          createdAt: call.createdAt.toISOString(),
+          expiresAt: call.expiresAt?.toISOString() ?? null,
+          distanceKm: haversineKm(technician.location!.latitude!, technician.location!.longitude!, call.latitude, call.longitude),
+          items: call.items.map((i) => ({ packageName: i.packageName, quantity: i.quantity, unitPrice: i.unitPrice })),
+          insufficientBalance: currentBalance < leadPrice,
+        };
+      })
+      .filter((call) => areas.some((a) => haversineKm(a.latitude, a.longitude, call.latitude, call.longitude) <= a.radiusKm))
+      .sort((a, b) => a.distanceKm - b.distanceKm);
+
+    return { success: true, data: nearby as any };
+  } catch (err) {
+    console.error("Get nearby live calls for freelancer error:", err);
     return { success: false, error: "Failed to load live calls" };
   }
 }

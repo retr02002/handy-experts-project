@@ -28,6 +28,7 @@ export default async function TechnicianLayout({
   // createTechnicianAction creates a complete TechnicianProfile upfront)
   // and any pre-existing technician who predates these fields. Each clears
   // permanently once its underlying data exists.
+  let technicianType = "VENDOR_MANAGED";
   if (status?.role === "TECHNICIAN") {
     const cityStatus = await hasTechnicianCityAction();
     if (cityStatus.success && !cityStatus.data?.hasCity) {
@@ -38,7 +39,13 @@ export default async function TechnicianLayout({
     if (photo.success && !photo.data?.hasPhoto) {
       redirect("/capture-photo");
     }
+
+    const { getMyTechnicianTypeAction } = await import("@/actions/technician.actions");
+    const typeRes = await getMyTechnicianTypeAction();
+    if (typeRes.success) {
+      technicianType = typeRes.data.type;
+    }
   }
 
-  return <TechnicianLayoutWrapper>{children}</TechnicianLayoutWrapper>;
+  return <TechnicianLayoutWrapper technicianType={technicianType}>{children}</TechnicianLayoutWrapper>;
 }
