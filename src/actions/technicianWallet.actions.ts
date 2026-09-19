@@ -81,8 +81,8 @@ export async function adminAddTechnicianFundsAction(
   if (amount <= 0) return { success: false, error: "Amount must be greater than 0" };
 
   try {
-    const adminUser = await prisma.user.findUnique({ where: { id: isAdmin.id }, select: { name: true } });
-    const adminName = adminUser?.name || "Admin";
+    const session = await getServerSession(authOptions);
+    const adminName = session?.user?.name || "Admin";
 
     await prisma.$transaction(async (tx) => {
       let wallet = await tx.technicianWallet.findUnique({ where: { technicianId } });
@@ -128,8 +128,8 @@ export async function adminDeductTechnicianFundsAction(
   if (amount <= 0) return { success: false, error: "Amount must be greater than 0" };
 
   try {
-    const adminUser = await prisma.user.findUnique({ where: { id: isAdmin.id }, select: { name: true } });
-    const adminName = adminUser?.name || "Admin";
+    const session = await getServerSession(authOptions);
+    const adminName = session?.user?.name || "Admin";
 
     await prisma.$transaction(async (tx) => {
       const wallet = await tx.technicianWallet.findUnique({ where: { technicianId } });

@@ -54,7 +54,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     ? true
     : audience === "customer"
       ? call.customerId === session.user.id
-      : call.vendor.userId === session.user.id;
+      : call.vendor?.userId === session.user.id;
   if (!allowed) return NextResponse.json({ error: "Not authorized" }, { status: 403 });
 
   // Documents describe finished work — issuing an invoice for a job still

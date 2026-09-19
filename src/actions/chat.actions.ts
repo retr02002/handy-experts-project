@@ -45,7 +45,7 @@ async function authorizeThread(
 
   const isCustomer = call.customerId === userId;
   const isTechnician = call.technician?.userId === userId;
-  const isVendor = call.vendor.userId === userId;
+  const isVendor = call.vendor?.userId === userId;
   if (!isCustomer && !isTechnician && !isVendor && !isAdmin) {
     return { ok: false, error: "You don't have access to this conversation" };
   }

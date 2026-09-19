@@ -37,7 +37,7 @@ async function canViewJob(serviceCallId: string): Promise<boolean> {
 
   return (
     call.customerId === session.user.id ||
-    call.vendor.userId === session.user.id ||
+    call.vendor?.userId === session.user.id ||
     call.technician?.userId === session.user.id
   );
 }

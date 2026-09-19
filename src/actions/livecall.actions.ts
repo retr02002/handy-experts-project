@@ -484,9 +484,9 @@ export async function getMyOrderDetailAction(liveCallId: string): Promise<Action
         createdByAdminName: r.createdByAdminName,
         upiRef: r.upiRef,
         paymentStatus: r.paymentStatus,
-        vendorName: r.serviceCall?.vendor.companyName ?? null,
-        vendorPhone: r.serviceCall?.vendor.user.phone ?? null,
-        vendorEmail: r.serviceCall?.vendor.user.email ?? null,
+        vendorName: r.serviceCall?.vendor?.companyName ?? null,
+        vendorPhone: r.serviceCall?.vendor?.user.phone ?? null,
+        vendorEmail: r.serviceCall?.vendor?.user.email ?? null,
         subtotal: r.subtotal,
         tax: r.tax,
         total: r.total,
@@ -904,7 +904,7 @@ export async function getNearbyLiveCallsForFreelancerAction(): Promise<ActionRes
           if (!mapped) return false;
           
           if (mapped.serviceId && allowedServiceIds.has(mapped.serviceId)) return true;
-          if (allowedCategoryIds.has(mapped.categoryId)) return true;
+          if (mapped.categoryId && allowedCategoryIds.has(mapped.categoryId)) return true;
           return false;
         })
       )

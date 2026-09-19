@@ -71,7 +71,7 @@ export async function getJobRouteAction(serviceCallId: string): Promise<ActionRe
 
     const allowed =
       call.customerId === userId ||
-      call.vendor.userId === userId ||
+      call.vendor?.userId === userId ||
       call.technician?.userId === userId;
     if (!allowed) return { success: false, error: "You don't have access to this job" };
 

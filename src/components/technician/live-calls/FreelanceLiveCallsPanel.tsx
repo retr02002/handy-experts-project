@@ -92,7 +92,7 @@ export function FreelanceLiveCallsPanel({ technicianLatitude, technicianLongitud
               label: `${c.customerFirstName} — ₹${c.total}`,
             }))}
             technicianMarkers={[]}
-            serviceAreaCircles={serviceAreas.map(a => ({ latitude: a.latitude, longitude: a.longitude, radiusKm: a.radiusKm }))}
+            serviceAreaCircles={serviceAreas.map((a, i) => ({ id: String(i), latitude: a.latitude, longitude: a.longitude, radiusKm: a.radiusKm }))}
             onCallMarkerClick={setSelectedId}
           />
         </div>

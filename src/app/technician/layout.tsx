@@ -43,7 +43,7 @@ export default async function TechnicianLayout({
     const { getMyTechnicianTypeAction } = await import("@/actions/technician.actions");
     const typeRes = await getMyTechnicianTypeAction();
     if (typeRes.success) {
-      technicianType = typeRes.data.type;
+      technicianType = typeRes.data?.type ?? "VENDOR_MANAGED";
     }
   }
 

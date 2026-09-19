@@ -144,19 +144,19 @@ export async function buildJobDocumentData(
     audience === "customer"
       ? PLATFORM_IDENTITY
       : {
-          name: call.vendor.companyName,
-          addressLines: [call.vendor.address],
-          city: call.vendor.city,
-          state: call.vendor.state,
+          name: call.vendor?.companyName ?? "",
+          addressLines: [call.vendor?.address ?? ""],
+          city: call.vendor?.city ?? "",
+          state: call.vendor?.state ?? "",
           // The vendor's own GST state code isn't stored separately; the
           // state name is what's printed, and the split below falls back to
           // comparing state names.
           stateCode: "",
-          pincode: call.vendor.pincode,
-          phone: call.vendor.user.phone ?? "",
-          email: call.vendor.user.email ?? "",
-          gstin: call.vendor.gstNumber,
-          pan: call.vendor.panNumber,
+          pincode: call.vendor?.pincode ?? "",
+          phone: call.vendor?.user.phone ?? "",
+          email: call.vendor?.user.email ?? "",
+          gstin: call.vendor?.gstNumber ?? null,
+          pan: call.vendor?.panNumber ?? null,
         };
 
   const [beforeImages, afterImages, signatureImage] = await Promise.all([
@@ -185,7 +185,7 @@ export async function buildJobDocumentData(
       addressLines: [lc.address, `${lc.city}, ${lc.state} ${lc.pincode}`],
     },
     technicianName: call.technician?.user.name ?? null,
-    vendorName: call.vendor.companyName,
+    vendorName: call.vendor?.companyName ?? "",
     status: call.status,
     completionStatus: call.report?.completionStatus ?? null,
     jobTitle: lc.items.map((i) => i.packageName).join(", ") || "Service visit",

@@ -100,7 +100,7 @@ export async function submitReviewAction(serviceCallId: string, input: ReviewInp
           serviceCallId,
           customerId: userId,
           technicianId: call.technicianId,
-          vendorId: call.vendorId,
+          vendorId: call.vendorId!,
           technicianRating: input.technicianRating,
           technicianComment,
           serviceRating: input.serviceRating,
