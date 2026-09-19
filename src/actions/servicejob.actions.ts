@@ -14,6 +14,7 @@ import {
   GEOFENCE_ENFORCED,
   GEOFENCE_POSITION_REQUIRED,
 } from "@/lib/constants";
+import { createStepTimer } from "@/lib/perfLog";
 
 /**
  * A fixed 4-digit customer PIN is only 10,000 combinations, so the gate has
@@ -205,7 +206,9 @@ export async function startJobAction(
   pin: string,
   fix: GeoFixInput | null = null
 ): Promise<ActionResponse> {
+  const timer = createStepTimer(`startJobAction ${serviceCallId}`);
   const { technicianId, error } = await requireTechnicianId();
+  timer.mark("auth");
   if (!technicianId) return { success: false, error: error! };
 
   const parsedFix = fix ? geoFixSchema.safeParse(fix) : null;
@@ -213,6 +216,7 @@ export async function startJobAction(
 
   try {
     const verified = await verifyJobPin(serviceCallId, technicianId, pin, "EN_ROUTE");
+    timer.mark("verifyJobPin");
     if (!verified.ok) return { success: false, error: verified.error };
 
     const geo = evaluateJobGeofence(serviceCallId, verified.call, usableFix, "start");
@@ -226,6 +230,7 @@ export async function startJobAction(
       where: { id: serviceCallId },
       data: { status: "IN_PROGRESS", startedAt: new Date(), pinAttempts: 0, ...geo.fields },
     });
+    timer.mark("serviceCall.update");
 
     // Fire-and-forget notification to avoid blocking the client response
     prisma.notification.create({
@@ -261,7 +266,9 @@ export async function completeJobAction(
   report: ServiceReportInput,
   fix: GeoFixInput | null = null
 ): Promise<ActionResponse> {
+  const timer = createStepTimer(`completeJobAction ${serviceCallId}`);
   const { technicianId, error } = await requireTechnicianId();
+  timer.mark("auth");
   if (!technicianId) return { success: false, error: error! };
 
   const validated = serviceReportSchema.safeParse(report);
@@ -275,6 +282,7 @@ export async function completeJobAction(
 
   try {
     const verified = await verifyJobPin(serviceCallId, technicianId, pin, "IN_PROGRESS");
+    timer.mark("verifyJobPin");
     if (!verified.ok) return { success: false, error: verified.error };
 
     const geo = evaluateJobGeofence(serviceCallId, verified.call, usableFix, "complete");
@@ -308,6 +316,7 @@ export async function completeJobAction(
         }),
       ]);
     });
+    timer.mark("transaction (serviceCall.update + serviceReport.upsert)");
 
     // Fire-and-forget notifications
     prisma.notification.createMany({

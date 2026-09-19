@@ -15,6 +15,7 @@ import { canStartTravel, formatScheduledFor, TRAVEL_WINDOW_MINUTES } from "@/lib
 import { formatTicketNumber } from "@/lib/ticketNumber";
 import { MASKED_CUSTOMER_LABEL } from "@/lib/constants";
 import { isOrderOverdue } from "@/lib/overdue";
+import { createStepTimer } from "@/lib/perfLog";
 import {
   getLiveCallServiceIds,
   getPackageServiceCategoryMap,
@@ -1304,7 +1305,9 @@ export async function getMyAvailableJobsAction(): Promise<ActionResponse<Technic
 export async function claimServiceCallAction(
   serviceCallId: string
 ): Promise<ActionResponse<{ serviceCallId: string }>> {
+  const timer = createStepTimer(`claimServiceCallAction ${serviceCallId}`);
   const { technicianId, error } = await requireTechnicianProfile();
+  timer.mark("auth");
   if (!technicianId) return { success: false, error: error! };
 
   try {
@@ -1328,6 +1331,7 @@ export async function claimServiceCallAction(
         },
       }),
     ]);
+    timer.mark("technicianProfile + serviceCall lookup");
     if (!me) return { success: false, error: "Technician profile not found" };
     if (!me.location?.isOnDuty) return { success: false, error: "Go on duty before taking a job." };
     if (!call) return { success: false, error: "Job not found" };
@@ -1349,6 +1353,7 @@ export async function claimServiceCallAction(
           })
         : Promise.resolve(null),
     ]);
+    timer.mark("offer + service-area lookup");
     if (!hasPendingOffer && !belongsToMyVendor) {
       return { success: false, error: "This job isn't available to you." };
     }
@@ -1370,6 +1375,7 @@ export async function claimServiceCallAction(
       where: { id: serviceCallId, technicianId: null, status: "UNASSIGNED" },
       data: { technicianId, status: "ASSIGNED", assignedAt: new Date() },
     });
+    timer.mark("claim updateMany");
     if (claimed.count === 0) return { success: false, error: "This job is no longer available." };
 
     await prisma.$transaction(async (tx) => {
@@ -1409,6 +1415,7 @@ export async function claimServiceCallAction(
       }
       await Promise.all(writes);
     });
+    timer.mark("transaction (offers + handover)");
 
     // Fire-and-forget, same as notifyUser/notifyAllAdmins elsewhere in this
     // codebase — a notification insert failing must never roll back an

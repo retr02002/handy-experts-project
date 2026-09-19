@@ -10,10 +10,13 @@ import { ServiceCallDetailModal } from "./ServiceCallDetailModal";
 import { ViewToggle, type ViewMode } from "@/components/ui/ViewToggle";
 
 // Short enough that a technician accepting/starting/completing a job shows
-// up on the vendor's dashboard within a few seconds instead of up to 15s —
-// there's no push/websocket mechanism in this app, so this poll cadence is
-// the whole mechanism.
-const CALLS_POLL_INTERVAL_MS = 3000;
+// up on the vendor's dashboard within a handful of seconds instead of up to
+// 15s — there's no push/websocket mechanism in this app, so this poll
+// cadence is the whole mechanism. Not pushed down to 3s: with several
+// vendor dashboards open at once, that was found to create enough
+// concurrent DB load to queue out the technician's own job actions behind
+// this polling traffic — 5s is the safer middle ground at real scale.
+const CALLS_POLL_INTERVAL_MS = 5000;
 
 export function VendorServiceCallsClient({ initialCalls }: { initialCalls: ServiceCallSummary[] }) {
   const searchParams = useSearchParams();

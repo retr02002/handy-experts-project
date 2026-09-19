@@ -35,6 +35,35 @@ interface Props {
   onDone: () => void;
 }
 
+class TimeoutError extends Error {}
+
+/**
+ * Guarantees this dialog can never sit on "Verifying..." forever, no matter
+ * what's slow upstream (a stalled mobile connection, DB contention, a cold
+ * server instance) — races the actual request against a hard ceiling and
+ * surfaces a clear, retryable error if nothing comes back in time. The
+ * in-flight request itself isn't cancelled (Server Actions don't expose an
+ * AbortSignal), it just stops blocking the UI; every action this wraps is
+ * safe to retry (PIN re-verification, conditional claim checks).
+ */
+const ACTION_TIMEOUT_MS = 15_000;
+
+function withTimeout<T>(promise: Promise<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new TimeoutError("Action timed out")), ACTION_TIMEOUT_MS);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
+
 /**
  * The customer reads their fixed 4-digit PIN out loud; the technician types
  * it here. Verification is entirely server-side — the PIN is never sent to
@@ -66,7 +95,7 @@ export function JobPinDialog({ call, gate, onClose, onDone }: Props) {
     startTransition(async () => {
       try {
         if (gate === "start") {
-          const res = await startJobAction(call.id, pin, fix);
+          const res = await withTimeout(startJobAction(call.id, pin, fix));
           if (!res.success) {
             setError(
               res.error === GEOFENCE_POSITION_REQUIRED
@@ -82,7 +111,7 @@ export function JobPinDialog({ call, gate, onClose, onDone }: Props) {
             setError(input.error);
             return;
           }
-          const res = await completeJobAction(call.id, pin, input.value, fix);
+          const res = await withTimeout(completeJobAction(call.id, pin, input.value, fix));
           if (!res.success) {
             setError(
               res.error === GEOFENCE_POSITION_REQUIRED
@@ -95,13 +124,18 @@ export function JobPinDialog({ call, gate, onClose, onDone }: Props) {
         }
         onDone();
       } catch (err) {
-        // The action itself never throws (it catches server-side errors and
-        // resolves with {success:false}) — reaching here means the request
-        // itself failed (a dropped mobile connection, a timeout). Without
-        // this, that rejection went unhandled and the button was stuck
-        // showing "Verifying..." forever with no way to retry.
+        // Two things land here: (1) the request itself failing (a dropped
+        // mobile connection) — the action never throws on its own, it
+        // always resolves with {success:false} for server-side errors; (2)
+        // the withTimeout race above firing because nothing came back at
+        // all. Either way, this used to go unhandled and leave the button
+        // stuck showing "Verifying..." forever with no way to retry.
         console.error("Job PIN submit error:", err);
-        setError("Network error — please check your connection and try again.");
+        setError(
+          err instanceof TimeoutError
+            ? "This is taking longer than expected — check your connection and try again."
+            : "Network error — please check your connection and try again."
+        );
       } finally {
         setIsSubmitting(false);
       }
