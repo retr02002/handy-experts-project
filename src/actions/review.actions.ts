@@ -3,7 +3,6 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
 import type { ActionResponse } from "@/actions/auth.actions";
 import type { Prisma } from "@prisma/client";
 
@@ -134,10 +133,11 @@ export async function submitReviewAction(serviceCallId: string, input: ReviewInp
       }
     });
 
-    revalidatePath("/customer/reviews");
-    revalidatePath("/vendor/reviews");
-    revalidatePath("/technician/feedback");
-    revalidatePath("/services");
+    // No revalidatePath — the caller (RateJobModal via OrderDetailClient's
+    // onSubmitted) already self-refetches. The /services one was also
+    // ineffective on its own terms: getAllServices is unstable_cache-tagged
+    // ("services"), not path-invalidated, so revalidating the page would
+    // have just re-rendered with the same stale tagged data anyway.
     return { success: true };
   } catch (err) {
     console.error("Submit review error:", err);

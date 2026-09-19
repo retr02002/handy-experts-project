@@ -4,7 +4,6 @@ import { randomInt } from "crypto";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
 import type { ActionResponse } from "@/actions/auth.actions";
 import {
   createLiveCallSchema,
@@ -297,7 +296,9 @@ export async function createLiveCallAction(
       return created;
     });
 
-    revalidatePath("/cart");
+    // No revalidatePath — /cart has no server data dependency (CartContainer
+    // is a client component managing its own state), and checkout advances
+    // a local step state rather than revisiting the page.
     // Best-effort — never let a notification failure fail the order itself.
     notifyAllAdmins(
       "NEW_LIVE_CALL",
@@ -594,8 +595,8 @@ export async function cancelMyOrderAction(input: unknown): Promise<ActionRespons
       return { success: false, error: "A professional just accepted this order — it can no longer be cancelled here." };
     }
 
-    revalidatePath(`/customer/orders/${liveCallId}`);
-    revalidatePath("/customer/orders");
+    // No revalidatePath — OrderDetailClient's onCancelled already
+    // self-refetches via getMyOrderDetailAction directly.
     notifyAllAdmins(
       "CALL_CANCELLED",
       "Order cancelled by customer",

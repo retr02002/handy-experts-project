@@ -218,11 +218,13 @@ export async function startJobAction(
     const geo = evaluateJobGeofence(serviceCallId, verified.call, usableFix, "start");
     if (geo.error) return { success: false, error: geo.error };
 
-    await prisma.$transaction(async (tx) => {
-      await tx.serviceCall.update({
-        where: { id: serviceCallId },
-        data: { status: "IN_PROGRESS", startedAt: new Date(), pinAttempts: 0, ...geo.fields },
-      });
+    // A single write needs no transaction wrapper — that was pure extra
+    // BEGIN/COMMIT round-trip latency on every start-job tap for no
+    // atomicity benefit (the notification below is already fire-and-forget,
+    // outside any transaction).
+    await prisma.serviceCall.update({
+      where: { id: serviceCallId },
+      data: { status: "IN_PROGRESS", startedAt: new Date(), pinAttempts: 0, ...geo.fields },
     });
 
     // Fire-and-forget notification to avoid blocking the client response
@@ -237,8 +239,14 @@ export async function startJobAction(
       },
     }).catch(console.error);
 
-    revalidatePath("/technician/service-calls");
-    revalidatePath("/vendor/service-calls");
+    // No revalidatePath here on purpose — this Server Action runs from a
+    // client component that already re-fetches its own data via onChanged()
+    // the moment this resolves, and revalidatePath has no effect at all on
+    // the vendor's poll-driven fetch (a plain Server Action call per poll
+    // tick, not a cached page render). Revalidating used to force this
+    // response to wait on re-running /technician/service-calls' full data
+    // fetch (including the much heavier getMyAvailableJobsAction) before the
+    // technician's tap ever resolved — pure dead weight.
     return { success: true };
   } catch (err) {
     console.error("Start job error:", err);
@@ -323,8 +331,9 @@ export async function completeJobAction(
       ],
     }).catch(console.error);
 
-    revalidatePath("/technician/service-calls");
-    revalidatePath("/vendor/service-calls");
+    // No revalidatePath here either — see the matching comment in
+    // startJobAction for why it's dead weight on this client-refetch
+    // architecture.
     return { success: true };
   } catch (err) {
     console.error("Complete job error:", err);

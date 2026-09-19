@@ -1,7 +1,6 @@
 "use server";
 
 import { randomUUID } from "crypto";
-import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import type { ActionResponse } from "@/actions/auth.actions";
 import { checkoutDetailsSchema } from "@/lib/validations/livecall.schema";
@@ -163,7 +162,8 @@ export async function createRazorpayOrderAction(input: unknown): Promise<ActionR
         return created;
       });
 
-      revalidatePath("/cart");
+      // No revalidatePath — /cart has no server data dependency, same
+      // reasoning as createLiveCallAction in livecall.actions.ts.
       notifyAllAdmins(
         "NEW_LIVE_CALL",
         "New live call",
@@ -296,7 +296,7 @@ export async function verifyRazorpayPaymentAction(input: {
       // committed; a failure past this point just leaves stale cart rows,
       // not a duplicate/lost order.
       await prisma.cartItem.deleteMany({ where: { userId, status: "ACTIVE" } });
-      revalidatePath("/cart");
+      // No revalidatePath — see the matching comment in createRazorpayOrderAction above.
       if (liveCall) {
         notifyAllAdmins(
           "NEW_LIVE_CALL",

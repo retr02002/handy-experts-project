@@ -10,11 +10,17 @@ import { motion } from "framer-motion";
 export function TechnicianBottomNav({ technicianType }: { technicianType?: string }) {
   const pathname = usePathname();
 
-  const navItems = [
+  const navItems = technicianType === "FREELANCE" ? [
     { label: "Home", href: "/technician", icon: "ph:squares-four" },
-    ...(technicianType === "FREELANCE" ? [{ label: "Live Calls", href: "/technician/live-calls", icon: "ph:phone-call" }] : []),
+    { label: "Live Calls", href: "/technician/live-calls", icon: "ph:phone-call" },
     { label: "Theme", href: "theme", icon: "theme" },
     { label: "Jobs", href: "/technician/service-calls", icon: "ph:wrench" },
+    { label: "Profile", href: "/technician/profile", icon: "ph:user" },
+  ] : [
+    { label: "Home", href: "/technician", icon: "ph:squares-four" },
+    { label: "Jobs", href: "/technician/service-calls", icon: "ph:wrench" },
+    { label: "Theme", href: "theme", icon: "theme" },
+    { label: "Reviews", href: "/technician/feedback", icon: "ph:star" },
     { label: "Profile", href: "/technician/profile", icon: "ph:user" },
   ];
 

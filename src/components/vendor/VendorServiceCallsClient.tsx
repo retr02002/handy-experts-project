@@ -9,7 +9,11 @@ import { ServiceCallsCardGrid } from "./ServiceCallsCardGrid";
 import { ServiceCallDetailModal } from "./ServiceCallDetailModal";
 import { ViewToggle, type ViewMode } from "@/components/ui/ViewToggle";
 
-const CALLS_POLL_INTERVAL_MS = 15000;
+// Short enough that a technician accepting/starting/completing a job shows
+// up on the vendor's dashboard within a few seconds instead of up to 15s —
+// there's no push/websocket mechanism in this app, so this poll cadence is
+// the whole mechanism.
+const CALLS_POLL_INTERVAL_MS = 3000;
 
 export function VendorServiceCallsClient({ initialCalls }: { initialCalls: ServiceCallSummary[] }) {
   const searchParams = useSearchParams();

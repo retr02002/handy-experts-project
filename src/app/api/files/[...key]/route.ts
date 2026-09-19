@@ -29,6 +29,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ key: st
         "Content-Type": contentType,
         "Content-Length": String(body.byteLength),
         "Cache-Control": "public, max-age=31536000, immutable",
+        // Stored content-type is only as trustworthy as the client-supplied
+        // upload Content-Type (see the upload routes) — this stops an old
+        // browser from re-sniffing a mismatched/spoofed type.
+        "X-Content-Type-Options": "nosniff",
       },
     });
   } catch {

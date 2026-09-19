@@ -7,6 +7,7 @@ import bcrypt from "bcrypt";
 import type { PrismaClient } from "@prisma/client";
 import { consumeOtp } from "@/actions/otp.actions";
 import { findTechnicianByIdentifier } from "@/lib/technicianIdentifier";
+import { NEXTAUTH_SECRET } from "@/lib/authSecret";
 
 declare module "next-auth" {
   interface Session {
@@ -126,6 +127,20 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
     maxAge: 7 * 24 * 60 * 60, // 7 days
   },
+  // Explicit instead of relying on NextAuth's implicit defaults, so this
+  // can't silently regress unnoticed (e.g. secure cookies never activating
+  // because someone tested over plain HTTP in a "prod-like" environment).
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === "production" ? "__Secure-next-auth.session-token" : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+  },
   callbacks: {
     async jwt({ token, user, trigger }) {
       if (user) {
@@ -161,5 +176,5 @@ export const authOptions: NextAuthOptions = {
       return session;
     }
   },
-  secret: process.env.NEXTAUTH_SECRET || "fallback_secret_for_development_12345",
+  secret: NEXTAUTH_SECRET,
 };

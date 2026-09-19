@@ -1,11 +1,13 @@
 import React from "react";
+import Image from "next/image";
 
 export function OnboardingShell({ children, wide = false }: { children: React.ReactNode; wide?: boolean }) {
   return (
     <div className="relative w-full flex-1 flex flex-col sm:h-auto sm:min-h-[100dvh] overflow-hidden sm:items-center sm:justify-center px-4 py-8 sm:py-10">
       {/* Background — desktop only; mobile stays a plain full-screen surface, app-style */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/images/auth-hero.png" alt="" className="hidden sm:block absolute inset-0 w-full h-full object-cover" />
+      <div className="hidden sm:block absolute inset-0">
+        <Image src="/images/auth-hero.png" alt="" fill priority sizes="100vw" className="object-cover" />
+      </div>
       <div className="hidden sm:block absolute inset-0 bg-slate-900/70" />
 
       {/* Mobile brand header */}

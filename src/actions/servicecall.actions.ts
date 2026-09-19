@@ -272,9 +272,9 @@ export async function buyLiveCallAction(
       total: liveCall.total,
     });
 
-    revalidatePath("/vendor/live-calls");
-    revalidatePath("/vendor/service-calls");
-    revalidatePath("/vendor/wallet");
+    // No revalidatePath — LiveCallsPanel.tsx already self-refetches
+    // (refetchCalls/refetchAwaiting) on BuyLeadModal's onBought, and this
+    // has no effect on the vendor's poll-driven fetch anyway.
     // notifyAllAdmins already runs asynchronously internally, but we don't await it here anyway.
     notifyAllAdmins(
       "CALL_ACCEPTED",
@@ -851,9 +851,8 @@ export async function updateServiceCallStatusAction(
       await prisma.serviceCall.update({ where: { id }, data: { status, ...timestampField } });
     }
 
-    revalidatePath("/vendor/service-calls");
-    revalidatePath("/technician/service-calls");
-    revalidatePath(`/customer/orders/${call.liveCallId}`);
+    // No revalidatePath — TechnicianJobPanel/vendor+admin callers already
+    // self-refetch via onChanged() after this resolves.
     return { success: true };
   } catch (err) {
     console.error("Update service call status error:", err);
@@ -1032,9 +1031,24 @@ export async function reassignServiceCallAction(
 
     const technician = await prisma.technicianProfile.findUnique({
       where: { id: newTechnicianId },
-      select: { userId: true, vendorId: true, user: { select: { name: true } } },
+      select: {
+        userId: true,
+        vendorId: true,
+        user: { select: { name: true } },
+        location: { select: { isOnDuty: true } },
+      },
     });
     if (!technician) return { success: false, error: "Technician not found" };
+
+    const isOwnStaff = technician.vendorId === vendorId;
+    // The candidate list (getReassignCandidatesAction) only ever offers a
+    // freelancer if they're genuinely unaffiliated (vendorId: null) and
+    // on-duty — without this check here, any technician id not belonging
+    // to this vendor (including another vendor's own staff, or an
+    // off-duty technician) would silently be sent an unsolicited offer.
+    if (!isOwnStaff && (technician.vendorId !== null || !technician.location?.isOnDuty)) {
+      return { success: false, error: "This technician isn't available to be assigned right now." };
+    }
 
     // Whoever had this job before — either still directly assigned, or
     // already released back into the pool by an earlier decline — is who
@@ -1042,7 +1056,6 @@ export async function reassignServiceCallAction(
     const outgoingTechnicianName = call.technician?.user.name ?? call.previousTechnicianName ?? "Unassigned";
     const outgoingTechnicianId = call.technicianId ?? call.previousTechnicianId ?? null;
 
-    const isOwnStaff = technician.vendorId === vendorId;
     const message = `A job is available at ${call.liveCall.address}, ${call.liveCall.city} — ₹${call.liveCall.total}.`;
 
     if (isOwnStaff) {
@@ -1295,33 +1308,47 @@ export async function claimServiceCallAction(
   if (!technicianId) return { success: false, error: error! };
 
   try {
-    const me = await prisma.technicianProfile.findUnique({
-      where: { id: technicianId },
-      select: {
-        vendorId: true,
-        userId: true,
-        user: { select: { name: true } },
-        location: { select: { isOnDuty: true, latitude: true, longitude: true } },
-      },
-    });
+    // These two lookups don't depend on each other — run them together
+    // instead of one round trip at a time.
+    const [me, call] = await Promise.all([
+      prisma.technicianProfile.findUnique({
+        where: { id: technicianId },
+        select: {
+          vendorId: true,
+          userId: true,
+          user: { select: { name: true } },
+          location: { select: { isOnDuty: true, latitude: true, longitude: true } },
+        },
+      }),
+      prisma.serviceCall.findUnique({
+        where: { id: serviceCallId },
+        include: {
+          liveCall: { select: { latitude: true, longitude: true, address: true, city: true, customerId: true } },
+          vendor: { select: { userId: true } },
+        },
+      }),
+    ]);
     if (!me) return { success: false, error: "Technician profile not found" };
     if (!me.location?.isOnDuty) return { success: false, error: "Go on duty before taking a job." };
-
-    const call = await prisma.serviceCall.findUnique({
-      where: { id: serviceCallId },
-      include: {
-        liveCall: { select: { latitude: true, longitude: true, address: true, city: true, customerId: true } },
-        vendor: { select: { userId: true } },
-      },
-    });
     if (!call) return { success: false, error: "Job not found" };
     if (call.status !== "UNASSIGNED") return { success: false, error: "This job is no longer available." };
 
-    const hasPendingOffer = await prisma.serviceCallOffer.findFirst({
-      where: { liveCallId: call.liveCallId, technicianId, status: "PENDING" },
-      select: { id: true },
-    });
     const belongsToMyVendor = me.vendorId !== null && me.vendorId === call.vendorId;
+
+    // Same independence — the pending-offer check and the in-area check
+    // (only relevant for the vendor's own jobs) don't depend on each other.
+    const [hasPendingOffer, areas] = await Promise.all([
+      prisma.serviceCallOffer.findFirst({
+        where: { liveCallId: call.liveCallId, technicianId, status: "PENDING" },
+        select: { id: true },
+      }),
+      belongsToMyVendor
+        ? prisma.vendorServiceArea.findMany({
+            where: { vendorId: me.vendorId! },
+            select: { latitude: true, longitude: true, radiusKm: true },
+          })
+        : Promise.resolve(null),
+    ]);
     if (!hasPendingOffer && !belongsToMyVendor) {
       return { success: false, error: "This job isn't available to you." };
     }
@@ -1333,11 +1360,7 @@ export async function claimServiceCallAction(
     // directly offered job was already validated as in-range when the offer
     // was created, so it isn't re-checked here.
     if (belongsToMyVendor) {
-      const areas = await prisma.vendorServiceArea.findMany({
-        where: { vendorId: me.vendorId! },
-        select: { latitude: true, longitude: true, radiusKm: true },
-      });
-      const inArea = areas.some(
+      const inArea = (areas ?? []).some(
         (a) => haversineKm(a.latitude, a.longitude, me.location!.latitude, me.location!.longitude) <= a.radiusKm
       );
       if (!inArea) return { success: false, error: "You're currently outside your service area." };
@@ -1350,62 +1373,75 @@ export async function claimServiceCallAction(
     if (claimed.count === 0) return { success: false, error: "This job is no longer available." };
 
     await prisma.$transaction(async (tx) => {
+      // Independent writes — grouped so they run concurrently instead of
+      // one round trip at a time inside the transaction.
+      const writes: Promise<unknown>[] = [
+        tx.serviceCallOffer.updateMany({
+          where: { liveCallId: call.liveCallId, technicianId, status: "PENDING" },
+          data: { status: "ACCEPTED", respondedAt: new Date() },
+        }),
+        // Everyone else's ping for this job stops now.
+        tx.serviceCallOffer.updateMany({
+          where: { liveCallId: call.liveCallId, technicianId: { not: technicianId }, status: "PENDING" },
+          data: { status: "EXPIRED", respondedAt: new Date() },
+        }),
+      ];
       // A predecessor snapshot (from an earlier decline or vendor
       // reassignment that released this job to the pool) becomes the real
       // handover record now that this claim has actually stuck.
       if (call.previousTechnicianId || call.previousTechnicianName) {
-        await tx.serviceCallHandover.create({
-          data: {
-            serviceCallId,
-            fromTechnicianId: call.previousTechnicianId,
-            fromTechnicianName: call.previousTechnicianName ?? "Unassigned",
-            toTechnicianId: technicianId,
-            toTechnicianName: me.user.name ?? "",
-            reason: call.previousHandoverReason,
-          },
-        });
-        await tx.serviceCall.update({
-          where: { id: serviceCallId },
-          data: { previousTechnicianId: null, previousTechnicianName: null, previousHandoverReason: null },
-        });
+        writes.push(
+          tx.serviceCallHandover.create({
+            data: {
+              serviceCallId,
+              fromTechnicianId: call.previousTechnicianId,
+              fromTechnicianName: call.previousTechnicianName ?? "Unassigned",
+              toTechnicianId: technicianId,
+              toTechnicianName: me.user.name ?? "",
+              reason: call.previousHandoverReason,
+            },
+          }),
+          tx.serviceCall.update({
+            where: { id: serviceCallId },
+            data: { previousTechnicianId: null, previousTechnicianName: null, previousHandoverReason: null },
+          })
+        );
       }
-      await tx.serviceCallOffer.updateMany({
-        where: { liveCallId: call.liveCallId, technicianId, status: "PENDING" },
-        data: { status: "ACCEPTED", respondedAt: new Date() },
-      });
-      // Everyone else's ping for this job stops now.
-      await tx.serviceCallOffer.updateMany({
-        where: { liveCallId: call.liveCallId, technicianId: { not: technicianId }, status: "PENDING" },
-        data: { status: "EXPIRED", respondedAt: new Date() },
-      });
-      if (call.vendor) {
-        await tx.notification.create({
-          data: {
-            userId: call.vendor.userId,
-            type: "CALL_ASSIGNED",
-            title: "Technician accepted the job",
-            message: `A technician accepted your call at ${call.liveCall.address}, ${call.liveCall.city}.`,
-            liveCallId: call.liveCallId,
-            serviceCallId,
-          },
-        });
-      }
-      await tx.notification.create({
+      await Promise.all(writes);
+    });
+
+    // Fire-and-forget, same as notifyUser/notifyAllAdmins elsewhere in this
+    // codebase — a notification insert failing must never roll back an
+    // already-successful claim, which is exactly what awaiting these inside
+    // the transaction above risked.
+    if (call.vendor) {
+      prisma.notification.create({
         data: {
-          userId: call.liveCall.customerId,
+          userId: call.vendor.userId,
           type: "CALL_ASSIGNED",
-          title: "A technician is on the job",
-          message: "Your service request has been assigned — track it from your order page.",
+          title: "Technician accepted the job",
+          message: `A technician accepted your call at ${call.liveCall.address}, ${call.liveCall.city}.`,
           liveCallId: call.liveCallId,
           serviceCallId,
         },
-      });
-    });
+      }).catch(console.error);
+    }
+    prisma.notification.create({
+      data: {
+        userId: call.liveCall.customerId,
+        type: "CALL_ASSIGNED",
+        title: "A technician is on the job",
+        message: "Your service request has been assigned — track it from your order page.",
+        liveCallId: call.liveCallId,
+        serviceCallId,
+      },
+    }).catch(console.error);
 
-    revalidatePath("/technician");
-    revalidatePath("/technician/service-calls");
-    revalidatePath("/vendor/live-calls");
-    revalidatePath("/vendor/service-calls");
+    // No revalidatePath — this action is invoked from client components
+    // that already re-fetch their own data on resolution, and it has no
+    // effect on the vendor's poll-driven fetch (a plain Server Action call
+    // per poll tick, not a cached page render). Same reasoning as
+    // startJobAction/completeJobAction in servicejob.actions.ts.
     return { success: true, data: { serviceCallId } };
   } catch (err) {
     console.error("Claim service call error:", err);
@@ -1494,9 +1530,8 @@ export async function declineJobAction(serviceCallId: string, reason: string): P
       }
     });
 
-    revalidatePath("/technician");
-    revalidatePath("/technician/service-calls");
-    revalidatePath("/vendor/service-calls");
+    // No revalidatePath — TechnicianJobPanel.handleDecline already
+    // self-refetches via onChanged() after this resolves.
     return { success: true };
   } catch (err) {
     console.error("Decline job error:", err);

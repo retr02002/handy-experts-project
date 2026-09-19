@@ -28,9 +28,13 @@ const LiveMap = dynamic(() => import("@/components/shared/LiveMap").then((m) => 
   loading: () => <div className="w-full h-[500px] bg-slate-100 dark:bg-slate-800 animate-pulse" />,
 });
 
-const CALLS_POLL_INTERVAL_MS = 10000;
+// Short enough that a technician accepting/starting/completing a job shows
+// up on the vendor's dashboard within a few seconds instead of up to 10-15s
+// — there's no push/websocket mechanism in this app, so this poll cadence
+// is the whole mechanism.
+const CALLS_POLL_INTERVAL_MS = 3000;
 const TECHNICIANS_POLL_INTERVAL_MS = 15000;
-const AWAITING_POLL_INTERVAL_MS = 8000;
+const AWAITING_POLL_INTERVAL_MS = 3000;
 
 interface LiveCallsPanelProps {
   vendorLatitude: number;

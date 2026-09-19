@@ -66,6 +66,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ key: st
         "Content-Type": contentType,
         "Content-Length": String(body.byteLength),
         "Cache-Control": resolved.isPublic ? "public, max-age=31536000, immutable" : "private, no-store",
+        // Stored content-type is only as trustworthy as the client-supplied
+        // upload Content-Type — this stops an old browser from re-sniffing
+        // a mismatched/spoofed type, notably for Aadhaar/PAN/GST documents.
+        "X-Content-Type-Options": "nosniff",
       },
     });
   } catch {

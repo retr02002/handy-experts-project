@@ -16,8 +16,15 @@ async function requireVendorId(): Promise<{ vendorId: string | null; error: stri
   if (!session?.user?.id || session.user.role !== "VENDOR") {
     return { vendorId: null, error: "Not signed in as a vendor" };
   }
-  const profile = await prisma.vendorProfile.findUnique({ where: { userId: session.user.id }, select: { id: true } });
+  const profile = await prisma.vendorProfile.findUnique({
+    where: { userId: session.user.id },
+    select: { id: true, isActive: true },
+  });
   if (!profile) return { vendorId: null, error: "Vendor profile not found" };
+  // Same isActive gate buyLiveCallAction already applies before letting a
+  // vendor spend — a deactivated account shouldn't be able to move wallet
+  // money either.
+  if (!profile.isActive) return { vendorId: null, error: "Your account is deactivated." };
   return { vendorId: profile.id, error: null };
 }
 
@@ -251,8 +258,9 @@ export async function verifyWalletTopupAction(input: {
       // safe no-op, same idempotency contract as everywhere else.
     });
 
+    // No revalidatePath — VendorWalletClient sets its local balance state
+    // directly from this action's own returned data, it never re-fetches.
     const wallet = await prisma.vendorWallet.findUnique({ where: { id: txRow.walletId }, select: { balance: true } });
-    revalidatePath("/vendor/wallet");
     return { success: true, data: { balance: wallet?.balance ?? 0 } };
   } catch (err) {
     console.error("Verify wallet top-up error:", err);

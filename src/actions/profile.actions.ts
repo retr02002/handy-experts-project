@@ -33,9 +33,9 @@ export async function updateProfileName(input: UpdateNameInput): Promise<ActionR
 
   try {
     await prisma.user.update({ where: { id: userId }, data: { name: validated.data.name } });
-    revalidatePath("/customer/profile");
-    revalidatePath("/vendor/profile");
-    revalidatePath("/technician/profile");
+    // No revalidatePath — AccountSettingsCard/EditProfileModal call
+    // useSession().update() after this, never router.refresh(), and a
+    // single account only ever has one of these three role paths anyway.
     return { success: true };
   } catch (error) {
     console.error("Update name error:", error);
@@ -67,7 +67,7 @@ export async function updateProfileEmail(input: UpdateEmailInput): Promise<Actio
     }
 
     await prisma.user.update({ where: { id: userId }, data: { email: validated.data.email } });
-    revalidatePath("/customer/profile");
+    // No revalidatePath — same reasoning as updateProfileName above.
     return { success: true };
   } catch (error) {
     console.error("Update email error:", error);
@@ -102,9 +102,8 @@ export async function updateProfilePhone(input: UpdatePhoneInput): Promise<Actio
     }
 
     await prisma.user.update({ where: { id: userId }, data: { phone: validated.data.phone } });
-    revalidatePath("/technician/profile");
-    revalidatePath("/customer/profile");
-    revalidatePath("/vendor/profile");
+    // No revalidatePath — TechnicianPhoneCard just sets local state after
+    // this resolves, same reasoning as updateProfileName above.
     return { success: true };
   } catch (error) {
     console.error("Update phone error:", error);

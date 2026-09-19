@@ -56,7 +56,11 @@ async function issueOtp(
   if (!rateCheck.ok) return rateCheck;
 
   const code = generateCode();
-  if (process.env.OTP_DEBUG_LOG === "true") console.log(`[OTP DEBUG] ${phone} (${purpose}/${channel}) code:`, code);
+  // NODE_ENV check is not optional here — this must never be able to log a
+  // real OTP code in production regardless of how OTP_DEBUG_LOG got set.
+  if (process.env.NODE_ENV !== "production" && process.env.OTP_DEBUG_LOG === "true") {
+    console.log(`[OTP DEBUG] ${phone} (${purpose}/${channel}) code:`, code);
+  }
   const sendResult = await sendOtpMessage({ phone, code, channel });
   if (!sendResult.ok) return { ok: false, error: sendResult.error };
 

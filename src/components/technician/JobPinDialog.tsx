@@ -94,6 +94,14 @@ export function JobPinDialog({ call, gate, onClose, onDone }: Props) {
           toast.success("Job completed and report submitted");
         }
         onDone();
+      } catch (err) {
+        // The action itself never throws (it catches server-side errors and
+        // resolves with {success:false}) — reaching here means the request
+        // itself failed (a dropped mobile connection, a timeout). Without
+        // this, that rejection went unhandled and the button was stuck
+        // showing "Verifying..." forever with no way to retry.
+        console.error("Job PIN submit error:", err);
+        setError("Network error — please check your connection and try again.");
       } finally {
         setIsSubmitting(false);
       }

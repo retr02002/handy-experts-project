@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
 interface AuthLayoutProps {
@@ -11,8 +12,9 @@ export function AuthLayout({ children }: AuthLayoutProps) {
     // Responsive flex container that integrates naturally with the main site layout
     <div className="relative w-full flex-1 flex flex-col lg:min-h-[100dvh] lg:items-center lg:justify-center bg-transparent lg:px-8 xl:px-12 lg:py-16">
       {/* Full Page Background Image — desktop only */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/images/auth-hero.png" alt="" className="hidden lg:block absolute inset-0 w-full h-full object-cover" />
+      <div className="hidden lg:block absolute inset-0">
+        <Image src="/images/auth-hero.png" alt="" fill priority sizes="100vw" className="object-cover" />
+      </div>
       <div className="hidden lg:block absolute inset-0 bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-slate-900/40" />
 
       <div className="relative z-10 w-full max-w-6xl mx-auto flex-1 flex flex-col lg:flex-row items-stretch sm:items-center justify-start lg:justify-between gap-8 lg:gap-24 pt-24 lg:pt-28 pb-32 sm:pb-12 px-4 sm:px-0">

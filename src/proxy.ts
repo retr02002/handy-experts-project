@@ -1,5 +1,6 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
+import { NEXTAUTH_SECRET } from "@/lib/authSecret";
 
 export default withAuth(
   function proxy(req) {
@@ -48,7 +49,7 @@ export default withAuth(
     pages: {
       signIn: "/sign-in",
     },
-    secret: process.env.NEXTAUTH_SECRET || "fallback_secret_for_development_12345",
+    secret: NEXTAUTH_SECRET,
   }
 );
 

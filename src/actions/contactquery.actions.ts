@@ -51,6 +51,37 @@ function mapContactQuery(row: {
   };
 }
 
+// Same cooldown-plus-hourly-cap shape as checkRateLimit in otp.actions.ts —
+// this is public and unauthenticated, so email is the only identifier
+// available to throttle on.
+const RESEND_COOLDOWN_SECONDS = 60;
+const HOURLY_SEND_CAP = 5;
+
+async function checkContactQueryRateLimit(email: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const latest = await prisma.contactQuery.findFirst({
+    where: { email },
+    orderBy: { createdAt: "desc" },
+    select: { createdAt: true },
+  });
+  if (latest) {
+    const elapsedSeconds = (Date.now() - latest.createdAt.getTime()) / 1000;
+    if (elapsedSeconds < RESEND_COOLDOWN_SECONDS) {
+      const remaining = Math.ceil(RESEND_COOLDOWN_SECONDS - elapsedSeconds);
+      return { ok: false, error: `Please wait ${remaining}s before sending another message` };
+    }
+  }
+
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const recentCount = await prisma.contactQuery.count({
+    where: { email, createdAt: { gt: oneHourAgo } },
+  });
+  if (recentCount >= HOURLY_SEND_CAP) {
+    return { ok: false, error: "Too many messages sent — please try again later" };
+  }
+
+  return { ok: true };
+}
+
 /** Public — no auth. Whatever a visitor types on /contact lands here as a NEW query. */
 export async function submitContactQueryAction(input: unknown): Promise<ActionResponse<{ id: string }>> {
   const validated = contactQuerySchema.safeParse(input);
@@ -59,6 +90,9 @@ export async function submitContactQueryAction(input: unknown): Promise<ActionRe
   }
 
   try {
+    const rateCheck = await checkContactQueryRateLimit(validated.data.email);
+    if (!rateCheck.ok) return { success: false, error: rateCheck.error };
+
     const query = await prisma.contactQuery.create({ data: validated.data });
     return { success: true, data: { id: query.id } };
   } catch (error) {

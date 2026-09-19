@@ -331,19 +331,31 @@ export async function getAdminDashboardStatsAction(): Promise<ActionResponse<Adm
   if (!isAdmin) return { success: false, error: "Not authorized" };
 
   try {
-    const [totalLiveCalls, broadcastingLiveCalls, totalServiceCalls, activeServiceCalls, completedServiceCalls, totalVendors, activeVendors, totalTechnicians] =
-      await Promise.all([
-        prisma.liveCall.count(),
-        prisma.liveCall.count({ where: { status: "BROADCASTING" } }),
-        prisma.serviceCall.count(),
-        prisma.serviceCall.count({ where: { OR: [{ status: "ASSIGNED" }, { status: "EN_ROUTE" }, { status: "IN_PROGRESS" }] } }),
-        prisma.serviceCall.count({ where: { status: "COMPLETED" } }),
-        prisma.vendorProfile.count(),
-        prisma.vendorProfile.count({ where: { isActive: true } }),
-        prisma.technicianProfile.count(),
-      ]);
-
-    const [serviceCallsRes, vendorsRes] = await Promise.all([getAllServiceCallsAction(), getAllVendorsForAdminAction()]);
+    // One Promise.all instead of two sequential ones — none of these 10
+    // calls depend on each other's result.
+    const [
+      totalLiveCalls,
+      broadcastingLiveCalls,
+      totalServiceCalls,
+      activeServiceCalls,
+      completedServiceCalls,
+      totalVendors,
+      activeVendors,
+      totalTechnicians,
+      serviceCallsRes,
+      vendorsRes,
+    ] = await Promise.all([
+      prisma.liveCall.count(),
+      prisma.liveCall.count({ where: { status: "BROADCASTING" } }),
+      prisma.serviceCall.count(),
+      prisma.serviceCall.count({ where: { OR: [{ status: "ASSIGNED" }, { status: "EN_ROUTE" }, { status: "IN_PROGRESS" }] } }),
+      prisma.serviceCall.count({ where: { status: "COMPLETED" } }),
+      prisma.vendorProfile.count(),
+      prisma.vendorProfile.count({ where: { isActive: true } }),
+      prisma.technicianProfile.count(),
+      getAllServiceCallsAction(),
+      getAllVendorsForAdminAction(),
+    ]);
     const recentServiceCalls = (serviceCallsRes.success ? (serviceCallsRes.data ?? []) : []).slice(0, 5);
     const topVendors = (vendorsRes.success ? (vendorsRes.data ?? []) : [])
       .slice()

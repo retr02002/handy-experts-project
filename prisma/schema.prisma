@@ -784,6 +784,9 @@ model ServiceCall {
   @@index([technicianId])
   @@index([customerId])
   @@index([status])
+  // Matches getMyAvailableJobsAction's actual filter shape (status:
+  // UNASSIGNED + vendorId) — now polled every 3s per on-duty technician.
+  @@index([status, vendorId])
 }
 
 // Append-only log of completed handovers — written once the NEW
