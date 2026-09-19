@@ -155,9 +155,9 @@ export async function adminDeductTechnicianFundsAction(
 
     revalidatePath(`/admin/freelance-technicians/${technicianId}`);
     return { success: true };
-  } catch (err: any) {
-    console.error("Admin deduct technician funds error:", err);
-    return { success: false, error: err.message || "Failed to deduct funds" };
+  } catch (error) {
+    console.error("Admin deduct technician funds error:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Failed to deduct funds" };
   }
 }
 

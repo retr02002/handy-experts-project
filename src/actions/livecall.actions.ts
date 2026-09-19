@@ -930,7 +930,7 @@ export async function getNearbyLiveCallsForFreelancerAction(): Promise<ActionRes
       .filter((call) => areas.some((a) => haversineKm(a.latitude, a.longitude, call.latitude, call.longitude) <= a.radiusKm))
       .sort((a, b) => a.distanceKm - b.distanceKm);
 
-    return { success: true, data: nearby as any };
+    return { success: true, data: nearby };
   } catch (err) {
     console.error("Get nearby live calls for freelancer error:", err);
     return { success: false, error: "Failed to load live calls" };
