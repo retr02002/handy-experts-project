@@ -45,7 +45,7 @@ export function PackageCard({ parentService, pkg }: PackageCardProps) {
         {/* Top Image */}
         <div className="relative aspect-square w-full overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-800">
           <Image
-            src={parentService.image}
+            src={pkg.image || parentService.image}
             alt={pkg.name}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
