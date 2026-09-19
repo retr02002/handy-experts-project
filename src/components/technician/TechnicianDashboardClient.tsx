@@ -32,7 +32,14 @@ export function TechnicianDashboardClient({
 
   const refetchCalls = useCallback(async () => {
     const res = await getMyServiceCallsForTechnicianAction();
-    if (res.success && res.data) setCalls(res.data);
+    if (res.success && res.data) {
+      setCalls(res.data);
+      // See the matching comment in TechnicianServiceCallsClient.tsx's
+      // load() — keeps an open detail panel live instead of stale after a
+      // non-gated status change.
+      const data = res.data;
+      setDetailCall((prev) => (prev ? data.find((c) => c.id === prev.id) ?? prev : prev));
+    }
   }, []);
 
   usePolling(refetchCalls, CALLS_POLL_INTERVAL_MS);

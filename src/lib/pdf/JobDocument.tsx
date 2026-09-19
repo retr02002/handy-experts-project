@@ -4,6 +4,7 @@
    the component name alone and there is nothing meaningful to add. */
 import React from "react";
 import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
+import { HANDYZO_LOGO_DATA_URI } from "./logoBase64";
 import type { JobDocumentData } from "./documentData";
 
 /**
@@ -213,7 +214,11 @@ export function JobDocument({ data }: { data: JobDocumentData }) {
         {/* Biller block + invoice meta, mirroring the reference layout */}
         <View style={{ flexDirection: "row", borderWidth: 1, borderColor: C.line }}>
           <View style={{ flex: 1.4, padding: 6, borderRightWidth: 1, borderRightColor: C.line }}>
-            <Text style={s.billerName}>{biller.name}</Text>
+            {data.audience === "customer" ? (
+              <Image src={HANDYZO_LOGO_DATA_URI} style={{ width: 110, height: 28, objectFit: "contain", marginBottom: 4 }} />
+            ) : (
+              <Text style={s.billerName}>{biller.name}</Text>
+            )}
             {biller.addressLines.map((l, i) => (
               <Text key={i} style={s.billerLine}>
                 {l}

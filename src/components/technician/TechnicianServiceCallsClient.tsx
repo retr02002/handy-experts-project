@@ -34,7 +34,18 @@ export function TechnicianServiceCallsClient({
 
   const load = useCallback(async () => {
     const res = await getMyServiceCallsForTechnicianAction();
-    if (res.success && res.data) setCalls(res.data);
+    if (res.success && res.data) {
+      setCalls(res.data);
+      // Keeps an open detail panel live through the job's whole lifecycle
+      // instead of leaving it on a stale snapshot — a non-gated status
+      // change (e.g. "Start Journey") only calls onChanged(), it doesn't
+      // close the panel, so without this the panel kept showing the
+      // pre-transition status/button even though the server had already
+      // moved on, and a second tap failed with a confusing "already there"
+      // error.
+      const data = res.data;
+      setDetailCall((prev) => (prev ? data.find((c) => c.id === prev.id) ?? prev : prev));
+    }
   }, []);
 
   const loadJobs = useCallback(async () => {

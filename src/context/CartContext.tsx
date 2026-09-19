@@ -56,16 +56,23 @@ async function runMutation(
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const [items, setItems] = useState<CartItem[]>([]);
   const [savedItems, setSavedItems] = useState<CartItem[]>([]);
   const loadedForSession = useRef(false);
 
-  // Cart is per-user and DB-backed: load it once per authenticated session,
-  // and wipe the local view on sign-out so the next user never sees it.
+  // Cart is per-user and DB-backed: load it once per authenticated
+  // CUSTOMER session (technicians/vendors/admins have no cart concept in
+  // this app — without the role check this fired a wasted request on
+  // every single one of their dashboard loads too), and wipe the local
+  // view on sign-out so the next user never sees it.
   useEffect(() => {
+    // PENDING included alongside CUSTOMER — a Google-signed-in customer
+    // mid-onboarding can still be browsing /services and adding to cart
+    // before their role/profile is fully complete.
+    const isCustomer = session?.user?.role === "CUSTOMER" || session?.user?.role === "PENDING";
     const timer = setTimeout(() => {
-      if (status === "authenticated" && !loadedForSession.current) {
+      if (status === "authenticated" && isCustomer && !loadedForSession.current) {
         loadedForSession.current = true;
         getCartAction().then((res) => {
           if (res.success && res.data) {
@@ -80,7 +87,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     }, 0);
     return () => clearTimeout(timer);
-  }, [status]);
+  }, [status, session?.user?.role]);
 
   const addToCart = (service: Service, pkg: ServicePackage) => {
     const id = pkg.id;

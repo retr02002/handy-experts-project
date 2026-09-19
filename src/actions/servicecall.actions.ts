@@ -95,11 +95,15 @@ export async function finalizeVendorAcceptance(params: {
   city: string;
   total: number;
 }): Promise<{ serviceCallId: string; offerCount: number }> {
-  const serviceCall = await prisma.serviceCall.create({
-    data: { liveCallId: params.liveCallId, vendorId: params.vendorId, customerId: params.customerId, status: "UNASSIGNED" },
-  });
-
-  const eligible = await findEligibleTechnicians(params.vendorId, params.liveCallId);
+  // Independent — findEligibleTechnicians only needs vendorId/liveCallId,
+  // already known, it doesn't need the newly-created ServiceCall's id
+  // (that's only needed for the offers/notifications created below).
+  const [serviceCall, eligible] = await Promise.all([
+    prisma.serviceCall.create({
+      data: { liveCallId: params.liveCallId, vendorId: params.vendorId, customerId: params.customerId, status: "UNASSIGNED" },
+    }),
+    findEligibleTechnicians(params.vendorId, params.liveCallId),
+  ]);
   if (eligible.length > 0) {
     await prisma.serviceCallOffer.createMany({
       data: eligible.map((t) => ({ liveCallId: params.liveCallId, vendorId: params.vendorId, technicianId: t.id })),
@@ -208,15 +212,17 @@ export async function buyLiveCallAction(
   if (!vendorId) return { success: false, error: error! };
 
   try {
-    const vendorProfile = await prisma.vendorProfile.findUnique({
-      where: { id: vendorId },
-      select: { isActive: true, companyName: true, leadPricingType: true, leadPricingValue: true },
-    });
+    // Independent lookups — neither depends on the other's result.
+    const [vendorProfile, liveCall] = await Promise.all([
+      prisma.vendorProfile.findUnique({
+        where: { id: vendorId },
+        select: { isActive: true, companyName: true, leadPricingType: true, leadPricingValue: true },
+      }),
+      prisma.liveCall.findUnique({ where: { id: liveCallId } }),
+    ]);
     if (!vendorProfile?.isActive) {
       return { success: false, error: "Your account is deactivated and can't buy new leads." };
     }
-
-    const liveCall = await prisma.liveCall.findUnique({ where: { id: liveCallId } });
     if (!liveCall) return { success: false, error: "Live call not found" };
     if (liveCall.status !== "BROADCASTING") {
       return { success: false, error: "This lead was already bought by another vendor or has expired." };
@@ -264,14 +270,20 @@ export async function buyLiveCallAction(
       throw txErr;
     }
 
-    const { serviceCallId, offerCount } = await finalizeVendorAcceptance({
-      liveCallId,
-      vendorId,
-      customerId: liveCall.customerId,
-      address: liveCall.address,
-      city: liveCall.city,
-      total: liveCall.total,
-    });
+    // finalizeVendorAcceptance and this items lookup are independent — the
+    // items only need liveCallId, already known — so they run concurrently
+    // instead of the items query waiting on the whole acceptance flow.
+    const [{ serviceCallId, offerCount }, liveCallItems] = await Promise.all([
+      finalizeVendorAcceptance({
+        liveCallId,
+        vendorId,
+        customerId: liveCall.customerId,
+        address: liveCall.address,
+        city: liveCall.city,
+        total: liveCall.total,
+      }),
+      prisma.liveCallItem.findMany({ where: { liveCallId } }),
+    ]);
 
     // No revalidatePath — LiveCallsPanel.tsx already self-refetches
     // (refetchCalls/refetchAwaiting) on BuyLeadModal's onBought, and this
@@ -309,7 +321,7 @@ export async function buyLiveCallAction(
           subtotal: liveCall.subtotal,
           tax: liveCall.tax,
           total: liveCall.total,
-          items: (await prisma.liveCallItem.findMany({ where: { liveCallId } })).map((i) => ({
+          items: liveCallItems.map((i) => ({
             packageName: i.packageName,
             quantity: i.quantity,
             unitPrice: i.unitPrice,

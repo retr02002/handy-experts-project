@@ -28,20 +28,29 @@ export default async function TechnicianLayout({
   // createTechnicianAction creates a complete TechnicianProfile upfront)
   // and any pre-existing technician who predates these fields. Each clears
   // permanently once its underlying data exists.
+  //
+  // The three checks below are independent of each other (each derives its
+  // own technicianId from the session), so they're fetched together —
+  // this layout runs on every single technician page navigation, and
+  // running them one at a time was 3 sequential session+DB round trips
+  // where one concurrent batch does the same work. The redirect PRIORITY
+  // (city before photo) is still applied afterwards, against the already-
+  // resolved results, so behavior is unchanged.
   let technicianType = "VENDOR_MANAGED";
   if (status?.role === "TECHNICIAN") {
-    const cityStatus = await hasTechnicianCityAction();
+    const { getMyTechnicianTypeAction } = await import("@/actions/technician.actions");
+    const [cityStatus, photo, typeRes] = await Promise.all([
+      hasTechnicianCityAction(),
+      hasTechnicianPhotoAction(),
+      getMyTechnicianTypeAction(),
+    ]);
+
     if (cityStatus.success && !cityStatus.data?.hasCity) {
       redirect("/select-city");
     }
-
-    const photo = await hasTechnicianPhotoAction();
     if (photo.success && !photo.data?.hasPhoto) {
       redirect("/capture-photo");
     }
-
-    const { getMyTechnicianTypeAction } = await import("@/actions/technician.actions");
-    const typeRes = await getMyTechnicianTypeAction();
     if (typeRes.success) {
       technicianType = typeRes.data?.type ?? "VENDOR_MANAGED";
     }
