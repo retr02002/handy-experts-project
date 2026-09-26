@@ -15,6 +15,8 @@ export function categoryToFormInput(category: Category): CategoryInput {
     isActive: category.isActive,
     isPopular: category.isPopular,
     sortOrder: category.sortOrder,
+    leadPricingType: category.leadPricingType,
+    leadPricingValue: category.leadPricingValue,
   };
 }
 
@@ -28,5 +30,7 @@ export function emptyCategoryInput(): CategoryInput {
     isActive: true,
     isPopular: false,
     sortOrder: 0,
+    leadPricingType: null,
+    leadPricingValue: null,
   };
 }

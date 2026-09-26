@@ -39,6 +39,8 @@ export const serviceSchema = z.object({
   howItWorks: z.array(serviceStepSchema).default([]),
   faqs: z.array(serviceFaqSchema).default([]),
   isPopular: z.boolean().default(false),
+  leadPricingType: z.enum(["FLAT", "PERCENTAGE"]).nullable().optional(),
+  leadPricingValue: z.number().nullable().optional(),
 });
 
 export type ServiceInput = z.infer<typeof serviceSchema>;
@@ -55,6 +57,8 @@ export const servicePackageSchema = z.object({
   image: z.string().optional(),
   features: z.array(z.string().min(1)).min(1, "Add at least one feature"),
   details: z.array(z.string().min(1)).default([]),
+  leadPricingType: z.enum(["FLAT", "PERCENTAGE"]).nullable().optional(),
+  leadPricingValue: z.number().nullable().optional(),
 });
 
 export type ServicePackageInput = z.infer<typeof servicePackageSchema>;

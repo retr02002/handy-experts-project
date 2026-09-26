@@ -162,12 +162,30 @@ export async function getAllVendorsForAdminAction(): Promise<ActionResponse<Admi
 
   try {
     const rows = await prisma.vendorProfile.findMany({
-      include: {
+      select: {
+        id: true,
+        companyName: true,
+        companyType: true,
+        gstNumber: true,
+        panNumber: true,
+        aadhaarNumber: true,
+        address: true,
+        city: true,
+        state: true,
+        pincode: true,
+        latitude: true,
+        longitude: true,
+        isActive: true,
+        incorporationDate: true,
+        createdAt: true,
+        leadPricingType: true,
+        leadPricingValue: true,
         user: { select: { name: true, email: true, phone: true } },
         _count: { select: { technicians: true, serviceCalls: true } },
         wallet: { select: { balance: true } },
       },
       orderBy: { createdAt: "desc" },
+      take: 200,
     });
 
     return {
@@ -268,6 +286,15 @@ export async function updateVendorAction(input: UpdateVendorInput): Promise<Acti
   try {
     const vendor = await prisma.vendorProfile.findUnique({ where: { id }, select: { userId: true } });
     if (!vendor) return { success: false, error: "Vendor not found" };
+
+    const existingPhoneUser = await prisma.user.findUnique({ where: { phone }, select: { id: true, role: true } });
+    if (existingPhoneUser && existingPhoneUser.id !== vendor.userId) {
+      return { 
+        success: false, 
+        error: `This phone number is already registered as a ${existingPhoneUser.role.toLowerCase()}.`,
+        errors: { phone: ["Already in use"] } 
+      };
+    }
 
     await prisma.$transaction([
       prisma.user.update({ where: { id: vendor.userId }, data: { name, phone } }),
@@ -571,22 +598,58 @@ export async function getVendorPerformanceAction(vendorId: string): Promise<Acti
   }
 }
 
-export interface VendorCategoryAssignment {
+export interface VendorSkillAssignment {
   categoryId: string;
   categoryName: string;
+  serviceIds: string[];
 }
 
-/** A vendor's currently-assigned categories, for the admin coverage page. */
-export async function getVendorCategoriesAction(vendorId: string): Promise<ActionResponse<VendorCategoryAssignment[]>> {
+/** A vendor's currently-assigned categories and services, for the admin coverage page. */
+export async function getVendorCategoriesAction(vendorId: string): Promise<ActionResponse<VendorSkillAssignment[]>> {
   if (!(await requireAdmin())) return { success: false, error: "Not authorized" };
 
   try {
-    const rows = await prisma.vendorCategory.findMany({
-      where: { vendorId },
-      select: { categoryId: true, category: { select: { name: true } } },
-      orderBy: { category: { name: "asc" } },
-    });
-    return { success: true, data: rows.map((r) => ({ categoryId: r.categoryId, categoryName: r.category.name })) };
+    const [categories, services] = await Promise.all([
+      prisma.vendorCategory.findMany({
+        where: { vendorId },
+        select: { categoryId: true, category: { select: { name: true } } },
+        orderBy: { category: { name: "asc" } },
+      }),
+      prisma.vendorService.findMany({
+        where: { vendorId },
+        select: { serviceId: true, service: { select: { categoryId: true } } },
+      })
+    ]);
+
+    const assignmentsMap = new Map<string, VendorSkillAssignment>();
+    
+    // Process categories
+    for (const c of categories) {
+      assignmentsMap.set(c.categoryId, {
+        categoryId: c.categoryId,
+        categoryName: c.category.name,
+        serviceIds: [],
+      });
+    }
+
+    // Process services
+    for (const s of services) {
+      if (s.service.categoryId) {
+        const existing = assignmentsMap.get(s.service.categoryId);
+        if (existing) {
+          existing.serviceIds.push(s.serviceId);
+        } else {
+          // Fallback if somehow a service exists without its category (shouldn't happen with our builder)
+          assignmentsMap.set(s.service.categoryId, {
+            categoryId: s.service.categoryId,
+            categoryName: s.service.categoryId, // Don't have name easily available here, but builder always sends category
+            serviceIds: [s.serviceId],
+          });
+        }
+      }
+    }
+
+    return { success: true, data: Array.from(assignmentsMap.values()) };
   } catch (err) {
     console.error("Get vendor categories error:", err);
     return { success: false, error: "Failed to load categories" };
@@ -599,18 +662,46 @@ export async function getVendorCategoriesAction(vendorId: string): Promise<Actio
  * table, so a vendor with none of their requested categories here sees no
  * live calls at all.
  */
-export async function setVendorCategoriesAction(vendorId: string, categoryIds: string[]): Promise<ActionResponse> {
+export async function setVendorCategoriesAction(vendorId: string, skillAssignments: { categoryId: string, serviceIds: string[] }[]): Promise<ActionResponse> {
   if (!(await requireAdmin())) return { success: false, error: "Not authorized" };
 
   try {
     const vendor = await prisma.vendorProfile.findUnique({ where: { id: vendorId }, select: { id: true } });
     if (!vendor) return { success: false, error: "Vendor not found" };
 
-    const ids = [...new Set(categoryIds)];
+    const wholeCategoryIds = skillAssignments.filter((a) => a.serviceIds.length === 0).map((a) => a.categoryId);
+    const narrowServiceIds = [...new Set(skillAssignments.flatMap((a) => a.serviceIds))];
+
     await prisma.$transaction(async (tx) => {
-      await tx.vendorCategory.deleteMany({ where: { vendorId } });
-      if (ids.length > 0) {
-        await tx.vendorCategory.createMany({ data: ids.map((categoryId) => ({ vendorId, categoryId })), skipDuplicates: true });
+      // 1. Delete rows that are no longer assigned
+      if (wholeCategoryIds.length > 0) {
+        await tx.vendorCategory.deleteMany({
+          where: { vendorId, categoryId: { notIn: wholeCategoryIds } },
+        });
+      } else {
+        await tx.vendorCategory.deleteMany({ where: { vendorId } });
+      }
+
+      if (narrowServiceIds.length > 0) {
+        await tx.vendorService.deleteMany({
+          where: { vendorId, serviceId: { notIn: narrowServiceIds } },
+        });
+      } else {
+        await tx.vendorService.deleteMany({ where: { vendorId } });
+      }
+
+      // 2. Add new ones only if they don't exist (using skipDuplicates is perfect here, as it doesn't touch existing rows)
+      if (wholeCategoryIds.length > 0) {
+        await tx.vendorCategory.createMany({ 
+          data: wholeCategoryIds.map((categoryId) => ({ vendorId, categoryId })), 
+          skipDuplicates: true 
+        });
+      }
+      if (narrowServiceIds.length > 0) {
+        await tx.vendorService.createMany({
+          data: narrowServiceIds.map((serviceId) => ({ vendorId, serviceId })),
+          skipDuplicates: true
+        });
       }
     });
 

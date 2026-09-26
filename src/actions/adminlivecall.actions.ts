@@ -511,25 +511,37 @@ export async function getCategoryMatchedVendorsForLiveCallAction(
       [...packageCategoryMap.values()].map((v) => v.categoryId).filter((id): id is string => !!id)
     );
 
-    const [vendors, categoryLinks] = await Promise.all([
+    const callServiceIds = new Set(
+      [...packageCategoryMap.values()].map((v) => v.serviceId).filter((id): id is string => !!id)
+    );
+
+    const [vendors, categoryLinks, serviceLinks] = await Promise.all([
       prisma.vendorProfile.findMany({
         select: { id: true, companyName: true, isActive: true },
         orderBy: { companyName: "asc" },
       }),
       prisma.vendorCategory.findMany({ select: { vendorId: true, categoryId: true } }),
+      prisma.vendorService.findMany({ select: { vendorId: true, serviceId: true } }),
     ]);
 
     const vendorCategoryMap = new Map<string, Set<string>>();
+    const vendorServiceMap = new Map<string, Set<string>>();
     for (const link of categoryLinks) {
       if (!vendorCategoryMap.has(link.vendorId)) vendorCategoryMap.set(link.vendorId, new Set());
       vendorCategoryMap.get(link.vendorId)!.add(link.categoryId);
     }
+    for (const link of serviceLinks) {
+      if (!vendorServiceMap.has(link.vendorId)) vendorServiceMap.set(link.vendorId, new Set());
+      vendorServiceMap.get(link.vendorId)!.add(link.serviceId);
+    }
 
     const withMatch = vendors.map((v) => ({
       ...v,
-      isCategoryMatch: [...(vendorCategoryMap.get(v.id) ?? [])].some((c) => callCategoryIds.has(c)),
+      isCategoryMatch: 
+        [...(vendorCategoryMap.get(v.id) ?? [])].some((c) => callCategoryIds.has(c)) ||
+        [...(vendorServiceMap.get(v.id) ?? [])].some((s) => callServiceIds.has(s)),
     }));
-    withMatch.sort((a, b) => Number(b.isCategoryMatch) - Number(a.isCategoryMatch));
+    withMatch.sort((a: CategoryMatchedVendorOption, b: CategoryMatchedVendorOption) => Number(b.isCategoryMatch) - Number(a.isCategoryMatch));
 
     return { success: true, data: withMatch };
   } catch (err) {

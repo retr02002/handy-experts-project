@@ -102,6 +102,7 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ i
     { id: "reviews", label: "Reviews", icon: "ph:star-bold", badge: reviewsRes.success ? reviewsRes.data?.length : undefined },
     { id: "performance", label: "Performance", icon: "ph:chart-line-up-bold" },
     { id: "coverage", label: "Coverage", icon: "ph:map-pin-area-bold" },
+    { id: "pricing", label: "Pricing", icon: "ph:currency-inr-bold" },
     { id: "documents", label: "Documents", icon: "ph:folder-lock" },
   ];
 
@@ -117,7 +118,7 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ i
         reviews={reviewsRes.success ? reviewsRes.data ?? [] : []}
         performance={performance}
         categories={categoriesRes.success ? categoriesRes.data ?? [] : []}
-        assignedCategoryIds={assignedRes.success ? (assignedRes.data ?? []).map((c) => c.categoryId) : []}
+        assignedSkillAssignments={assignedRes.success ? (assignedRes.data ?? []) : []}
         areas={areasRes.success ? areasRes.data ?? [] : []}
         documents={documentsRes.success ? documentsRes.data?.documents ?? [] : []}
         logoUrl={documentsRes.success ? documentsRes.data?.logoUrl ?? null : null}

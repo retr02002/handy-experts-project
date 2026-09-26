@@ -211,6 +211,7 @@ export function ServiceFormWizard({ isOpen, onClose, onSuccess, categories, init
               <span className="text-xs text-slate-400">Popular services appear in the &quot;Popular Services&quot; section on the homepage.</span>
             </span>
           </label>
+
           <div className="grid grid-cols-2 gap-4">
             <Field label="Badge Text">
               <input className={inputClass} value={form.badge} onChange={(e) => set("badge", e.target.value)} placeholder="TRENDING" />

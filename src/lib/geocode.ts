@@ -22,3 +22,22 @@ export async function forwardGeocodePincode(pincode: string): Promise<{ latitude
     return null;
   }
 }
+
+/**
+ * Coordinates -> Pincode. Used for map clicks where a user drops a pin
+ * to define a service area and we need the underlying pincode.
+ */
+export async function reverseGeocodeLocation(latitude: number, longitude: number): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&countrycodes=in`,
+      { headers: { "User-Agent": "Handyzo/1.0 (hello@Handyzo.in)" } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.address?.postcode ?? null;
+  } catch (error) {
+    console.error("Reverse geocode failed:", error);
+    return null;
+  }
+}

@@ -21,3 +21,5 @@ export function computeLeadPrice(total: number, type: string, value: number): nu
   const price = type === "PERCENTAGE" ? total * (value / 100) : value;
   return Math.round(price);
 }
+
+

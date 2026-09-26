@@ -9,6 +9,7 @@ import { forwardGeocodePincode } from "@/lib/geocode";
 export interface TechnicianServiceAreaSummary {
   id: string;
   pincode: string;
+  locationName: string | null;
   latitude: number;
   longitude: number;
   radiusKm: number;
@@ -24,7 +25,7 @@ export async function getTechnicianServiceAreasAction(
     const areas = await prisma.technicianServiceArea.findMany({
       where: { technicianId },
       orderBy: { createdAt: "asc" },
-      select: { id: true, pincode: true, latitude: true, longitude: true, radiusKm: true },
+      select: { id: true, pincode: true, locationName: true, latitude: true, longitude: true, radiusKm: true },
     });
     return { success: true, data: areas };
   } catch (err) {
@@ -36,6 +37,7 @@ export async function getTechnicianServiceAreasAction(
 export async function addTechnicianServiceAreaAction(input: {
   technicianId: string;
   pincode: string;
+  locationName: string | null;
   radiusKm?: number;
 }): Promise<ActionResponse<{ id: string }>> {
   const isAdmin = await requireAdmin();
@@ -59,6 +61,7 @@ export async function addTechnicianServiceAreaAction(input: {
       data: {
         technicianId: input.technicianId,
         pincode: input.pincode,
+        locationName: input.locationName ?? null,
         latitude: coords.latitude,
         longitude: coords.longitude,
         radiusKm: input.radiusKm ?? 5,

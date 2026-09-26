@@ -11,6 +11,10 @@ import {
   type VendorServiceAreaSummary,
 } from "@/actions/vendorservicearea.actions";
 import type { CategoryWithServiceOptions } from "@/actions/category.actions";
+import { SkillAssignmentBuilder } from "@/components/shared/SkillAssignmentBuilder";
+import type { SkillAssignmentInput } from "@/lib/validations/technician.schema";
+
+import { CoverageMap } from "@/components/admin/CoverageMapDynamic";
 
 /**
  * The admin's control surface for both halves of a vendor's coverage — what
@@ -21,47 +25,70 @@ import type { CategoryWithServiceOptions } from "@/actions/category.actions";
 export function VendorCoverageManager({
   vendorId,
   categories,
-  initialAssignedCategoryIds,
+  initialAssignedSkillAssignments,
   initialAreas,
 }: {
   vendorId: string;
   categories: CategoryWithServiceOptions[];
-  initialAssignedCategoryIds: string[];
+  initialAssignedSkillAssignments: SkillAssignmentInput[];
   initialAreas: VendorServiceAreaSummary[];
 }) {
-  const [assigned, setAssigned] = useState(new Set(initialAssignedCategoryIds));
+  const [assigned, setAssigned] = useState<SkillAssignmentInput[]>(initialAssignedSkillAssignments);
   const [savingCategories, setSavingCategories] = useState(false);
   const [dirty, setDirty] = useState(false);
 
   const [areas, setAreas] = useState(initialAreas);
   const [newPincode, setNewPincode] = useState("");
+  const [newLocationName, setNewLocationName] = useState("");
   const [newRadius, setNewRadius] = useState("5");
   const [isAdding, setIsAdding] = useState(false);
   const [radiusDrafts, setRadiusDrafts] = useState<Record<string, number>>({});
   const [savingAreaId, setSavingAreaId] = useState<string | null>(null);
+  
+  const [draftPin, setDraftPin] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [isGeocoding, setIsGeocoding] = useState(false);
 
-  const toggleCategory = (id: string) => {
-    setAssigned((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const handleAssignmentsChange = (next: SkillAssignmentInput[]) => {
+    setAssigned(next);
     setDirty(true);
   };
 
   const saveCategories = async () => {
     setSavingCategories(true);
     try {
-      const res = await setVendorCategoriesAction(vendorId, [...assigned]);
+      const res = await setVendorCategoriesAction(vendorId, assigned);
       if (!res.success) {
         toast.error(res.error || "Couldn't save categories");
         return;
       }
-      toast.success(assigned.size === 0 ? "Saved — this vendor now sees no live calls" : "Categories updated");
+      toast.success(assigned.length === 0 ? "Saved — this vendor now sees no live calls" : "Categories updated");
       setDirty(false);
     } finally {
       setSavingCategories(false);
+    }
+  };
+
+  const handleMapClick = async (lat: number, lng: number, locationName?: string) => {
+    setDraftPin({ latitude: lat, longitude: lng });
+    if (locationName) setNewLocationName(locationName);
+    setIsGeocoding(true);
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&countrycodes=in`);
+      const data = await res.json();
+      if (data?.address?.postcode) {
+        setNewPincode(data.address.postcode);
+        if (!locationName && data.address) {
+          const possibleName = data.address.suburb || data.address.neighbourhood || data.address.city_district || data.address.village || data.address.town || data.address.city;
+          if (possibleName) setNewLocationName(possibleName);
+        }
+        toast.success(`Found pincode: ${data.address.postcode}`);
+      } else {
+        toast.error("Could not determine pincode for this location. Please enter manually.");
+      }
+    } catch (e) {
+      toast.error("Failed to find pincode for this location.");
+    } finally {
+      setIsGeocoding(false);
     }
   };
 
@@ -73,15 +100,17 @@ export function VendorCoverageManager({
     const radiusKm = Number(newRadius);
     setIsAdding(true);
     try {
-      const res = await addServiceAreaAction({ vendorId, pincode: newPincode, radiusKm });
+      const res = await addServiceAreaAction({ vendorId, pincode: newPincode, locationName: newLocationName || null, radiusKm });
       if (!res.success) {
         toast.error(res.error || "Couldn't add that area");
         return;
       }
       toast.success("Service area added");
-      setAreas((prev) => [...prev, { id: res.data!.id, pincode: newPincode, latitude: 0, longitude: 0, radiusKm }]);
+      setAreas((prev) => [...prev, { id: res.data!.id, pincode: newPincode, locationName: newLocationName || null, latitude: draftPin?.latitude || 0, longitude: draftPin?.longitude || 0, radiusKm }]);
       setNewPincode("");
+      setNewLocationName("");
       setNewRadius("5");
+      setDraftPin(null);
     } finally {
       setIsAdding(false);
     }
@@ -125,24 +154,9 @@ export function VendorCoverageManager({
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {categories.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => toggleCategory(c.id)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition-colors cursor-pointer ${
-                assigned.has(c.id)
-                  ? "bg-blue-600 border-blue-600 text-white"
-                  : "bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-400"
-              }`}
-            >
-              {c.name}
-            </button>
-          ))}
-        </div>
+        <SkillAssignmentBuilder value={assigned} onChange={handleAssignmentsChange} />
 
-        {assigned.size === 0 && (
+        {assigned.length === 0 && (
           <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
             <ClientIcon icon="ph:warning-circle-fill" className="w-4 h-4 shrink-0" />
             No categories assigned — this vendor currently sees no live calls at all.
@@ -164,20 +178,30 @@ export function VendorCoverageManager({
         <div>
           <h2 className="text-sm font-bold text-slate-900 dark:text-white">Serviceable areas</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            The green coverage circles shown on the live-calls map — a vendor with none sees no calls anywhere.
+            Search or click the map below to drop a pin, adjust radius, and save it.
           </p>
         </div>
+        
+        <CoverageMap 
+          areas={areas} 
+          draftPin={draftPin} 
+          draftRadiusKm={Number(newRadius) || 5} 
+          onMapClick={handleMapClick} 
+        />
 
         {areas.length === 0 ? (
           <p className="text-sm text-slate-400">No areas added yet.</p>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-2">
             {areas.map((a) => (
               <div
                 key={a.id}
                 className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/80"
               >
-                <span className="text-sm font-semibold text-slate-900 dark:text-white w-16 shrink-0">{a.pincode}</span>
+                <div className="flex flex-col min-w-0 w-32 shrink-0">
+                  <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">{a.pincode}</span>
+                  {a.locationName && <span className="text-[10px] text-slate-500 truncate">{a.locationName}</span>}
+                </div>
                 <input
                   type="number"
                   min={1}
@@ -212,9 +236,10 @@ export function VendorCoverageManager({
           <input
             value={newPincode}
             onChange={(e) => setNewPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            placeholder="6-digit pincode"
+            placeholder={isGeocoding ? "Locating..." : "6-digit pincode"}
             inputMode="numeric"
-            className="flex-1 h-9 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 text-sm text-slate-900 dark:text-white"
+            disabled={isGeocoding}
+            className="flex-1 h-9 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 text-sm text-slate-900 dark:text-white disabled:opacity-50"
           />
           <input
             type="number"
@@ -228,7 +253,7 @@ export function VendorCoverageManager({
           <button
             type="button"
             onClick={addArea}
-            disabled={isAdding}
+            disabled={isAdding || isGeocoding}
             className="h-9 px-4 rounded-lg bg-[#00B4FF] hover:bg-[#0096fa] disabled:opacity-60 text-white text-sm font-bold transition-colors cursor-pointer shrink-0"
           >
             {isAdding ? "Adding..." : "Add"}

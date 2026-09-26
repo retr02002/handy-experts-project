@@ -33,6 +33,8 @@ export function serviceToFormInput(service: ServiceWithPackages | Service): Serv
     howItWorks: parseJsonArray(serviceStepSchema, service.howItWorks),
     faqs: parseJsonArray(serviceFaqSchema, service.faqs),
     isPopular: service.isPopular,
+    leadPricingType: service.leadPricingType,
+    leadPricingValue: service.leadPricingValue,
   };
 }
 
@@ -49,6 +51,8 @@ export function packageToFormInput(pkg: ServicePackage): ServicePackageInput {
     image: pkg.image ?? "",
     features: parseJsonArray(z.string(), pkg.features),
     details: parseJsonArray(z.string(), pkg.details),
+    leadPricingType: pkg.leadPricingType,
+    leadPricingValue: pkg.leadPricingValue,
   };
 }
 
@@ -69,6 +73,8 @@ export function emptyServiceInput(): ServiceInput {
     howItWorks: [],
     faqs: [],
     isPopular: false,
+    leadPricingType: null,
+    leadPricingValue: null,
   };
 }
 
@@ -85,6 +91,8 @@ export function emptyPackageInput(serviceId: string = ""): ServicePackageInput {
     image: "",
     features: [],
     details: [],
+    leadPricingType: null,
+    leadPricingValue: null,
   };
 }
 

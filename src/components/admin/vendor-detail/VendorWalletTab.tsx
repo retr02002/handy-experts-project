@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { toast } from "sonner";
-import { adminRechargeVendorWalletAction, setVendorLeadPricingAction, type WalletSummary } from "@/actions/wallet.actions";
+import { adminRechargeVendorWalletAction, adminDeductVendorWalletAction, setVendorLeadPricingAction, type WalletSummary } from "@/actions/wallet.actions";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -34,7 +34,7 @@ export function VendorWalletTab({
   const [rechargeNote, setRechargeNote] = useState("");
   const [isRecharging, setIsRecharging] = useState(false);
 
-  const handleRecharge = async () => {
+  const handleTransaction = async (type: "add" | "deduct") => {
     const amount = Number(rechargeAmount);
     if (!Number.isFinite(amount) || amount <= 0) {
       toast.error("Enter a valid amount");
@@ -42,15 +42,16 @@ export function VendorWalletTab({
     }
     setIsRecharging(true);
     try {
-      const res = await adminRechargeVendorWalletAction(vendorId, amount, rechargeNote);
+      const action = type === "add" ? adminRechargeVendorWalletAction : adminDeductVendorWalletAction;
+      const res = await action(vendorId, amount, rechargeNote);
       if (!res.success) {
-        toast.error(res.error || "Failed to recharge wallet");
+        toast.error(res.error || `Failed to ${type === "add" ? "recharge" : "deduct"} wallet`);
         return;
       }
-      toast.success(`₹${amount} added to ${companyName}'s wallet`);
-      setBalance(res.data?.balance ?? balance + amount);
+      toast.success(`₹${amount} ${type === "add" ? "added to" : "deducted from"} ${companyName}'s wallet`);
+      setBalance(res.data?.balance ?? (type === "add" ? balance + amount : balance - amount));
       setTransactions((prev) => [
-        { id: `optimistic-${Date.now()}`, type: "DEPOSIT", status: "COMPLETED", amount, liveCallId: null, adminName: null, adminNote: rechargeNote || null, createdAt: new Date().toISOString() },
+        { id: `optimistic-${Date.now()}`, type: type === "add" ? "DEPOSIT" : "DEBIT", status: "COMPLETED", amount, liveCallId: null, adminName: "You", adminNote: rechargeNote || null, createdAt: new Date().toISOString() },
         ...prev,
       ]);
       setRechargeAmount("");
@@ -134,33 +135,45 @@ export function VendorWalletTab({
         </div>
 
         <div className="bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-5 flex flex-col gap-2">
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Recharge Wallet Manually</p>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <input
-              type="number"
-              min={1}
-              value={rechargeAmount}
-              onChange={(e) => setRechargeAmount(e.target.value)}
-              placeholder="Amount ₹"
-              className="sm:w-28 h-10 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/80 rounded-lg px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 shrink-0"
-            />
-            <input
-              value={rechargeNote}
-              onChange={(e) => setRechargeNote(e.target.value)}
-              placeholder="Note (optional) — e.g. cash received at office"
-              className="flex-1 min-w-0 h-10 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/80 rounded-lg px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40"
-            />
-            <button
-              type="button"
-              onClick={handleRecharge}
-              disabled={isRecharging || !rechargeAmount}
-              className="h-10 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold disabled:opacity-60 cursor-pointer shrink-0"
-            >
-              {isRecharging ? "..." : "Add"}
-            </button>
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Manage Wallet Balance</p>
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min={1}
+                value={rechargeAmount}
+                onChange={(e) => setRechargeAmount(e.target.value)}
+                placeholder="Amount ₹"
+                className="w-1/3 min-w-[80px] h-10 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/80 rounded-lg px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              />
+              <input
+                value={rechargeNote}
+                onChange={(e) => setRechargeNote(e.target.value)}
+                placeholder="Reason / Note (optional)"
+                className="w-2/3 h-10 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/80 rounded-lg px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => handleTransaction("add")}
+                disabled={isRecharging || !rechargeAmount}
+                className="flex-1 h-10 px-3 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold shadow-sm hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-60 cursor-pointer transition-all"
+              >
+                Add Funds
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTransaction("deduct")}
+                disabled={isRecharging || !rechargeAmount}
+                className="flex-1 h-10 px-3 rounded-lg bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-bold shadow-sm hover:bg-red-100 dark:hover:bg-red-500/20 disabled:opacity-60 cursor-pointer transition-all"
+              >
+                Deduct
+              </button>
+            </div>
           </div>
-          <p className="text-[11px] text-slate-400">
-            Adds money to this vendor&apos;s wallet directly — no Razorpay involved.
+          <p className="text-[11px] text-slate-400 mt-1">
+            Adds or deducts money from this vendor&apos;s wallet directly.
           </p>
         </div>
       </div>

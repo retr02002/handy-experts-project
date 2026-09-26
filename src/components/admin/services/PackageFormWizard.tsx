@@ -228,6 +228,7 @@ export function PackageFormWizard({ isOpen, onClose, onSuccess, services, initia
               {discountPct}% off · Customers save ₹{form.originalPrice - form.price}
             </div>
           )}
+
         </div>
       )}
 

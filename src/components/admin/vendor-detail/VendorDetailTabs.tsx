@@ -16,6 +16,7 @@ import { VendorOrdersTab } from "./VendorOrdersTab";
 import { VendorReviewsTab } from "./VendorReviewsTab";
 import { VendorPerformanceTab } from "./VendorPerformanceTab";
 import { VendorCoverageTab } from "./VendorCoverageTab";
+import { VendorPricingTab } from "./VendorPricingTab";
 import { KycDocumentsReadOnlyTab } from "@/components/shared/kyc/KycDocumentsReadOnlyTab";
 import { VENDOR_KYC_FIELDS } from "@/lib/kycDocumentTypes";
 import type { KycDocSummary } from "@/actions/kyc.actions";
@@ -30,7 +31,7 @@ interface Props {
   reviews: ReviewItem[];
   performance: VendorPerformance | null;
   categories: CategoryWithServiceOptions[];
-  assignedCategoryIds: string[];
+  assignedSkillAssignments: { categoryId: string, serviceIds: string[] }[];
   areas: VendorServiceAreaSummary[];
   documents: KycDocSummary[];
   logoUrl: string | null;
@@ -52,7 +53,7 @@ export function VendorDetailTabs({
   reviews,
   performance,
   categories,
-  assignedCategoryIds,
+  assignedSkillAssignments,
   areas,
   documents,
   logoUrl,
@@ -86,8 +87,13 @@ export function VendorDetailTabs({
         return {
           ...t,
           content: (
-            <VendorCoverageTab vendorId={vendor.id} categories={categories} assignedCategoryIds={assignedCategoryIds} areas={areas} />
+            <VendorCoverageTab vendorId={vendor.id} categories={categories} assignedSkillAssignments={assignedSkillAssignments} areas={areas} />
           ),
+        };
+      case "pricing":
+        return {
+          ...t,
+          content: <VendorPricingTab vendorId={vendor.id} />,
         };
       case "documents":
         return { ...t, content: <KycDocumentsReadOnlyTab documents={documents} fields={VENDOR_KYC_FIELDS} logoUrl={logoUrl} /> };

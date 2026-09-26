@@ -184,6 +184,7 @@ export function CategoryFormModal({ isOpen, onClose, onSuccess, initialData, cat
             <span className="text-xs text-slate-400">Popular categories appear in the &quot;Popular Services&quot; section on the homepage.</span>
           </span>
         </label>
+
       </div>
     </WizardModal>
   );

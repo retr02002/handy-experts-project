@@ -6,12 +6,12 @@ import type { VendorServiceAreaSummary } from "@/actions/vendorservicearea.actio
 export function VendorCoverageTab({
   vendorId,
   categories,
-  assignedCategoryIds,
+  assignedSkillAssignments,
   areas,
 }: {
   vendorId: string;
   categories: CategoryWithServiceOptions[];
-  assignedCategoryIds: string[];
+  assignedSkillAssignments: { categoryId: string, serviceIds: string[] }[];
   areas: VendorServiceAreaSummary[];
 }) {
   return (
@@ -22,7 +22,7 @@ export function VendorCoverageTab({
       <VendorCoverageManager
         vendorId={vendorId}
         categories={categories}
-        initialAssignedCategoryIds={assignedCategoryIds}
+        initialAssignedSkillAssignments={assignedSkillAssignments}
         initialAreas={areas}
       />
     </div>

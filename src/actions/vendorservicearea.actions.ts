@@ -37,6 +37,7 @@ function revalidateServiceAreaSurfaces() {
 export interface VendorServiceAreaSummary {
   id: string;
   pincode: string;
+  locationName: string | null;
   latitude: number;
   longitude: number;
   radiusKm: number;
@@ -115,7 +116,7 @@ export async function addServiceAreaAction(input: AddServiceAreaInput): Promise<
     }
 
     const area = await prisma.vendorServiceArea.create({
-      data: { vendorId, pincode, latitude: coords.latitude, longitude: coords.longitude, radiusKm },
+      data: { vendorId, pincode, locationName: validated.data.locationName ?? null, latitude: coords.latitude, longitude: coords.longitude, radiusKm },
     });
 
     revalidateServiceAreaSurfaces();
@@ -163,6 +164,7 @@ export interface AdminVendorServiceArea {
   vendorId: string;
   companyName: string;
   pincode: string;
+  locationName: string | null;
   latitude: number;
   longitude: number;
   radiusKm: number;
@@ -185,6 +187,7 @@ export async function getAllVendorServiceAreasForAdminAction(): Promise<ActionRe
       vendorId: a.vendorId,
       companyName: a.vendor.companyName,
       pincode: a.pincode,
+      locationName: a.locationName,
       latitude: a.latitude,
       longitude: a.longitude,
       radiusKm: a.radiusKm,

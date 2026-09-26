@@ -163,6 +163,8 @@ model VendorProfile {
   serviceCallOffers ServiceCallOffer[]
   serviceAreas      VendorServiceArea[]
   categories        VendorCategory[]
+  offeredServices   VendorService[]
+  packages          VendorPackage[]
   supportTickets    SupportTicket[]
   kycDocuments      KycDocument[]
   createdAt         DateTime            @default(now())
@@ -189,9 +191,7 @@ model VendorServiceArea {
   pincode   String
   latitude  Float
   longitude Float
-  // Vendor-adjustable per area. 15 mirrors the old flat radius and is used
-  // only for the one-time backfill/auto-seed rows; a vendor's own later
-  // additions default their form input to 5.
+  locationName String?
   radiusKm  Float         @default(5)
   createdAt DateTime      @default(now())
 
@@ -320,6 +320,8 @@ model Category {
   technicianCategories TechnicianCategory[]
   vendorCategories     VendorCategory[]
   couponScopes         CouponScope[]
+  leadPricingType      LeadPricingType?
+  leadPricingValue     Float?
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
 }
@@ -362,6 +364,7 @@ model TechnicianServiceArea {
   pincode      String
   latitude     Float
   longitude    Float
+  locationName String?
   radiusKm     Float             @default(5)
   createdAt    DateTime          @default(now())
 
@@ -379,10 +382,28 @@ model VendorCategory {
   vendor     VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   categoryId String
   category   Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  leadPricingType LeadPricingType?
+  leadPricingValue Float?
   createdAt  DateTime      @default(now())
 
   @@unique([vendorId, categoryId])
   @@index([categoryId])
+}
+
+// Narrow vendor skill assignment — "does only this specific service,"
+// independent of (not nested inside) any VendorCategory row.
+model VendorService {
+  id         String        @id @default(cuid())
+  vendorId   String
+  vendor     VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  serviceId  String
+  service    Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  leadPricingType LeadPricingType?
+  leadPricingValue Float?
+  createdAt  DateTime      @default(now())
+
+  @@unique([vendorId, serviceId])
+  @@index([serviceId])
 }
 
 model Service {
@@ -413,7 +434,10 @@ model Service {
   faqs               Json?
   packages           ServicePackage[]
   technicianServices TechnicianService[]
+  vendorServices     VendorService[]
   couponScopes       CouponScope[]
+  leadPricingType    LeadPricingType?
+  leadPricingValue   Float?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 
@@ -439,8 +463,25 @@ model ServicePackage {
   cartItems     CartItem[]
   liveCallItems LiveCallItem[]
   couponScopes  CouponScope[]
+  vendorPackages VendorPackage[]
+  leadPricingType LeadPricingType?
+  leadPricingValue Float?
 
   @@index([serviceId])
+}
+
+model VendorPackage {
+  id         String          @id @default(cuid())
+  vendorId   String
+  vendor     VendorProfile   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  packageId  String
+  package    ServicePackage  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  leadPricingType LeadPricingType?
+  leadPricingValue Float?
+  createdAt  DateTime        @default(now())
+
+  @@unique([vendorId, packageId])
+  @@index([packageId])
 }
 
 enum CartItemStatus {

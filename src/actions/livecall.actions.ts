@@ -17,6 +17,7 @@ import { requireAdmin } from "@/lib/require-admin";
 import { notifyAllAdmins } from "@/actions/notification.actions";
 import { getPackageServiceCategoryMap } from "@/lib/technicianSkills";
 import { computeOrderTotal, computeLeadPrice } from "@/lib/pricing";
+import { computeLiveCallLeadPrice } from "@/lib/pricing.server";
 import { isOrderOverdue } from "@/lib/overdue";
 import { resolveCouponDiscount } from "@/lib/coupons";
 import { getCityCode, getAreaCode } from "@/lib/locationCodes";
@@ -366,7 +367,19 @@ export async function getMyOrdersAction(): Promise<ActionResponse<CustomerOrderS
     // the expiry sweep if abandoned.
     const rows = await prisma.liveCall.findMany({
       where: { customerId: userId, status: { not: "AWAITING_PAYMENT" } },
-      include: { items: true, serviceCall: { select: { id: true, status: true } } },
+      select: {
+        id: true,
+        ticketSeq: true,
+        orderCityCode: true,
+        orderLocalityCode: true,
+        orderSeq: true,
+        total: true,
+        status: true,
+        scheduledFor: true,
+        createdAt: true,
+        items: { select: { packageName: true, quantity: true } },
+        serviceCall: { select: { id: true, status: true } },
+      },
       orderBy: { createdAt: "desc" },
       take: 100,
     });
@@ -455,12 +468,47 @@ export async function getMyOrderDetailAction(liveCallId: string): Promise<Action
   try {
     const r = await prisma.liveCall.findFirst({
       where: { id: liveCallId, customerId: userId },
-      include: {
-        items: true,
+      select: {
+        id: true,
+        status: true,
+        address: true,
+        city: true,
+        state: true,
+        pincode: true,
+        latitude: true,
+        longitude: true,
+        paymentMode: true,
+        createdByAdminName: true,
+        upiRef: true,
+        paymentStatus: true,
+        subtotal: true,
+        tax: true,
+        total: true,
+        walletAmountApplied: true,
+        originalTotal: true,
+        discountAmount: true,
+        createdAt: true,
+        acceptedAt: true,
+        scheduledFor: true,
+        startPin: true,
+        completionPin: true,
+        cancelReason: true,
+        cancelledAt: true,
+        ticketSeq: true,
+        orderCityCode: true,
+        orderLocalityCode: true,
+        orderSeq: true,
+        items: { select: { packageName: true, quantity: true, unitPrice: true } },
         customer: { select: { startPin: true, completionPin: true } },
         serviceCall: {
-          include: {
-            technician: { include: { user: { select: { name: true, phone: true } } } },
+          select: {
+            id: true,
+            status: true,
+            startedAt: true,
+            completedAt: true,
+            cancelledAt: true,
+            assignedAt: true,
+            technician: { select: { id: true, skillCategory: true, experienceYears: true, ratingAvg: true, ratingCount: true, user: { select: { name: true, phone: true } } } },
             vendor: { select: { companyName: true, user: { select: { phone: true, email: true } } } },
             review: { select: { id: true } },
           },
@@ -709,51 +757,58 @@ export async function getNearbyLiveCallsForVendorAction(): Promise<ActionRespons
     // with zero areas sees zero calls by design (they haven't set up
     // coverage yet). distanceKm below is still measured from the business
     // location purely for sort order, not for eligibility.
-    const [calls, areas, categoryLinks] = await Promise.all([
-      prisma.liveCall.findMany({
-        where: { status: "BROADCASTING" },
-        include: { items: true },
-        orderBy: { createdAt: "desc" },
-        take: 100,
-      }),
+    const calls = await prisma.liveCall.findMany({
+      where: { status: "BROADCASTING" },
+      include: { items: true },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+
+    const [areas, categoryLinks, serviceLinks] = await Promise.all([
       prisma.vendorServiceArea.findMany({
         where: { vendorId: vendor.id },
         select: { latitude: true, longitude: true, radiusKm: true },
       }),
       prisma.vendorCategory.findMany({ where: { vendorId: vendor.id }, select: { categoryId: true } }),
+      prisma.vendorService.findMany({ where: { vendorId: vendor.id }, select: { serviceId: true } }),
     ]);
 
-    // Category gate: a vendor only sees calls whose items include at least
-    // one category they're assigned — the fix for a plumbing-only vendor
-    // being shown a haircut order. One batched package→category resolution
-    // for every distinct package across all 100 candidate calls, not one
-    // query per call.
+    // Category and service gate: a vendor only sees calls whose items include at least
+    // one category or specific service they're assigned.
     const allowedCategoryIds = new Set(categoryLinks.map((c) => c.categoryId));
+    const allowedServiceIds = new Set(serviceLinks.map((s) => s.serviceId));
     const packageIds = calls.flatMap((c) => c.items.map((i) => i.packageId).filter((id): id is string => !!id));
     const packageCategoryMap = await getPackageServiceCategoryMap(packageIds);
 
-    const nearby = calls
-      .filter((call) =>
-        call.items.some((i) => {
-          const categoryId = i.packageId ? packageCategoryMap.get(i.packageId)?.categoryId : null;
-          return !!categoryId && allowedCategoryIds.has(categoryId);
-        })
-      )
-      .map((call) => ({
-        id: call.id,
-        customerFirstName: maskName(call.customerName),
-        customerPhoneMasked: maskPhone(call.customerPhone),
-        city: call.city,
-        pincode: call.pincode,
-        latitude: call.latitude,
-        longitude: call.longitude,
-        total: call.total,
-        leadPrice: computeLeadPrice(call.total, vendor.leadPricingType, vendor.leadPricingValue),
-        createdAt: call.createdAt.toISOString(),
-        expiresAt: call.expiresAt?.toISOString() ?? null,
-        distanceKm: haversineKm(vendor.latitude, vendor.longitude, call.latitude, call.longitude),
-        items: call.items.map((i) => ({ packageName: i.packageName, quantity: i.quantity, unitPrice: i.unitPrice })),
-      }))
+    const filteredCalls = calls.filter((call) =>
+      call.items.some((i) => {
+        const mapping = i.packageId ? packageCategoryMap.get(i.packageId) : null;
+        return !!mapping && (
+          (mapping.categoryId && allowedCategoryIds.has(mapping.categoryId)) ||
+          (mapping.serviceId && allowedServiceIds.has(mapping.serviceId))
+        );
+      })
+    );
+
+    const nearbyPromises = filteredCalls.map(async (call) => ({
+      id: call.id,
+      customerFirstName: maskName(call.customerName),
+      customerPhoneMasked: maskPhone(call.customerPhone),
+      city: call.city,
+      pincode: call.pincode,
+      latitude: call.latitude,
+      longitude: call.longitude,
+      total: call.total,
+      leadPrice: await computeLiveCallLeadPrice(call.items, call.total, vendor.id, vendor.leadPricingType, vendor.leadPricingValue),
+      createdAt: call.createdAt.toISOString(),
+      expiresAt: call.expiresAt?.toISOString() ?? null,
+      distanceKm: haversineKm(vendor.latitude, vendor.longitude, call.latitude, call.longitude),
+      items: call.items.map((i) => ({ packageName: i.packageName, quantity: i.quantity, unitPrice: i.unitPrice })),
+    }));
+    
+    const nearbyUnfiltered = await Promise.all(nearbyPromises);
+
+    const nearby = nearbyUnfiltered
       .filter((call) => areas.some((a) => haversineKm(a.latitude, a.longitude, call.latitude, call.longitude) <= a.radiusKm))
       .sort((a, b) => a.distanceKm - b.distanceKm);
 

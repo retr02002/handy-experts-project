@@ -471,3 +471,56 @@ export async function adminRechargeVendorWalletAction(
     return { success: false, error: "Failed to recharge this vendor's wallet" };
   }
 }
+
+/**
+ * Admin manually deducts money from a vendor's wallet — e.g. manual adjustment.
+ * Lands as COMPLETED immediately; the note is the audit trail for why the money was deducted.
+ */
+export async function adminDeductVendorWalletAction(
+  vendorId: string,
+  amountRupees: number,
+  note?: string
+): Promise<ActionResponse<{ balance: number }>> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || session.user.role !== "SUPER_ADMIN") {
+    return { success: false, error: "Not authorized" };
+  }
+
+  if (!Number.isFinite(amountRupees) || amountRupees <= 0) {
+    return { success: false, error: "Enter a positive amount" };
+  }
+
+  const adminName = session.user.name?.trim() || "An admin";
+
+  try {
+    const wallet = await ensureVendorWallet(vendorId);
+    
+    // Check if sufficient balance
+    const currentWallet = await prisma.vendorWallet.findUnique({ where: { id: wallet.id }, select: { balance: true } });
+    if (!currentWallet || currentWallet.balance < amountRupees) {
+      return { success: false, error: "Insufficient wallet balance" };
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.vendorWallet.update({ where: { id: wallet.id }, data: { balance: { decrement: amountRupees } } });
+      await tx.vendorWalletTransaction.create({
+        data: {
+          walletId: wallet.id,
+          type: "DEBIT",
+          status: "COMPLETED",
+          amount: amountRupees,
+          adminName,
+          adminNote: note?.trim() || null,
+        },
+      });
+    });
+
+    const updated = await prisma.vendorWallet.findUnique({ where: { id: wallet.id }, select: { balance: true } });
+    revalidatePath("/admin/vendors");
+    revalidatePath("/vendor/wallet");
+    return { success: true, data: { balance: updated?.balance ?? 0 } };
+  } catch (err) {
+    console.error("Admin deduct vendor wallet error:", err);
+    return { success: false, error: "Failed to deduct from this vendor's wallet" };
+  }
+}

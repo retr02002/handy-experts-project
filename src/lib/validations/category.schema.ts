@@ -14,6 +14,8 @@ export const categorySchema = z.object({
   isActive: z.boolean().default(true),
   isPopular: z.boolean().default(false),
   sortOrder: z.number().int().min(0, "Sort order must be 0 or more").default(0),
+  leadPricingType: z.enum(["FLAT", "PERCENTAGE"]).nullable().optional(),
+  leadPricingValue: z.number().nullable().optional(),
 });
 
 export type CategoryInput = z.infer<typeof categorySchema>;

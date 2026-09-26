@@ -10,6 +10,7 @@ import { requireAdmin } from "@/lib/require-admin";
 import { notifyAllAdmins } from "@/actions/notification.actions";
 import type { LiveCallItemDetail } from "@/actions/livecall.actions";
 import { computeLeadPrice } from "@/lib/pricing";
+import { computeLiveCallLeadPrice } from "@/lib/pricing.server";
 import { haversineKm } from "@/lib/geo";
 import { canStartTravel, formatScheduledFor, TRAVEL_WINDOW_MINUTES } from "@/lib/jobSchedule";
 import { formatTicketNumber } from "@/lib/ticketNumber";
@@ -216,9 +217,9 @@ export async function buyLiveCallAction(
     const [vendorProfile, liveCall] = await Promise.all([
       prisma.vendorProfile.findUnique({
         where: { id: vendorId },
-        select: { isActive: true, companyName: true, leadPricingType: true, leadPricingValue: true },
+        select: { id: true, isActive: true, companyName: true, leadPricingType: true, leadPricingValue: true },
       }),
-      prisma.liveCall.findUnique({ where: { id: liveCallId } }),
+      prisma.liveCall.findUnique({ where: { id: liveCallId }, include: { items: true } }),
     ]);
     if (!vendorProfile?.isActive) {
       return { success: false, error: "Your account is deactivated and can't buy new leads." };
@@ -228,7 +229,7 @@ export async function buyLiveCallAction(
       return { success: false, error: "This lead was already bought by another vendor or has expired." };
     }
 
-    const leadPrice = computeLeadPrice(liveCall.total, vendorProfile.leadPricingType, vendorProfile.leadPricingValue);
+    const leadPrice = await computeLiveCallLeadPrice(liveCall.items, liveCall.total, vendorProfile.id, vendorProfile.leadPricingType, vendorProfile.leadPricingValue);
 
     try {
       await prisma.$transaction(async (tx) => {
@@ -356,7 +357,15 @@ export async function getPendingOffersForLiveCallAction(
     await sweepExpiredOffers();
     const offers = await prisma.serviceCallOffer.findMany({
       where: { liveCallId, vendorId },
-      include: { technician: { include: { user: { select: { name: true } } } } },
+      select: {
+        id: true,
+        technicianId: true,
+        status: true,
+        declineReason: true,
+        createdAt: true,
+        respondedAt: true,
+        technician: { select: { user: { select: { name: true } } } },
+      },
       orderBy: { createdAt: "asc" },
     });
     return {
@@ -400,7 +409,22 @@ export async function getMyAwaitingCallsForVendorAction(): Promise<ActionRespons
     await sweepExpiredOffers();
     const calls = await prisma.serviceCall.findMany({
       where: { vendorId, status: "UNASSIGNED" },
-      include: { liveCall: { include: { items: true, offers: true } } },
+      select: {
+        id: true,
+        liveCallId: true,
+        createdAt: true,
+        liveCall: {
+          select: {
+            address: true,
+            city: true,
+            total: true,
+            scheduledFor: true,
+            acceptedAt: true,
+            items: { select: { packageName: true } },
+            offers: { select: { status: true } },
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
       take: 50,
     });
@@ -529,14 +553,52 @@ export interface ServiceCallSummary {
 }
 
 const serviceCallWithDetails = Prisma.validator<Prisma.ServiceCallDefaultArgs>()({
-  include: {
-    liveCall: { include: { items: true } },
-    technician: { include: { user: { select: { name: true } } } },
+  select: {
+    id: true,
+    liveCallId: true,
+    status: true,
+    technicianId: true,
+    assignedAt: true,
+    startedAt: true,
+    completedAt: true,
+    cancelledAt: true,
+    createdAt: true,
+    pinAttempts: true,
+    geofenceBypass: true,
+    liveCall: {
+      select: {
+        customerName: true,
+        customerPhone: true,
+        siteContactName: true,
+        siteContactPhone: true,
+        address: true,
+        customerEmail: true,
+        city: true,
+        state: true,
+        pincode: true,
+        latitude: true,
+        longitude: true,
+        paymentMode: true,
+        createdByAdminName: true,
+        upiRef: true,
+        paymentScreenshotUrl: true,
+        subtotal: true,
+        tax: true,
+        total: true,
+        scheduledFor: true,
+        ticketSeq: true,
+        orderCityCode: true,
+        orderLocalityCode: true,
+        orderSeq: true,
+        items: { select: { packageName: true, quantity: true, unitPrice: true } }
+      }
+    },
+    technician: { select: { user: { select: { name: true } } } },
     vendor: { select: { companyName: true, user: { select: { phone: true, email: true } } } },
     report: { select: { id: true } },
   },
 });
-const serviceCallInclude = serviceCallWithDetails.include;
+const serviceCallSelect = serviceCallWithDetails.select;
 type ServiceCallRow = Prisma.ServiceCallGetPayload<typeof serviceCallWithDetails>;
 
 function mapServiceCallRow(r: ServiceCallRow): ServiceCallSummary {
@@ -632,7 +694,7 @@ export async function getMyServiceCallsForVendorAction(): Promise<ActionResponse
   try {
     const rows = await prisma.serviceCall.findMany({
       where: { vendorId },
-      include: serviceCallInclude,
+      select: serviceCallSelect,
       orderBy: { createdAt: "desc" },
       take: 100,
     });
@@ -650,7 +712,7 @@ export async function getMyServiceCallsForTechnicianAction(): Promise<ActionResp
   try {
     const rows = await prisma.serviceCall.findMany({
       where: { technicianId },
-      include: serviceCallInclude,
+      select: serviceCallSelect,
       orderBy: { createdAt: "desc" },
       take: 100,
     });
@@ -675,7 +737,7 @@ export async function getAllServiceCallsAction(): Promise<ActionResponse<AdminSe
 
   try {
     const rows = await prisma.serviceCall.findMany({
-      include: serviceCallInclude,
+      select: serviceCallSelect,
       orderBy: { createdAt: "desc" },
       take: 200,
     });
@@ -699,7 +761,7 @@ export async function getServiceCallsForVendorAction(
   try {
     const rows = await prisma.serviceCall.findMany({
       where: { vendorId },
-      include: serviceCallInclude,
+      select: serviceCallSelect,
       orderBy: { createdAt: "desc" },
       take: 200,
     });
@@ -744,7 +806,7 @@ export async function getServiceCallFullDetailAction(
   if (!isAdmin) return { success: false, error: "Not authorized" };
 
   try {
-    const call = await prisma.serviceCall.findUnique({ where: { id: serviceCallId }, include: serviceCallInclude });
+    const call = await prisma.serviceCall.findUnique({ where: { id: serviceCallId }, select: serviceCallSelect });
     if (!call) return { success: false, error: "Service call not found" };
 
     const [reportRes, reviewRes, offers] = await Promise.all([
@@ -1721,13 +1783,13 @@ export async function buyLiveCallAsFreelancerAction(
       return { success: false, error: "Only freelance technicians can buy leads directly." };
     }
 
-    const liveCall = await prisma.liveCall.findUnique({ where: { id: liveCallId } });
+    const liveCall = await prisma.liveCall.findUnique({ where: { id: liveCallId }, include: { items: true } });
     if (!liveCall) return { success: false, error: "Live call not found" };
     if (liveCall.status !== "BROADCASTING") {
       return { success: false, error: "This lead was already bought or has expired." };
     }
 
-    const leadPrice = computeLeadPrice(liveCall.total, technician.leadFeeType, technician.leadFeeAmount);
+    const leadPrice = await computeLiveCallLeadPrice(liveCall.items, liveCall.total, null, technician.leadFeeType, technician.leadFeeAmount);
 
     let createdServiceCallId = "";
 
