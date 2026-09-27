@@ -171,6 +171,19 @@ export function ServiceCallDetailModal({ call, onClose, onChanged, autoOpenAssig
 
   const [downloadingInvoice, setDownloadingInvoice] = useState(false);
 
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => {
+        const result = reader.result as string;
+        const base64Data = result.split(',')[1];
+        resolve(base64Data);
+      };
+      reader.readAsDataURL(blob);
+    });
+  };
+
   const handleDownloadInvoice = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (downloadingInvoice) return;
@@ -180,26 +193,47 @@ export function ServiceCallDetailModal({ call, onClose, onChanged, autoOpenAssig
       const res = await fetch(`/api/service-calls/${call.id}/document?audience=vendor`);
       if (!res.ok) throw new Error("Failed to fetch document");
       const blob = await res.blob();
+      const fileName = `Invoice-${call.id}.pdf`;
       
-      if (navigator.share && navigator.canShare) {
-        const file = new File([blob], `Invoice-${call.id}.pdf`, { type: "application/pdf" });
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: `Invoice ${call.ticketNumber}`,
-          });
-          return;
+      const { Capacitor } = await import("@capacitor/core");
+      
+      if (Capacitor.isNativePlatform()) {
+        const { Filesystem, Directory } = await import("@capacitor/filesystem");
+        const { Share } = await import("@capacitor/share");
+        
+        const base64Data = await blobToBase64(blob);
+        const savedFile = await Filesystem.writeFile({
+          path: fileName,
+          data: base64Data,
+          directory: Directory.Cache,
+        });
+
+        await Share.share({
+          title: `Invoice ${call.ticketNumber}`,
+          url: savedFile.uri,
+          dialogTitle: 'Download Invoice',
+        });
+      } else {
+        if (navigator.share && navigator.canShare) {
+          const file = new File([blob], fileName, { type: "application/pdf" });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: `Invoice ${call.ticketNumber}`,
+            });
+            return;
+          }
         }
+        
+        const objectUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
       }
-      
-      const objectUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = objectUrl;
-      a.download = `Invoice-${call.id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
     } catch (err) {
       console.error("Failed to fetch invoice:", err);
       toast.error("Could not load the invoice. Please try again.");

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { Capacitor } from "@capacitor/core";
 
 interface Props {
   serviceCallId: string;
@@ -11,6 +12,19 @@ interface Props {
   className?: string;
   label?: React.ReactNode;
 }
+
+const blobToBase64 = (blob: Blob): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64Data = result.split(',')[1];
+      resolve(base64Data);
+    };
+    reader.readAsDataURL(blob);
+  });
+};
 
 export function DownloadInvoiceButton({ serviceCallId, ticketNumber, audience, mode, className = "", label }: Props) {
   const [downloading, setDownloading] = useState(false);
@@ -28,29 +42,47 @@ export function DownloadInvoiceButton({ serviceCallId, ticketNumber, audience, m
       
       const fileName = `Invoice-${ticketNumber || serviceCallId}.pdf`;
 
-      if (navigator.share && navigator.canShare) {
-        const file = new File([blob], fileName, { type: "application/pdf" });
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: `Invoice ${ticketNumber || ""}`.trim(),
-          });
-          return;
-        }
-      }
-      
-      const objectUrl = URL.createObjectURL(blob);
-      if (mode === "view") {
-        window.open(objectUrl, "_blank");
+      if (Capacitor.isNativePlatform()) {
+        const { Filesystem, Directory } = await import("@capacitor/filesystem");
+        const { Share } = await import("@capacitor/share");
+        
+        const base64Data = await blobToBase64(blob);
+        const savedFile = await Filesystem.writeFile({
+          path: fileName,
+          data: base64Data,
+          directory: Directory.Cache,
+        });
+
+        await Share.share({
+          title: `Invoice ${ticketNumber || ""}`.trim(),
+          url: savedFile.uri,
+          dialogTitle: mode === "view" ? 'View Invoice' : 'Download Invoice',
+        });
       } else {
-        const a = document.createElement("a");
-        a.href = objectUrl;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        if (navigator.share && navigator.canShare) {
+          const file = new File([blob], fileName, { type: "application/pdf" });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: `Invoice ${ticketNumber || ""}`.trim(),
+            });
+            return;
+          }
+        }
+        
+        const objectUrl = URL.createObjectURL(blob);
+        if (mode === "view") {
+          window.open(objectUrl, "_blank");
+        } else {
+          const a = document.createElement("a");
+          a.href = objectUrl;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
       }
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
     } catch (err) {
       console.error("Failed to fetch invoice:", err);
       alert("Could not load the invoice. Please try again.");

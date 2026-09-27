@@ -3,6 +3,7 @@
 import React, { useCallback, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { Capacitor } from "@capacitor/core";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { usePolling } from "@/hooks/usePolling";
 import { getMyOrderDetailAction, type CustomerOrderDetail, type OrderDisplayStatus } from "@/actions/livecall.actions";
@@ -113,6 +114,19 @@ export function OrderDetailClient({ orderId, initialOrder }: { orderId: string; 
   const [cancelOpen, setCancelOpen] = useState(false);
   const [downloadingInvoice, setDownloadingInvoice] = useState(false);
 
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => {
+        const result = reader.result as string;
+        const base64Data = result.split(',')[1];
+        resolve(base64Data);
+      };
+      reader.readAsDataURL(blob);
+    });
+  };
+
   const handleDownloadInvoice = async (e: React.MouseEvent, action: "view" | "download") => {
     e.preventDefault();
     if (!serviceCallId || downloadingInvoice) return;
@@ -122,32 +136,50 @@ export function OrderDetailClient({ orderId, initialOrder }: { orderId: string; 
       const res = await fetch(`/api/service-calls/${serviceCallId}/document?audience=customer${action === "view" ? "&disposition=inline" : ""}`);
       if (!res.ok) throw new Error("Failed to fetch document");
       const blob = await res.blob();
+      const fileName = `Invoice-${order.id}.pdf`;
       
-      // Native App / Mobile flow using Web Share API (handles Blob downloads flawlessly on Android/iOS)
-      if (navigator.share && navigator.canShare) {
-        const file = new File([blob], `Invoice-${order.id}.pdf`, { type: "application/pdf" });
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: `Invoice ${order.id}`,
-          });
-          return;
-        }
-      }
-      
-      // Desktop / Web fallback
-      const objectUrl = URL.createObjectURL(blob);
-      if (action === "view") {
-        window.open(objectUrl, "_blank");
+      // Native App / Mobile flow using Web Share API and Filesystem
+      if (Capacitor.isNativePlatform()) {
+        const { Filesystem, Directory } = await import("@capacitor/filesystem");
+        const { Share } = await import("@capacitor/share");
+        
+        const base64Data = await blobToBase64(blob);
+        const savedFile = await Filesystem.writeFile({
+          path: fileName,
+          data: base64Data,
+          directory: Directory.Cache,
+        });
+
+        await Share.share({
+          title: `Invoice ${order.id}`,
+          url: savedFile.uri,
+          dialogTitle: action === "view" ? 'View Invoice' : 'Download Invoice',
+        });
       } else {
-        const a = document.createElement("a");
-        a.href = objectUrl;
-        a.download = `Invoice-${order.id}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        if (navigator.share && navigator.canShare) {
+          const file = new File([blob], fileName, { type: "application/pdf" });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: `Invoice ${order.id}`,
+            });
+            return;
+          }
+        }
+        
+        const objectUrl = URL.createObjectURL(blob);
+        if (action === "view") {
+          window.open(objectUrl, "_blank");
+        } else {
+          const a = document.createElement("a");
+          a.href = objectUrl;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
       }
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
     } catch (err) {
       console.error("Failed to fetch invoice:", err);
       alert("Could not load the invoice. Please try again.");
