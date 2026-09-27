@@ -15,6 +15,7 @@ import { haversineKm } from "@/lib/geo";
 import { LOCATION_NOT_SET, VENDOR_INACTIVE, LIVE_CALL_EXPIRY_MINUTES } from "@/lib/constants";
 import { requireAdmin } from "@/lib/require-admin";
 import { notifyAllAdmins } from "@/actions/notification.actions";
+import { notifyOrderPlaced } from "@/lib/whatsapp";
 import { getPackageServiceCategoryMap } from "@/lib/technicianSkills";
 import { computeOrderTotal, computeLeadPrice } from "@/lib/pricing";
 import { computeLiveCallLeadPrice } from "@/lib/pricing.server";
@@ -307,6 +308,7 @@ export async function createLiveCallAction(
       `${data.customerName} placed an order in ${data.city} — ₹${total}.`,
       liveCall.id
     );
+    notifyOrderPlaced(data.customerPhone, formatTicketNumber(liveCall), total).catch(console.error);
     return { success: true, data: { liveCallId: liveCall.id, ticketNumber: formatTicketNumber(liveCall) } };
   } catch (err) {
     if (err instanceof Error && err.message === "WALLET_BALANCE_CHANGED") {

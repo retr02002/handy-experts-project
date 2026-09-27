@@ -51,3 +51,7 @@ next-env.d.ts
 
 # Local-dev object storage fallback (see src/lib/storage/provider.localDisk.ts)
 .storage/
+
+# Mobile folders
+mobile-vendor/
+mobile-customer/

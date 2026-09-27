@@ -8,6 +8,7 @@ import { computeOrderTotal } from "@/lib/pricing";
 import { resolveCouponDiscount } from "@/lib/coupons";
 import { createRazorpayOrder, verifyPaymentSignature } from "@/lib/razorpay";
 import { notifyAllAdmins } from "@/actions/notification.actions";
+import { notifyOrderPlaced } from "@/lib/whatsapp";
 import { requireCustomerId, resolveCoordinates, ensureServicePins } from "@/actions/livecall.actions";
 import { LIVE_CALL_EXPIRY_MINUTES } from "@/lib/constants";
 import { getCityCode, getAreaCode } from "@/lib/locationCodes";
@@ -170,6 +171,7 @@ export async function createRazorpayOrderAction(input: unknown): Promise<ActionR
         `${data.customerName} placed an order in ${data.city} — ₹${total}.`,
         liveCall.id
       );
+      notifyOrderPlaced(data.customerPhone, formatTicketNumber(liveCall), total).catch(console.error);
 
       return {
         success: true,
@@ -304,6 +306,7 @@ export async function verifyRazorpayPaymentAction(input: {
           `${liveCall.customerName} placed an order in ${liveCall.city} — ₹${liveCall.total}.`,
           liveCall.id
         );
+        notifyOrderPlaced(liveCall.customerPhone, formatTicketNumber(liveCall), liveCall.total).catch(console.error);
       }
     }
     // claim.count === 0 means the webhook already confirmed this payment —

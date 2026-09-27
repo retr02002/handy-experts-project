@@ -15,6 +15,7 @@ import {
   GEOFENCE_POSITION_REQUIRED,
 } from "@/lib/constants";
 import { createStepTimer } from "@/lib/perfLog";
+import { notifyJobCompletedByLiveCallId } from "@/lib/whatsapp";
 
 /**
  * A fixed 4-digit customer PIN is only 10,000 combinations, so the gate has
@@ -339,6 +340,8 @@ export async function completeJobAction(
         },
       ],
     }).catch(console.error);
+
+    notifyJobCompletedByLiveCallId(verified.call.liveCallId).catch(console.error);
 
     // No revalidatePath here either — see the matching comment in
     // startJobAction for why it's dead weight on this client-refetch

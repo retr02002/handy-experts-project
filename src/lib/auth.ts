@@ -138,6 +138,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: "lax",
         path: "/",
         secure: process.env.NODE_ENV === "production",
+        maxAge: 7 * 24 * 60 * 60, // Ensure WebViews don't treat it as a session cookie
       },
     },
   },
