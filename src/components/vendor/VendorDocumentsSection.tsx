@@ -54,14 +54,21 @@ export function VendorDocumentsSection({ initialDocuments, agreementTemplate }: 
           </div>
         </div>
         {agreementTemplate ? (
-          <a
-            href={agreementTemplate.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="h-10 sm:h-9 px-3 rounded-lg bg-blue-600 text-white text-xs font-bold flex items-center justify-center shrink-0 hover:opacity-90 transition-opacity sm:ml-auto"
+          <button
+            type="button"
+            onClick={async () => {
+              const { Capacitor } = await import("@capacitor/core");
+              if (Capacitor.isNativePlatform()) {
+                const { Browser } = await import("@capacitor/browser");
+                await Browser.open({ url: agreementTemplate.url });
+              } else {
+                window.open(agreementTemplate.url, "_blank", "noopener,noreferrer");
+              }
+            }}
+            className="h-10 sm:h-9 px-3 rounded-lg bg-blue-600 text-white text-xs font-bold flex items-center justify-center shrink-0 hover:opacity-90 transition-opacity sm:ml-auto cursor-pointer"
           >
             Download
-          </a>
+          </button>
         ) : (
           <span className="text-[11px] text-slate-400 shrink-0">Not available yet</span>
         )}

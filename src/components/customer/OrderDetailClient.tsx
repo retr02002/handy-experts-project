@@ -13,6 +13,7 @@ import { getUnreadMessageCountAction } from "@/actions/chat.actions";
 import { OrderProgressStepper } from "./OrderProgressStepper";
 import { StarRating } from "@/components/shared/StarRating";
 import { describeTimeUntil, formatScheduledFor } from "@/lib/jobSchedule";
+import { DownloadInvoiceButton } from "@/components/shared/DownloadInvoiceButton";
 
 // Every one of these pulls in weight that most order views never need — a
 // completed order shows no map, an unassigned one has nobody to chat with.
@@ -422,24 +423,22 @@ export function OrderDetailClient({ orderId, initialOrder }: { orderId: string; 
               </div>
             </div>
             <div className="flex items-center gap-2 sm:ml-auto">
-              <button
-                type="button"
-                onClick={(e) => handleDownloadInvoice(e, "view")}
-                disabled={downloadingInvoice}
+              <DownloadInvoiceButton
+                serviceCallId={serviceCallId}
+                ticketNumber={order.ticketNumber}
+                audience="customer"
+                mode="view"
+                label="View"
                 className="h-10 px-4 flex-1 sm:flex-none rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 hover:border-blue-400 transition-colors disabled:opacity-50"
-              >
-                <ClientIcon icon={downloadingInvoice ? "ph:spinner-gap-bold" : "ph:eye-bold"} className={downloadingInvoice ? "w-3.5 h-3.5 animate-spin" : "w-3.5 h-3.5"} /> 
-                {downloadingInvoice ? "Loading..." : "View"}
-              </button>
-              <button
-                type="button"
-                onClick={(e) => handleDownloadInvoice(e, "download")}
-                disabled={downloadingInvoice}
+              />
+              <DownloadInvoiceButton
+                serviceCallId={serviceCallId}
+                ticketNumber={order.ticketNumber}
+                audience="customer"
+                mode="download"
+                label="Download"
                 className="h-10 px-4 flex-1 sm:flex-none rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity disabled:opacity-50"
-              >
-                <ClientIcon icon={downloadingInvoice ? "ph:spinner-gap-bold" : "ph:download-simple-bold"} className={downloadingInvoice ? "w-3.5 h-3.5 animate-spin" : "w-3.5 h-3.5"} /> 
-                {downloadingInvoice ? "Loading..." : "Download"}
-              </button>
+              />
             </div>
           </div>
         )}

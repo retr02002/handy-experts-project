@@ -102,7 +102,7 @@ export function DownloadInvoiceButton({ serviceCallId, ticketNumber, audience, m
       className={`${className} ${downloading ? "opacity-50 cursor-not-allowed" : ""}`}
     >
       <ClientIcon icon={downloading ? "ph:spinner-gap-bold" : icon} className={downloading ? "w-4 h-4 animate-spin" : "w-4 h-4"} />
-      {label}
+      {downloading ? "Loading..." : label}
     </button>
   );
 }
