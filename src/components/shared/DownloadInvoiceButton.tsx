@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { Capacitor } from "@capacitor/core";
+import { Filesystem, Directory } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
 
 interface Props {
   serviceCallId: string;
@@ -43,9 +45,6 @@ export function DownloadInvoiceButton({ serviceCallId, ticketNumber, audience, m
       const fileName = `Invoice-${ticketNumber || serviceCallId}.pdf`;
 
       if (Capacitor.isNativePlatform()) {
-        const { Filesystem, Directory } = await import("@capacitor/filesystem");
-        const { Share } = await import("@capacitor/share");
-        
         const base64Data = await blobToBase64(blob);
         const savedFile = await Filesystem.writeFile({
           path: fileName,
@@ -85,7 +84,7 @@ export function DownloadInvoiceButton({ serviceCallId, ticketNumber, audience, m
       }
     } catch (err) {
       console.error("Failed to fetch invoice:", err);
-      alert("Could not load the invoice. Please try again.");
+      alert("Error: " + (err instanceof Error ? err.message : JSON.stringify(err)));
     } finally {
       setDownloading(false);
     }

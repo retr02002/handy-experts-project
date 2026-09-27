@@ -20,6 +20,9 @@ import {
 import Image from "next/image";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { TicketBadge } from "@/components/shared/TicketBadge";
+import { Capacitor } from "@capacitor/core";
+import { Filesystem, Directory } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
 import { JobPhotoGallery } from "@/components/shared/JobPhotoGallery";
 import { JobItemsEditor } from "./JobItemsEditor";
 import { jobStatusLabel } from "@/lib/jobStatus";
@@ -195,12 +198,7 @@ export function ServiceCallDetailModal({ call, onClose, onChanged, autoOpenAssig
       const blob = await res.blob();
       const fileName = `Invoice-${call.id}.pdf`;
       
-      const { Capacitor } = await import("@capacitor/core");
-      
       if (Capacitor.isNativePlatform()) {
-        const { Filesystem, Directory } = await import("@capacitor/filesystem");
-        const { Share } = await import("@capacitor/share");
-        
         const base64Data = await blobToBase64(blob);
         const savedFile = await Filesystem.writeFile({
           path: fileName,

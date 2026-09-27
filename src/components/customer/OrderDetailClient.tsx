@@ -4,6 +4,8 @@ import React, { useCallback, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Capacitor } from "@capacitor/core";
+import { Filesystem, Directory } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { usePolling } from "@/hooks/usePolling";
 import { getMyOrderDetailAction, type CustomerOrderDetail, type OrderDisplayStatus } from "@/actions/livecall.actions";
@@ -140,9 +142,6 @@ export function OrderDetailClient({ orderId, initialOrder }: { orderId: string; 
       
       // Native App / Mobile flow using Web Share API and Filesystem
       if (Capacitor.isNativePlatform()) {
-        const { Filesystem, Directory } = await import("@capacitor/filesystem");
-        const { Share } = await import("@capacitor/share");
-        
         const base64Data = await blobToBase64(blob);
         const savedFile = await Filesystem.writeFile({
           path: fileName,
