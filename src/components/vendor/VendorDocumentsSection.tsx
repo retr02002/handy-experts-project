@@ -57,16 +57,26 @@ export function VendorDocumentsSection({ initialDocuments, agreementTemplate }: 
           <button
             type="button"
             onClick={async () => {
-              const isNative = typeof window !== 'undefined' && (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
-              
-              if (isNative) {
-                try {
-                  const { Browser } = await import("@capacitor/browser");
-                  await Browser.open({ url: agreementTemplate.url });
-                } catch (e) {
-                  window.open(agreementTemplate.url, "_blank", "noopener,noreferrer");
-                }
-              } else {
+              try {
+                // Fetch the file to force download instead of opening in a new tab
+                const response = await fetch(agreementTemplate.url);
+                if (!response.ok) throw new Error("Network response was not ok");
+                
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                
+                const link = document.createElement("a");
+                link.href = blobUrl;
+                // Try to extract filename from URL or fallback
+                const filename = agreementTemplate.url.split("/").pop() || "Vendor_Agreement";
+                link.download = filename;
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(blobUrl);
+              } catch (error) {
+                // Fallback to opening in a new tab if fetch fails (e.g. CORS)
                 window.open(agreementTemplate.url, "_blank", "noopener,noreferrer");
               }
             }}
