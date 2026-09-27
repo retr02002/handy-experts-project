@@ -408,6 +408,7 @@ export async function getMyOrdersAction(): Promise<ActionResponse<CustomerOrderS
 
 export interface CustomerOrderDetail {
   id: string;
+  ticketNumber: string;
   /** Null until a vendor accepts and the job record exists. */
   serviceCallId: string | null;
   status: OrderDisplayStatus;
@@ -523,6 +524,12 @@ export async function getMyOrderDetailAction(liveCallId: string): Promise<Action
       success: true,
       data: {
         id: r.id,
+        ticketNumber: formatTicketNumber({
+          ticketSeq: r.ticketSeq,
+          orderCityCode: r.orderCityCode,
+          orderLocalityCode: r.orderLocalityCode,
+          orderSeq: r.orderSeq,
+        }),
         serviceCallId: r.serviceCall?.id ?? null,
         status: deriveOrderStatus(r.status, r.serviceCall?.status),
         address: r.address,

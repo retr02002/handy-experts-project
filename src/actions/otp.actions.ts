@@ -5,7 +5,10 @@ import bcrypt from "bcrypt";
 import { prisma } from "@/lib/prisma";
 import { sendOtpMessage, type OtpChannel } from "@/lib/apitxt";
 import type { ActionResponse } from "@/actions/auth.actions";
-import { sendCustomerOtpSchema, sendTechnicianOtpSchema } from "@/lib/validations/otp.schema";
+import {
+  sendCustomerOtpSchema,
+  sendTechnicianOtpSchema,
+} from "@/lib/validations/otp.schema";
 import type { OtpPurpose } from "@prisma/client";
 import { findTechnicianByIdentifier } from "@/lib/technicianIdentifier";
 
@@ -22,7 +25,10 @@ function maskPhone(phone: string): string {
   return `•••••• ${phone.slice(-4)}`;
 }
 
-async function checkRateLimit(phone: string, purpose: OtpPurpose): Promise<{ ok: true } | { ok: false; error: string }> {
+async function checkRateLimit(
+  phone: string,
+  purpose: OtpPurpose,
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const latest = await prisma.otpCode.findFirst({
     where: { phone, purpose },
     orderBy: { createdAt: "desc" },
@@ -32,7 +38,10 @@ async function checkRateLimit(phone: string, purpose: OtpPurpose): Promise<{ ok:
     const elapsedSeconds = (Date.now() - latest.createdAt.getTime()) / 1000;
     if (elapsedSeconds < RESEND_COOLDOWN_SECONDS) {
       const remaining = Math.ceil(RESEND_COOLDOWN_SECONDS - elapsedSeconds);
-      return { ok: false, error: `Please wait ${remaining}s before requesting another code` };
+      return {
+        ok: false,
+        error: `Please wait ${remaining}s before requesting another code`,
+      };
     }
   }
 
@@ -41,7 +50,10 @@ async function checkRateLimit(phone: string, purpose: OtpPurpose): Promise<{ ok:
     where: { phone, purpose, createdAt: { gt: oneHourAgo } },
   });
   if (recentCount >= HOURLY_SEND_CAP) {
-    return { ok: false, error: "Too many code requests — please try again later" };
+    return {
+      ok: false,
+      error: "Too many code requests — please try again later",
+    };
   }
 
   return { ok: true };
@@ -50,15 +62,20 @@ async function checkRateLimit(phone: string, purpose: OtpPurpose): Promise<{ ok:
 async function issueOtp(
   phone: string,
   purpose: OtpPurpose,
-  channel: OtpChannel
-): Promise<{ ok: true; cooldownSeconds: number } | { ok: false; error: string }> {
+  channel: OtpChannel,
+): Promise<
+  { ok: true; cooldownSeconds: number } | { ok: false; error: string }
+> {
   const rateCheck = await checkRateLimit(phone, purpose);
   if (!rateCheck.ok) return rateCheck;
 
   const code = generateCode();
   // NODE_ENV check is not optional here — this must never be able to log a
   // real OTP code in production regardless of how OTP_DEBUG_LOG got set.
-  if (process.env.NODE_ENV !== "production" && process.env.OTP_DEBUG_LOG === "true") {
+  if (
+    process.env.NODE_ENV !== "production" &&
+    process.env.OTP_DEBUG_LOG === "true"
+  ) {
     console.log(`[OTP DEBUG] ${phone} (${purpose}/${channel}) code:`, code);
   }
   // Fire and forget the external API call so the UI unblocks instantly (< 50ms)
@@ -84,10 +101,18 @@ export async function sendCustomerOtp(input: {
 }): Promise<ActionResponse<{ cooldownSeconds: number }>> {
   const validated = sendCustomerOtpSchema.safeParse(input);
   if (!validated.success) {
-    return { success: false, error: "Invalid input data", errors: validated.error.flatten().fieldErrors };
+    return {
+      success: false,
+      error: "Invalid input data",
+      errors: validated.error.flatten().fieldErrors,
+    };
   }
 
-  const result = await issueOtp(validated.data.phone, "CUSTOMER_LOGIN", validated.data.channel);
+  const result = await issueOtp(
+    validated.data.phone,
+    "CUSTOMER_LOGIN",
+    validated.data.channel,
+  );
   if (!result.ok) return { success: false, error: result.error };
   return { success: true, data: { cooldownSeconds: result.cooldownSeconds } };
 }
@@ -98,17 +123,36 @@ export async function sendTechnicianOtp(input: {
 }): Promise<ActionResponse<{ cooldownSeconds: number; phoneHint: string }>> {
   const validated = sendTechnicianOtpSchema.safeParse(input);
   if (!validated.success) {
-    return { success: false, error: "Invalid input data", errors: validated.error.flatten().fieldErrors };
+    return {
+      success: false,
+      error: "Invalid input data",
+      errors: validated.error.flatten().fieldErrors,
+    };
   }
 
-  const technician = await findTechnicianByIdentifier(validated.data.identifier);
+  const technician = await findTechnicianByIdentifier(
+    validated.data.identifier,
+  );
   if (!technician?.phone) {
-    return { success: false, error: "No technician account found for that username or number" };
+    return {
+      success: false,
+      error: "No technician account found for that username or number",
+    };
   }
 
-  const result = await issueOtp(technician.phone, "TECHNICIAN_LOGIN", validated.data.channel);
+  const result = await issueOtp(
+    technician.phone,
+    "TECHNICIAN_LOGIN",
+    validated.data.channel,
+  );
   if (!result.ok) return { success: false, error: result.error };
-  return { success: true, data: { cooldownSeconds: result.cooldownSeconds, phoneHint: maskPhone(technician.phone) } };
+  return {
+    success: true,
+    data: {
+      cooldownSeconds: result.cooldownSeconds,
+      phoneHint: maskPhone(technician.phone),
+    },
+  };
 }
 
 /**
@@ -142,13 +186,19 @@ export async function consumeOtp({
   });
 
   if (candidates.length === 0) {
-    return { ok: false, error: "Code expired or too many attempts — request a new one" };
+    return {
+      ok: false,
+      error: "Code expired or too many attempts — request a new one",
+    };
   }
 
   for (const candidate of candidates) {
     const matches = await bcrypt.compare(code, candidate.codeHash);
     if (matches) {
-      await prisma.otpCode.update({ where: { id: candidate.id }, data: { consumedAt: new Date() } });
+      await prisma.otpCode.update({
+        where: { id: candidate.id },
+        data: { consumedAt: new Date() },
+      });
       return { ok: true };
     }
   }

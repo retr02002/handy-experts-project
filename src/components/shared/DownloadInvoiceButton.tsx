@@ -35,9 +35,17 @@ export function DownloadInvoiceButton({ serviceCallId, ticketNumber, audience, m
     e.preventDefault();
     if (downloading) return;
     
+    const url = `/api/service-calls/${serviceCallId}/document?audience=${audience}${mode === "view" ? "&disposition=inline" : ""}`;
+
+    // For Web "view", open immediately to keep the user gesture token valid.
+    // Calling window.open AFTER an async fetch causes popup blockers to block it.
+    if (!Capacitor.isNativePlatform() && mode === "view") {
+      window.open(url, "_blank");
+      return;
+    }
+
     setDownloading(true);
     try {
-      const url = `/api/service-calls/${serviceCallId}/document?audience=${audience}${mode === "view" ? "&disposition=inline" : ""}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch document");
       const blob = await res.blob();
@@ -58,28 +66,16 @@ export function DownloadInvoiceButton({ serviceCallId, ticketNumber, audience, m
           dialogTitle: mode === "view" ? 'View Invoice' : 'Download Invoice',
         });
       } else {
-        if (navigator.share && navigator.canShare) {
-          const file = new File([blob], fileName, { type: "application/pdf" });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: `Invoice ${ticketNumber || ""}`.trim(),
-            });
-            return;
-          }
-        }
-        
+        // Web "download" mode
+        // Creating an <a> tag and clicking it doesn't require a strict user gesture token
+        // so it's safe to do after the async fetch.
         const objectUrl = URL.createObjectURL(blob);
-        if (mode === "view") {
-          window.open(objectUrl, "_blank");
-        } else {
-          const a = document.createElement("a");
-          a.href = objectUrl;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        }
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
       }
     } catch (err) {
