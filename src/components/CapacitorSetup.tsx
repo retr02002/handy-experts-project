@@ -6,7 +6,7 @@ import { Capacitor } from "@capacitor/core";
 
 export function CapacitorSetup() {
   useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
+    if (Capacitor.isNativePlatform() && Capacitor.isPluginAvailable("App")) {
       const backListener = CapacitorApp.addListener("backButton", ({ canGoBack }) => {
         // If we have web history, use it. Otherwise, exit the app (like on the login page).
         // For SPAs, we almost always have a history length > 1 if we've navigated.

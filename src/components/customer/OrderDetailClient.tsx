@@ -134,15 +134,30 @@ export function OrderDetailClient({ orderId, initialOrder }: { orderId: string; 
     e.preventDefault();
     if (!serviceCallId || downloadingInvoice) return;
     
+    const url = `/api/service-calls/${serviceCallId}/document?audience=customer${action === "view" ? "&disposition=inline" : ""}`;
+
+    // Check whether the native Capacitor plugins are actually reachable.
+    // When the WebView loads from a remote server URL, isNativePlatform()
+    // returns true but the plugin bridge is absent.
+    const hasNativePlugins =
+      Capacitor.isNativePlatform() &&
+      Capacitor.isPluginAvailable("Filesystem") &&
+      Capacitor.isPluginAvailable("Share");
+
+    // For non-native "view", open immediately to keep the user gesture token valid.
+    if (!hasNativePlugins && action === "view") {
+      window.open(url, "_blank");
+      return;
+    }
+
     setDownloadingInvoice(true);
     try {
-      const res = await fetch(`/api/service-calls/${serviceCallId}/document?audience=customer${action === "view" ? "&disposition=inline" : ""}`);
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch document");
       const blob = await res.blob();
       const fileName = `Invoice-${order.id}.pdf`;
       
-      // Native App / Mobile flow using Web Share API and Filesystem
-      if (Capacitor.isNativePlatform()) {
+      if (hasNativePlugins) {
         const base64Data = await blobToBase64(blob);
         const savedFile = await Filesystem.writeFile({
           path: fileName,
@@ -156,28 +171,14 @@ export function OrderDetailClient({ orderId, initialOrder }: { orderId: string; 
           dialogTitle: action === "view" ? 'View Invoice' : 'Download Invoice',
         });
       } else {
-        if (navigator.share && navigator.canShare) {
-          const file = new File([blob], fileName, { type: "application/pdf" });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: `Invoice ${order.id}`,
-            });
-            return;
-          }
-        }
-        
+        // Web / fallback "download" mode
         const objectUrl = URL.createObjectURL(blob);
-        if (action === "view") {
-          window.open(objectUrl, "_blank");
-        } else {
-          const a = document.createElement("a");
-          a.href = objectUrl;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        }
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
       }
     } catch (err) {

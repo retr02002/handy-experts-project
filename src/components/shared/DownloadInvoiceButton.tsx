@@ -37,9 +37,19 @@ export function DownloadInvoiceButton({ serviceCallId, ticketNumber, audience, m
     
     const url = `/api/service-calls/${serviceCallId}/document?audience=${audience}${mode === "view" ? "&disposition=inline" : ""}`;
 
-    // For Web "view", open immediately to keep the user gesture token valid.
-    // Calling window.open AFTER an async fetch causes popup blockers to block it.
-    if (!Capacitor.isNativePlatform() && mode === "view") {
+    // Check whether the native Capacitor plugins are actually reachable.
+    // When the WebView loads from a remote server URL (e.g. handyzo.com),
+    // isNativePlatform() returns true but the plugin bridge is absent —
+    // calling Filesystem/Share in that state throws "plugin not implemented".
+    const hasNativePlugins =
+      Capacitor.isNativePlatform() &&
+      Capacitor.isPluginAvailable("Filesystem") &&
+      Capacitor.isPluginAvailable("Share");
+
+    // For non-native "view", open immediately to keep the user gesture token
+    // valid — calling window.open AFTER an async fetch causes popup blockers
+    // to block it.
+    if (!hasNativePlugins && mode === "view") {
       window.open(url, "_blank");
       return;
     }
@@ -52,7 +62,7 @@ export function DownloadInvoiceButton({ serviceCallId, ticketNumber, audience, m
       
       const fileName = `Invoice-${ticketNumber || serviceCallId}.pdf`;
 
-      if (Capacitor.isNativePlatform()) {
+      if (hasNativePlugins) {
         const base64Data = await blobToBase64(blob);
         const savedFile = await Filesystem.writeFile({
           path: fileName,
@@ -66,9 +76,9 @@ export function DownloadInvoiceButton({ serviceCallId, ticketNumber, audience, m
           dialogTitle: mode === "view" ? 'View Invoice' : 'Download Invoice',
         });
       } else {
-        // Web "download" mode
-        // Creating an <a> tag and clicking it doesn't require a strict user gesture token
-        // so it's safe to do after the async fetch.
+        // Web / fallback "download" mode — creating an <a> tag and clicking
+        // it doesn't require a strict user gesture token, so it's safe to do
+        // after the async fetch.
         const objectUrl = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = objectUrl;

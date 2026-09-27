@@ -191,14 +191,24 @@ export function ServiceCallDetailModal({ call, onClose, onChanged, autoOpenAssig
     e.preventDefault();
     if (downloadingInvoice) return;
     
+    const url = `/api/service-calls/${call.id}/document?audience=vendor`;
+
+    // Check whether the native Capacitor plugins are actually reachable.
+    // When the WebView loads from a remote server URL, isNativePlatform()
+    // returns true but the plugin bridge is absent.
+    const hasNativePlugins =
+      Capacitor.isNativePlatform() &&
+      Capacitor.isPluginAvailable("Filesystem") &&
+      Capacitor.isPluginAvailable("Share");
+
     setDownloadingInvoice(true);
     try {
-      const res = await fetch(`/api/service-calls/${call.id}/document?audience=vendor`);
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch document");
       const blob = await res.blob();
       const fileName = `Invoice-${call.id}.pdf`;
       
-      if (Capacitor.isNativePlatform()) {
+      if (hasNativePlugins) {
         const base64Data = await blobToBase64(blob);
         const savedFile = await Filesystem.writeFile({
           path: fileName,
@@ -212,17 +222,6 @@ export function ServiceCallDetailModal({ call, onClose, onChanged, autoOpenAssig
           dialogTitle: 'Download Invoice',
         });
       } else {
-        if (navigator.share && navigator.canShare) {
-          const file = new File([blob], fileName, { type: "application/pdf" });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: `Invoice ${call.ticketNumber}`,
-            });
-            return;
-          }
-        }
-        
         const objectUrl = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = objectUrl;

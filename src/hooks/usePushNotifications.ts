@@ -7,7 +7,8 @@ import { PushNotifications } from '@capacitor/push-notifications';
 export function usePushNotifications(onTokenReceived?: (token: string) => void) {
   useEffect(() => {
     // Only execute if running natively inside the Capacitor wrapper
-    if (!Capacitor.isNativePlatform()) return;
+    // AND the PushNotifications plugin bridge is actually reachable.
+    if (!Capacitor.isNativePlatform() || !Capacitor.isPluginAvailable("PushNotifications")) return;
 
     let isMounted = true;
 
@@ -33,7 +34,7 @@ export function usePushNotifications(onTokenReceived?: (token: string) => void) 
       });
 
       // Some issue with our setup and push will not work
-      PushNotifications.addListener('registrationError', (error: any) => {
+      PushNotifications.addListener('registrationError', (error) => {
         console.error('Error on registration: ' + JSON.stringify(error));
       });
 
@@ -52,7 +53,7 @@ export function usePushNotifications(onTokenReceived?: (token: string) => void) 
 
     return () => {
       isMounted = false;
-      if (Capacitor.isNativePlatform()) {
+      if (Capacitor.isNativePlatform() && Capacitor.isPluginAvailable("PushNotifications")) {
         PushNotifications.removeAllListeners();
       }
     };

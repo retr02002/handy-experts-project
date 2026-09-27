@@ -58,7 +58,7 @@ export function VendorDocumentsSection({ initialDocuments, agreementTemplate }: 
             type="button"
             onClick={async () => {
               const { Capacitor } = await import("@capacitor/core");
-              if (Capacitor.isNativePlatform()) {
+              if (Capacitor.isNativePlatform() && Capacitor.isPluginAvailable("Browser")) {
                 const { Browser } = await import("@capacitor/browser");
                 await Browser.open({ url: agreementTemplate.url });
               } else {
