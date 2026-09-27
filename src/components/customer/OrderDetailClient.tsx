@@ -111,6 +111,50 @@ export function OrderDetailClient({ orderId, initialOrder }: { orderId: string; 
   const [techOpen, setTechOpen] = useState(false);
   const [rateOpen, setRateOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
+
+  const handleDownloadInvoice = async (e: React.MouseEvent, action: "view" | "download") => {
+    e.preventDefault();
+    if (!serviceCallId || downloadingInvoice) return;
+    
+    setDownloadingInvoice(true);
+    try {
+      const res = await fetch(`/api/service-calls/${serviceCallId}/document?audience=customer${action === "view" ? "&disposition=inline" : ""}`);
+      if (!res.ok) throw new Error("Failed to fetch document");
+      const blob = await res.blob();
+      
+      // Native App / Mobile flow using Web Share API (handles Blob downloads flawlessly on Android/iOS)
+      if (navigator.share && navigator.canShare) {
+        const file = new File([blob], `Invoice-${order.id}.pdf`, { type: "application/pdf" });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: `Invoice ${order.id}`,
+          });
+          return;
+        }
+      }
+      
+      // Desktop / Web fallback
+      const objectUrl = URL.createObjectURL(blob);
+      if (action === "view") {
+        window.open(objectUrl, "_blank");
+      } else {
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.download = `Invoice-${order.id}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+    } catch (err) {
+      console.error("Failed to fetch invoice:", err);
+      alert("Could not load the invoice. Please try again.");
+    } finally {
+      setDownloadingInvoice(false);
+    }
+  };
 
   const refresh = useCallback(async () => {
     const res = await getMyOrderDetailAction(orderId);
@@ -347,20 +391,24 @@ export function OrderDetailClient({ orderId, initialOrder }: { orderId: string; 
               </div>
             </div>
             <div className="flex items-center gap-2 sm:ml-auto">
-              <a
-                href={`/api/service-calls/${serviceCallId}/document?audience=customer&disposition=inline`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="h-10 px-4 flex-1 sm:flex-none rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 hover:border-blue-400 transition-colors"
+              <button
+                type="button"
+                onClick={(e) => handleDownloadInvoice(e, "view")}
+                disabled={downloadingInvoice}
+                className="h-10 px-4 flex-1 sm:flex-none rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 hover:border-blue-400 transition-colors disabled:opacity-50"
               >
-                <ClientIcon icon="ph:eye-bold" className="w-3.5 h-3.5" /> View
-              </a>
-              <a
-                href={`/api/service-calls/${serviceCallId}/document?audience=customer`}
-                className="h-10 px-4 flex-1 sm:flex-none rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity"
+                <ClientIcon icon={downloadingInvoice ? "ph:spinner-gap-bold" : "ph:eye-bold"} className={downloadingInvoice ? "w-3.5 h-3.5 animate-spin" : "w-3.5 h-3.5"} /> 
+                {downloadingInvoice ? "Loading..." : "View"}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => handleDownloadInvoice(e, "download")}
+                disabled={downloadingInvoice}
+                className="h-10 px-4 flex-1 sm:flex-none rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity disabled:opacity-50"
               >
-                <ClientIcon icon="ph:download-simple-bold" className="w-3.5 h-3.5" /> Download
-              </a>
+                <ClientIcon icon={downloadingInvoice ? "ph:spinner-gap-bold" : "ph:download-simple-bold"} className={downloadingInvoice ? "w-3.5 h-3.5 animate-spin" : "w-3.5 h-3.5"} /> 
+                {downloadingInvoice ? "Loading..." : "Download"}
+              </button>
             </div>
           </div>
         )}

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { ClientIcon } from "@/components/ui/ClientIcon";
+import { logoutPathForRole } from "@/lib/onboarding";
 
 /**
  * Replaces the old "Book" bottom-nav item. Signed out, it's just a link to
@@ -124,7 +125,7 @@ export function MobileAccountNavButton() {
             <button
               onClick={() => {
                 setIsOpen(false);
-                signOut({ callbackUrl: "/sign-in" });
+                signOut({ callbackUrl: logoutPathForRole(userRole) });
               }}
               className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
             >

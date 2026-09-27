@@ -169,6 +169,45 @@ export function ServiceCallDetailModal({ call, onClose, onChanged, autoOpenAssig
     }
   };
 
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
+
+  const handleDownloadInvoice = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (downloadingInvoice) return;
+    
+    setDownloadingInvoice(true);
+    try {
+      const res = await fetch(`/api/service-calls/${call.id}/document?audience=vendor`);
+      if (!res.ok) throw new Error("Failed to fetch document");
+      const blob = await res.blob();
+      
+      if (navigator.share && navigator.canShare) {
+        const file = new File([blob], `Invoice-${call.id}.pdf`, { type: "application/pdf" });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: `Invoice ${call.ticketNumber}`,
+          });
+          return;
+        }
+      }
+      
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = `Invoice-${call.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+    } catch (err) {
+      console.error("Failed to fetch invoice:", err);
+      toast.error("Could not load the invoice. Please try again.");
+    } finally {
+      setDownloadingInvoice(false);
+    }
+  };
+
   return createPortal(
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
@@ -189,12 +228,14 @@ export function ServiceCallDetailModal({ call, onClose, onChanged, autoOpenAssig
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
           <TicketBadge ticketNumber={call.ticketNumber} />
           {call.status === "COMPLETED" && (
-            <a
-              href={`/api/service-calls/${call.id}/document?audience=vendor`}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            <button
+              type="button"
+              onClick={handleDownloadInvoice}
+              disabled={downloadingInvoice}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
             >
-              <ClientIcon icon="ph:download-simple-bold" className="w-3 h-3" /> Invoice
-            </a>
+              <ClientIcon icon={downloadingInvoice ? "ph:spinner-gap-bold" : "ph:download-simple-bold"} className={downloadingInvoice ? "w-3 h-3 animate-spin" : "w-3 h-3"} /> {downloadingInvoice ? "Loading..." : "Invoice"}
+            </button>
           )}
         </div>
 

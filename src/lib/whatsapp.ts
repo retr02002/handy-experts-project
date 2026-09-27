@@ -20,7 +20,8 @@ export async function notifyOrderPlaced(phone: string, orderId: string, totalAmo
   const trackingUrl = `https://handyzo.com/customer/dashboard/orders/${orderId}`;
   const message = `Hello! Your order *${orderId}* has been successfully placed. \nTotal Amount: ₹${totalAmount}\n\nYou can track your order details here:\n${trackingUrl}\n\nThank you for choosing Handy Experts!`;
   
-  await sendWhatsAppMessage(phone, message);
+  // Fire and forget so we don't block the checkout flow
+  sendWhatsAppMessage(phone, message).catch(console.error);
 }
 
 export async function notifyJobCompletedByLiveCallId(liveCallId: string) {
@@ -31,7 +32,8 @@ export async function notifyJobCompletedByLiveCallId(liveCallId: string) {
     const ticket = formatTicketNumber(liveCall);
     const message = `Hello! We're glad to inform you that your job for order *${ticket}* has been successfully completed. \n\nThank you for choosing Handy Experts! We'd love to hear your feedback.`;
     
-    await sendWhatsAppMessage(liveCall.customerPhone, message);
+    // Fire and forget
+    sendWhatsAppMessage(liveCall.customerPhone, message).catch(console.error);
   } catch(e) {
     console.error("Failed to send WhatsApp completion message:", e);
   }

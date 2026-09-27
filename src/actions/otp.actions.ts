@@ -61,8 +61,8 @@ async function issueOtp(
   if (process.env.NODE_ENV !== "production" && process.env.OTP_DEBUG_LOG === "true") {
     console.log(`[OTP DEBUG] ${phone} (${purpose}/${channel}) code:`, code);
   }
-  const sendResult = await sendOtpMessage({ phone, code, channel });
-  if (!sendResult.ok) return { ok: false, error: sendResult.error };
+  // Fire and forget the external API call so the UI unblocks instantly (< 50ms)
+  sendOtpMessage({ phone, code, channel }).catch(console.error);
 
   const codeHash = await bcrypt.hash(code, 10);
   await prisma.otpCode.create({

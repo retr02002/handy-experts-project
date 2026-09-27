@@ -58,6 +58,7 @@ import NextTopLoader from 'nextjs-toploader';
 import { SplashScreen } from "@/components/ui/SplashScreen";
 import { NextAuthProvider } from "@/components/auth/NextAuthProvider";
 import { Toaster } from "sonner";
+import { CapacitorSetup } from "@/components/CapacitorSetup";
 
 export default function RootLayout({
   children,
@@ -85,6 +86,7 @@ export default function RootLayout({
           shadow="0 0 10px #00B4FF,0 0 5px #00B4FF"
           zIndex={1600}
         />
+        <CapacitorSetup />
         <SplashScreen />
         <NextAuthProvider>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>

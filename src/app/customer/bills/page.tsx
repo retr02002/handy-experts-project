@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { getMyOrdersAction, type OrderDisplayStatus } from "@/actions/livecall.actions";
 import { jobStatusLabel } from "@/lib/jobStatus";
+import { DownloadInvoiceButton } from "@/components/shared/DownloadInvoiceButton";
 
 const STATUS_STYLES: Record<OrderDisplayStatus, string> = {
   FINDING_PROFESSIONAL: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
@@ -75,22 +76,18 @@ export default async function CustomerBillsPage() {
                         <div className="flex items-center justify-end gap-1.5">
                           {isCompleted && order.serviceCallId ? (
                             <>
-                              <a
-                                href={`/api/service-calls/${order.serviceCallId}/document?audience=customer&disposition=inline`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                title="View invoice"
+                              <DownloadInvoiceButton
+                                serviceCallId={order.serviceCallId}
+                                audience="customer"
+                                mode="view"
                                 className="inline-flex p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors bg-slate-50 dark:bg-slate-800 rounded-lg"
-                              >
-                                <ClientIcon icon="ph:eye-bold" className="w-4 h-4" />
-                              </a>
-                              <a
-                                href={`/api/service-calls/${order.serviceCallId}/document?audience=customer`}
-                                title="Download invoice"
+                              />
+                              <DownloadInvoiceButton
+                                serviceCallId={order.serviceCallId}
+                                audience="customer"
+                                mode="download"
                                 className="inline-flex p-2 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors bg-slate-50 dark:bg-slate-800 rounded-lg"
-                              >
-                                <ClientIcon icon="ph:download-simple-bold" className="w-4 h-4" />
-                              </a>
+                              />
                             </>
                           ) : (
                             <span

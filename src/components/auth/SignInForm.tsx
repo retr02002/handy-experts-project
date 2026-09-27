@@ -25,6 +25,8 @@ export function SignInForm() {
   const [isSending, setIsSending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
 
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
   const routeAfterSignIn = async () => {
     const userRole = await getUserRole();
     const targetPath = userRole === "PENDING" ? "/onboarding"
@@ -33,6 +35,18 @@ export function SignInForm() {
           : userRole === "SUPER_ADMIN" ? "/admin"
             : "/customer";
     router.push(targetPath);
+  };
+
+  const handleGoogleSignIn = async () => {
+    if (isGoogleLoading) return;
+    setIsGoogleLoading(true);
+    // signIn will redirect the page, so we don't need to unset isLoading unless it throws
+    try {
+      await signIn("google", { callbackUrl: "/customer" });
+    } catch (e) {
+      setIsGoogleLoading(false);
+      setError("Failed to connect to Google. Please try again.");
+    }
   };
 
   const requestCode = async () => {
@@ -82,12 +96,22 @@ export function SignInForm() {
       {step === "start" && (
         <>
           <button
-            onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
+            onClick={handleGoogleSignIn}
+            disabled={isGoogleLoading}
             type="button"
-            className="w-full h-12 flex items-center justify-center gap-2 bg-transparent border border-slate-200 dark:border-slate-700/80 rounded-xl px-4 text-[14px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-[0.98] transition-all mb-5 shadow-sm cursor-pointer"
+            className="w-full h-12 flex items-center justify-center gap-2 bg-transparent border border-slate-200 dark:border-slate-700/80 rounded-xl px-4 text-[14px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-[0.98] transition-all mb-5 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <ClientIcon icon="logos:google-icon" className="w-5 h-5" />
-            Continue with Google
+            {isGoogleLoading ? (
+              <>
+                <ClientIcon icon="svg-spinners:180-ring" className="w-5 h-5 text-slate-500" />
+                Connecting...
+              </>
+            ) : (
+              <>
+                <ClientIcon icon="logos:google-icon" className="w-5 h-5" />
+                Continue with Google
+              </>
+            )}
           </button>
 
           <div className="flex items-center gap-3 mb-5">

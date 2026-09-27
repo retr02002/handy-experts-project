@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 import { TicketBadge } from "@/components/shared/TicketBadge";
 import { JOB_STATUS_COLORS, jobStatusLabel } from "@/lib/jobStatus";
+import { DownloadInvoiceButton } from "@/components/shared/DownloadInvoiceButton";
 import type { AdminServiceCallSummary } from "@/actions/servicecall.actions";
 
 const FILTERS = ["ALL", "UNASSIGNED", "ASSIGNED", "EN_ROUTE", "IN_PROGRESS", "COMPLETED", "CANCELLED"] as const;
@@ -122,12 +123,13 @@ export function VendorOrdersTab({ orders }: { orders: AdminServiceCallSummary[] 
                 <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
                   <span className="text-base font-black text-slate-900 dark:text-white">₹{o.total.toFixed(0)}</span>
                   {isCompleted ? (
-                    <a
-                      href={`/api/service-calls/${o.id}/document?audience=vendor`}
+                    <DownloadInvoiceButton
+                      serviceCallId={o.id}
+                      audience="vendor"
+                      mode="download"
+                      label="Invoice"
                       className="h-11 px-4 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold flex items-center gap-1.5 cursor-pointer shrink-0"
-                    >
-                      <ClientIcon icon="ph:download-simple-bold" className="w-3.5 h-3.5" /> Invoice
-                    </a>
+                    />
                   ) : (
                     <span
                       title="Available once the job is completed"
