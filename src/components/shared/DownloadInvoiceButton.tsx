@@ -37,19 +37,11 @@ export function DownloadInvoiceButton({ serviceCallId, ticketNumber, audience, m
     
     const url = `/api/service-calls/${serviceCallId}/document?audience=${audience}${mode === "view" ? "&disposition=inline" : ""}`;
 
-    // Check whether the native Capacitor plugins are actually reachable.
-    // When the WebView loads from a remote server URL (e.g. handyzo.com),
-    // isNativePlatform() returns true but the plugin bridge is absent —
-    // calling Filesystem/Share in that state throws "plugin not implemented".
-    const hasNativePlugins =
-      Capacitor.isNativePlatform() &&
-      Capacitor.isPluginAvailable("Filesystem") &&
-      Capacitor.isPluginAvailable("Share");
+    // In Capacitor, when loading from a remote URL, isPluginAvailable might
+    // fail or be undefined, so we check the globally injected bridge directly.
+    const isNative = typeof window !== 'undefined' && (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
 
-    // For non-native "view", open immediately to keep the user gesture token
-    // valid — calling window.open AFTER an async fetch causes popup blockers
-    // to block it.
-    if (!hasNativePlugins && mode === "view") {
+    if (!isNative && mode === "view") {
       window.open(url, "_blank");
       return;
     }
@@ -59,34 +51,28 @@ export function DownloadInvoiceButton({ serviceCallId, ticketNumber, audience, m
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch document");
       const blob = await res.blob();
-      
       const fileName = `Invoice-${ticketNumber || serviceCallId}.pdf`;
 
-      if (hasNativePlugins) {
-        const base64Data = await blobToBase64(blob);
-        const savedFile = await Filesystem.writeFile({
-          path: fileName,
-          data: base64Data,
-          directory: Directory.Cache,
-        });
+      if (isNative) {
+        try {
+          const base64Data = await blobToBase64(blob);
+          const savedFile = await Filesystem.writeFile({
+            path: fileName,
+            data: base64Data,
+            directory: Directory.Cache,
+          });
 
-        await Share.share({
-          title: `Invoice ${ticketNumber || ""}`.trim(),
-          url: savedFile.uri,
-          dialogTitle: mode === "view" ? 'View Invoice' : 'Download Invoice',
-        });
+          await Share.share({
+            title: `Invoice ${ticketNumber || ""}`.trim(),
+            url: savedFile.uri,
+            dialogTitle: mode === "view" ? 'View Invoice' : 'Download Invoice',
+          });
+        } catch (nativeErr) {
+          console.warn("Native share failed, falling back:", nativeErr);
+          fallbackWebDownload(blob, fileName);
+        }
       } else {
-        // Web / fallback "download" mode — creating an <a> tag and clicking
-        // it doesn't require a strict user gesture token, so it's safe to do
-        // after the async fetch.
-        const objectUrl = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = objectUrl;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+        fallbackWebDownload(blob, fileName);
       }
     } catch (err) {
       console.error("Failed to fetch invoice:", err);
@@ -94,6 +80,17 @@ export function DownloadInvoiceButton({ serviceCallId, ticketNumber, audience, m
     } finally {
       setDownloading(false);
     }
+  };
+
+  const fallbackWebDownload = (blob: Blob, fileName: string) => {
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = objectUrl;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
   };
 
   const isView = mode === "view";

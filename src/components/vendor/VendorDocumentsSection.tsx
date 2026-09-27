@@ -57,10 +57,15 @@ export function VendorDocumentsSection({ initialDocuments, agreementTemplate }: 
           <button
             type="button"
             onClick={async () => {
-              const { Capacitor } = await import("@capacitor/core");
-              if (Capacitor.isNativePlatform() && Capacitor.isPluginAvailable("Browser")) {
-                const { Browser } = await import("@capacitor/browser");
-                await Browser.open({ url: agreementTemplate.url });
+              const isNative = typeof window !== 'undefined' && (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
+              
+              if (isNative) {
+                try {
+                  const { Browser } = await import("@capacitor/browser");
+                  await Browser.open({ url: agreementTemplate.url });
+                } catch (e) {
+                  window.open(agreementTemplate.url, "_blank", "noopener,noreferrer");
+                }
               } else {
                 window.open(agreementTemplate.url, "_blank", "noopener,noreferrer");
               }
