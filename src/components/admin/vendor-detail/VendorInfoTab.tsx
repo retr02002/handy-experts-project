@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { toast } from "sonner";
-import { updateVendorAction, setVendorActiveStatusAction, type AdminVendor } from "@/actions/admin.actions";
+import { updateVendorAction, setVendorActiveStatusAction, resetVendorPasswordAction, type AdminVendor } from "@/actions/admin.actions";
 import { COMPANY_TYPES } from "@/lib/validations/onboarding.schema";
 import { ClientIcon } from "@/components/ui/ClientIcon";
 
@@ -68,6 +68,10 @@ export function VendorInfoTab({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [resetForm, setResetForm] = useState({ password: "", confirmPassword: "", isRandom: false });
 
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -108,6 +112,43 @@ export function VendorInfoTab({
       onChanged();
     } finally {
       setIsTogglingStatus(false);
+    }
+  };
+
+  const handleResetPasswordSubmit = async () => {
+    if (!resetForm.isRandom) {
+      if (!resetForm.password) {
+        toast.error("Please enter a new password");
+        return;
+      }
+      if (resetForm.password !== resetForm.confirmPassword) {
+        toast.error("Passwords do not match");
+        return;
+      }
+    }
+    
+    setIsResetModalOpen(false);
+    setIsResettingPassword(true);
+    try {
+      const res = await resetVendorPasswordAction(vendor.id, resetForm.isRandom ? undefined : resetForm.password);
+      if (!res.success) {
+        toast.error(res.error || "Failed to reset password");
+        return;
+      }
+      if (!res.data) {
+        toast.error("Failed to reset password: No data returned");
+        return;
+      }
+      toast.success(
+        <div className="flex flex-col gap-1">
+          <p className="font-bold">Password Reset Successful</p>
+          <p className="text-sm">Temp Password: <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">{res.data.tempPassword}</span></p>
+          <p className="text-xs opacity-80">{res.data.smsDelivered ? "SMS sent to vendor" : "SMS failed to send"}</p>
+        </div>,
+        { duration: 10000 }
+      );
+    } finally {
+      setIsResettingPassword(false);
     }
   };
 
@@ -191,9 +232,88 @@ export function VendorInfoTab({
               <ClientIcon icon={isActive ? "ph:prohibit-bold" : "ph:check-circle-bold"} className="w-4 h-4" />
               {isTogglingStatus ? "Updating..." : isActive ? "Deactivate Vendor" : "Reactivate Vendor"}
             </button>
+            <button
+              onClick={() => {
+                setResetForm({ password: "", confirmPassword: "", isRandom: false });
+                setShowPassword(false);
+                setIsResetModalOpen(true);
+              }}
+              disabled={isResettingPassword}
+              className="flex-1 min-w-[160px] h-11 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 border text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-500/30 hover:bg-orange-50 dark:hover:bg-orange-500/10"
+            >
+              <ClientIcon icon="ph:password-bold" className="w-4 h-4" />
+              {isResettingPassword ? "Resetting..." : "Reset Password"}
+            </button>
           </div>
         )}
       </div>
+
+      {isResetModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white dark:bg-[#0F172A] w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col gap-4">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Reset Password</h3>
+            
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={resetForm.isRandom} 
+                onChange={(e) => setResetForm(prev => ({ ...prev, isRandom: e.target.checked, password: "", confirmPassword: "" }))} 
+                className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-blue-500 focus:ring-blue-500/40 cursor-pointer"
+              />
+              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Generate a random password</span>
+            </label>
+
+            {!resetForm.isRandom && (
+              <>
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">New Password</p>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={resetForm.password}
+                      onChange={(e) => setResetForm(prev => ({ ...prev, password: e.target.value }))}
+                      className="w-full h-10 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/80 rounded-lg px-3 pr-10 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                    >
+                      <ClientIcon icon={showPassword ? "ph:eye-slash-bold" : "ph:eye-bold"} className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Confirm Password</p>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={resetForm.confirmPassword}
+                      onChange={(e) => setResetForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      className="w-full h-10 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/80 rounded-lg px-3 pr-10 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => setIsResetModalOpen(false)}
+                className="flex-1 h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResetPasswordSubmit}
+                className="flex-1 h-10 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold transition-colors"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

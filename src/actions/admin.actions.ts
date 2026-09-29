@@ -713,3 +713,42 @@ export async function setVendorCategoriesAction(vendorId: string, skillAssignmen
     return { success: false, error: "Failed to update categories" };
   }
 }
+
+export async function resetVendorPasswordAction(vendorId: string, customPassword?: string): Promise<ActionResponse<{ tempPassword: string; smsDelivered: boolean }>> {
+  const isAdmin = await requireAdmin();
+  if (!isAdmin) return { success: false, error: "Not authorized" };
+
+  try {
+    const vendor = await prisma.vendorProfile.findUnique({
+      where: { id: vendorId },
+      include: { user: { select: { id: true, email: true, phone: true } } },
+    });
+    if (!vendor) return { success: false, error: "Vendor not found" };
+
+    const tempPassword = customPassword || crypto.randomBytes(9).toString("base64url");
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    await prisma.user.update({
+      where: { id: vendor.userId },
+      data: { password: hashedPassword },
+    });
+
+    let smsDelivered = false;
+    if (vendor.user.phone) {
+      const sendResult = await sendTextMessage({
+        phone: vendor.user.phone,
+        channel: "SMS",
+        message: `Your Handyzo vendor password has been reset. Email: ${vendor.user.email}  Temp password: ${tempPassword}. Please log in and change your password.`,
+      });
+      smsDelivered = sendResult.ok;
+    }
+
+    return {
+      success: true,
+      data: { tempPassword, smsDelivered },
+    };
+  } catch (err) {
+    console.error("Reset vendor password error:", err);
+    return { success: false, error: "Failed to reset password" };
+  }
+}

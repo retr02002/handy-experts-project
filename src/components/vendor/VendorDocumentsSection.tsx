@@ -7,7 +7,22 @@ import { OtherDocumentsSection } from "@/components/shared/kyc/OtherDocumentsSec
 import { VENDOR_KYC_FIELDS } from "@/lib/kycDocumentTypes";
 import { deleteKycDocumentAction, type KycDocSummary } from "@/actions/kyc.actions";
 import type { PlatformDocumentSummary } from "@/actions/platformDocument.actions";
+import { Capacitor } from "@capacitor/core";
+import { Filesystem, Directory } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
 
+const blobToBase64 = (blob: Blob): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64Data = result.split(',')[1];
+      resolve(base64Data);
+    };
+    reader.readAsDataURL(blob);
+  });
+};
 interface Props {
   initialDocuments: KycDocSummary[];
   agreementTemplate: PlatformDocumentSummary | null;
@@ -57,26 +72,40 @@ export function VendorDocumentsSection({ initialDocuments, agreementTemplate }: 
           <button
             type="button"
             onClick={async () => {
+              const isNative = typeof window !== 'undefined' && Capacitor.isNativePlatform();
+
+              if (!isNative) {
+                // For web/mobile web, skip the async fetch which triggers popup blockers and iOS Safari blob bugs.
+                window.open(agreementTemplate.url, "_blank");
+                return;
+              }
+
               try {
-                // Fetch the file to force download instead of opening in a new tab
                 const response = await fetch(agreementTemplate.url);
                 if (!response.ok) throw new Error("Network response was not ok");
                 
                 const blob = await response.blob();
-                const blobUrl = window.URL.createObjectURL(blob);
-                
-                const link = document.createElement("a");
-                link.href = blobUrl;
-                // Try to extract filename from URL or fallback
-                const filename = agreementTemplate.url.split("/").pop() || "Vendor_Agreement";
-                link.download = filename;
-                
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(blobUrl);
+                const filename = agreementTemplate.url.split("/").pop() || "Vendor_Agreement.pdf";
+
+                try {
+                  const base64Data = await blobToBase64(blob);
+                  const savedFile = await Filesystem.writeFile({
+                    path: filename,
+                    data: base64Data,
+                    directory: Directory.Cache,
+                  });
+
+                  await Share.share({
+                    title: "Vendor Agreement",
+                    url: savedFile.uri,
+                    dialogTitle: 'Download Vendor Agreement',
+                  });
+                } catch (nativeErr) {
+                  console.warn("Native share failed, falling back to open:", nativeErr);
+                  window.open(agreementTemplate.url, "_blank");
+                }
               } catch (error) {
-                // Fallback to opening in a new tab if fetch fails (e.g. CORS)
+                // Fallback to opening in a new tab if fetch fails
                 window.open(agreementTemplate.url, "_blank", "noopener,noreferrer");
               }
             }}

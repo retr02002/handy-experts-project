@@ -19,7 +19,7 @@ export function VendorTechniciansTab({ technicians }: { technicians: VendorPerfo
       {technicians.map((t) => (
         <Link
           key={t.id}
-          href={`/admin/technicians/${t.id}`}
+          href={`/admin/vendor-technicians/${t.id}`}
           className="bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 flex flex-col gap-3 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md transition-all"
         >
           <div className="flex items-start gap-3 min-w-0">
